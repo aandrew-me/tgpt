@@ -17,6 +17,7 @@ import (
 )
 
 const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+var stopSpin = false
 
 func getRandomString(n int) string {
 	fullString := ""
@@ -55,12 +56,15 @@ func getData(input string, inputLength int) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer resp.Body.Close()
 	bodyText, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
 	stopSpin = true
+	fmt.Print("\r")
+
 	// Adding comma after each json object
 	mainText := regexp.MustCompile(`}\n`).ReplaceAllString(string(bodyText), "},\n")
 
@@ -74,7 +78,7 @@ func getData(input string, inputLength int) {
 
 	error := json.Unmarshal([]byte(jsonArray), &chatData)
 	if error != nil {
-		fmt.Println("erroror parsing JSON: ", err)
+		fmt.Println("error parsing JSON: ", err)
 		return
 	}
 
@@ -113,12 +117,10 @@ func loading(stop *bool) {
 		}
 		fmt.Printf("\r%s Loading", spinChars[i])
 		i = (i + 1) % len(spinChars)
-		time.Sleep(80 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
-	fmt.Print("\r") // Clear the spinning character from console
 }
 
-var stopSpin = false
 
 type ChatData struct {
 	Text string `json:"text"`
@@ -133,7 +135,7 @@ func main() {
 		input := args[1]
 
 		if input == "-h" || input == "--help" {
-			color.Blue(`Usage: ./gpt "Explain quantum computing in simple terms"`)
+			color.Blue(`Usage: ./tgpt "Explain quantum computing in simple terms"`)
 		} else {
 			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
 			inputLength := len(formattedInput) + 87
