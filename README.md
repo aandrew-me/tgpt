@@ -6,4 +6,5 @@ Usage
 ```
 ./tgpt "Explain quantum computing in simple terms"
 ```
-[![asciicast](https://asciinema.org/a/oAzssjJXrxk3vf3YtcTsg3GXP.svg)](https://asciinema.org/a/oAzssjJXrxk3vf3YtcTsg3GXP)
+![tgpt](https://user-images.githubusercontent.com/66430340/232550313-4f5a0514-a78e-4371-9160-c75cd34b6be5.gif)
+
