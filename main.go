@@ -131,12 +131,12 @@ func main() {
 	args := os.Args
 
 	if len(args) > 1 {
-		go loading(&stopSpin)
 		input := args[1]
 
 		if input == "-h" || input == "--help" {
 			color.Blue(`Usage: ./tgpt "Explain quantum computing in simple terms"`)
 		} else {
+			go loading(&stopSpin)
 			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
 			inputLength := len(formattedInput) + 87
 			getData(formattedInput, inputLength)
