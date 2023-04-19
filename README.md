@@ -11,7 +11,7 @@ tgpt "Explain quantum computing in simple terms"
 
 ## Installation
 
-With go
+With Go
 ```
-go mod install github.com/aandrew-me/tgpt@main
+go install github.com/aandrew-me/tgpt@main
 ```
