@@ -6,5 +6,5 @@ Usage
 ```
 ./tgpt "Explain quantum computing in simple terms"
 ```
-![tgpt](https://user-images.githubusercontent.com/66430340/232550313-4f5a0514-a78e-4371-9160-c75cd34b6be5.gif)
+![demo](https://user-images.githubusercontent.com/66430340/233156555-9aed5472-7222-441e-86c8-bb78c133f493.gif)
 
