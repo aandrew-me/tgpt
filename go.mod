@@ -1,4 +1,4 @@
-module aandrew-me/terminal-gpt
+module github.com/aandrew-me/terminal-gpt
 
 go 1.20
 
