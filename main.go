@@ -134,7 +134,7 @@ func main() {
 		input := args[1]
 
 		if input == "-h" || input == "--help" {
-			color.Blue(`Usage: ./tgpt "Explain quantum computing in simple terms"`)
+			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
@@ -144,7 +144,7 @@ func main() {
 
 	} else {
 		color.Red("You have to write some text")
-		color.Blue(`Example: ./gpt "Explain quantum computing in simple terms"`)
+		color.Blue(`Example: tgpt "Explain quantum computing in simple terms"`)
 	}
 
 }
