@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+
+# Check the system architecture
+if [[ $(uname -m) == "x86_64" ]]; then
+    ARCH="amd64"
+elif [[ $(uname -m) == "i386" || $(uname -m) == "i686" ]]; then
+    ARCH="i386"
+elif [[ $(uname -m) == "arm64" ]]; then
+    ARCH="arm64"
+else
+    echo "Unsupported architecture: $(uname -m)"
+    exit 1
+fi
+
+# Check if the system is macOS
+if [[ $(uname -s) == "Darwin" ]]; then
+    OS="mac"
+else
+    OS="linux"
+fi
+
+echo "Operating System: ${OS}"
+echo "Processor Architecture: ${ARCH}"
+# Set the URL of the executable based on the architecture and OS
+URL="https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-${OS}-${ARCH}"
+# Download the executable
+echo "Downloading..."
+curl -sSL "$URL" -o /tmp/tgpt
+
+# Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
+if [[ $OS == "linux" ]]; then
+    sudo mv /tmp/tgpt /usr/local/bin/
+    sudo chmod +x /usr/local/bin/tgpt
+else
+    sudo mv /tmp/tgpt /usr/local/opt/
+    sudo chmod +x /usr/local/opt/tgpt
+fi
+
+echo -e "\e[32m Installed Successfully \e[0m"
+
+echo -e "Run \e[34mtgpt -h\e[0m to get started"
+
+
