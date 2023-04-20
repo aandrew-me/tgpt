@@ -31,14 +31,15 @@ curl -sSL "$URL" -o /tmp/tgpt
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
 if [[ $OS == "linux" ]]; then
     sudo mv /tmp/tgpt /usr/local/bin/
-    sudo chmod +x /usr/local/bin/tgpt
 else
-    sudo mv /tmp/tgpt /usr/local/opt/
-    sudo chmod +x /usr/local/opt/tgpt
+    sudo mv /tmp/tgpt /usr/local/bin/
 fi
 
-echo -e "\e[32m Installed Successfully \e[0m"
+sudo chmod +x /usr/local/bin/tgpt
 
-echo -e "Run \e[34mtgpt -h\e[0m to get started"
+
+echo -e "Installed Successfully"
+
+echo -e "Run tgpt -h to get started"
 
 
