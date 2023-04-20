@@ -11,7 +11,10 @@ tgpt "Explain quantum computing in simple terms"
 
 ## Installation
 
-With Go
+### With Go
 ```
 go install github.com/aandrew-me/tgpt@main
 ```
+### From Release
+
+You can download an executable for your Operating System, then rename it to tgpt or whatever you want. Then you can execute it by typing `./tgpt` being in that directory. Or you can add it to the Environmental Variable **PATH** and then you can execute it by just typing `tgpt`.
