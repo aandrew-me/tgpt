@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 
+## Install script for GNU/Linux & MacOS
+
+set -e
+
 # Check the system architecture
 if [[ $(uname -m) == "x86_64" ]]; then
     ARCH="amd64"
@@ -25,7 +29,7 @@ echo "Processor Architecture: ${ARCH}"
 # Set the URL of the executable based on the architecture and OS
 URL="https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-${OS}-${ARCH}"
 # Download the executable
-echo "Downloading..."
+echo "Downloading...\n"
 curl -sSL "$URL" -o /tmp/tgpt
 
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
@@ -37,8 +41,7 @@ fi
 
 sudo chmod +x /usr/local/bin/tgpt
 
-
-echo -e "Installed Successfully"
+echo -e "Installed Successfully \n"
 
 echo -e "Run tgpt -h to get started"
 
