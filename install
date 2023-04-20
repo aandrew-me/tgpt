@@ -25,11 +25,11 @@ else
 fi
 
 echo "Operating System: ${OS}"
-echo "Processor Architecture: ${ARCH}"
+echo -e "Processor Architecture: ${ARCH}\n"
 # Set the URL of the executable based on the architecture and OS
 URL="https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-${OS}-${ARCH}"
 # Download the executable
-echo "Downloading...\n"
+echo -e "Downloading...\n"
 curl -sSL "$URL" -o /tmp/tgpt
 
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
