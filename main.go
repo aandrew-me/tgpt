@@ -1,22 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
+	"github.com/fatih/color"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
-
-	"github.com/fatih/color"
 )
 
 const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 var stopSpin = false
 
 func getRandomString(n int) string {
@@ -26,8 +25,11 @@ func getRandomString(n int) string {
 		random := rand.Intn(51)
 		fullString += (string(letters[random]))
 	}
-
 	return fullString
+}
+
+type ChatData struct {
+	Text string `json:"text"`
 }
 
 func getData(input string, inputLength int) {
@@ -39,7 +41,7 @@ func getData(input string, inputLength int) {
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"chatcmpl-75z6jNw2bxwG9ATGUPQCDsZYOQX5N"}}`, input))
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Some error has occured. Code 1")
 	}
 	// Setting all the required headers
 	req.Header.Set("Host", "chatbot.theb.ai")
@@ -54,58 +56,95 @@ func getData(input string, inputLength int) {
 	req.Header.Set("Cookie", "__cf_bm="+randomString)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Some error has occured. Check your internet connection.")
 	}
 
 	defer resp.Body.Close()
-	bodyText, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	stopSpin = true
 	fmt.Print("\r")
 
-	// Adding comma after each json object
-	mainText := regexp.MustCompile(`}\n`).ReplaceAllString(string(bodyText), "},\n")
+	scanner := bufio.NewScanner(resp.Body)
 
-	// Adding brackets to make it an array
-	jsonArray := fmt.Sprintf("[%s]", mainText)
+	// Variables
+	var oldLine = ""
+	var newLine = ""
+	count := 0
 	bold := color.New(color.Bold)
+	boldGreen := color.New(color.Bold, color.FgGreen)
+	isCode := false
+	isGreen := false
+	tickCount := 0
+	previousWasTick := false
+	isTick := false
 
+	// Print the Question
 	bold.Print(input, "\n\n")
 
-	var chatData []ChatData
+	// Handling each json
+	for scanner.Scan() {
+		var jsonObj map[string]interface{}
+		line := scanner.Text()
+		err := json.Unmarshal([]byte(line), &jsonObj)
+		if err != nil {
+			log.Fatal("Some error has occured")
+		}
+		mainText := fmt.Sprintf("%s", jsonObj["text"])
 
-	error := json.Unmarshal([]byte(jsonArray), &chatData)
-	if error != nil {
-		fmt.Println("error parsing JSON: ", err)
-		return
+		if count <= 0 {
+			oldLine = mainText
+			splitLine := strings.Split(oldLine, "")
+			for _, word := range splitLine {
+				fmt.Print(word)
+			}
+		} else {
+			newLine = mainText
+			result := strings.Replace(newLine, oldLine, "", -1)
+			splitLine := strings.Split(result, "")
+			for _, word := range splitLine {
+				// If its a backtick
+				if word == "`" {
+					tickCount++
+					isTick = true
+
+					if tickCount == 2 && !previousWasTick {
+						tickCount = 0
+					} else if tickCount == 6 {
+						tickCount = 0
+					}
+					previousWasTick = true
+					isGreen = false
+					isCode = false
+
+				} else {
+					isTick = false
+					// If its a normal word
+					previousWasTick = false
+					if tickCount == 1 {
+						isGreen = true
+					} else if tickCount == 3 {
+						isCode = true
+					}
+				}
+
+				if isCode {
+					fmt.Print(color.BlueString(word))
+				} else if isGreen {
+					boldGreen.Print(word)
+				} else if !isTick {
+					fmt.Print(word)
+				}
+
+			}
+			oldLine = newLine
+		}
+
+		count++
 	}
-
-	// Selecting the last one
-	text := chatData[len(chatData)-1].Text
-
-	threeTickPattern := regexp.MustCompile("```([\\s\\S]*?)```")
-
-	oneTickPattern := regexp.MustCompile("`([\\s\\S]*?)`")
-
-	matches := threeTickPattern.FindAllStringSubmatch(text, -1)
-
-	for _, match := range matches {
-		capturedText := match[1]
-		blueText := color.BlueString(capturedText)
-		text = strings.ReplaceAll(text, match[0], blueText)
+	if err := scanner.Err(); err != nil {
+		panic(err)
 	}
-
-	moreMatches := oneTickPattern.FindAllStringSubmatch(text, -1)
-
-	for _, match := range moreMatches {
-		capturedText := match[1]
-		blueText := color.GreenString(capturedText)
-		text = strings.ReplaceAll(text, match[0], blueText)
-	}
-
-	fmt.Println(text)
+	fmt.Println("")
 }
 
 func loading(stop *bool) {
@@ -121,16 +160,10 @@ func loading(stop *bool) {
 	}
 }
 
-
-type ChatData struct {
-	Text string `json:"text"`
-}
-
 func main() {
-	// getData()
 	args := os.Args
 
-	if len(args) > 1 {
+	if len(args) > 1 && len(args[1]) > 0 {
 		input := args[1]
 
 		if input == "-h" || input == "--help" {
