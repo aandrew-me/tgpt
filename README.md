@@ -13,7 +13,7 @@ tgpt "Explain quantum computing in simple terms"
 
 ### With Go
 ```
-go install github.com/aandrew-me/tgpt@main
+go install github.com/aandrew-me/tgpt@latest
 ```
 ### Download for Linux or Mac with this one line
 ```
