@@ -1,6 +1,6 @@
-# Terminal GPT
+# Terminal GPT (tgpt)
 
-This tool lets you use ChatGPT 3.5 in Terminal without any API KEYS. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai).
+This tool lets you use ChatGPT 3.5 in Terminal without any API KEYS. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai). Its written in Go.
 
 ## Usage
 ```

@@ -5,13 +5,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/fatih/color"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -41,7 +41,7 @@ func getData(input string, inputLength int) {
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"chatcmpl-75z6jNw2bxwG9ATGUPQCDsZYOQX5N"}}`, input))
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
-		log.Fatal("Some error has occured. Code 1")
+		fmt.Println("\nSome error has occured. Code 1")
 	}
 	// Setting all the required headers
 	req.Header.Set("Host", "chatbot.theb.ai")
@@ -56,7 +56,9 @@ func getData(input string, inputLength int) {
 	req.Header.Set("Cookie", "__cf_bm="+randomString)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal("Some error has occured. Check your internet connection.")
+		stopSpin = true
+		fmt.Println("\rSome error has occured. Check your internet connection.")
+		os.Exit(0)
 	}
 
 	defer resp.Body.Close()
@@ -79,7 +81,8 @@ func getData(input string, inputLength int) {
 	isTick := false
 
 	// Print the Question
-	bold.Print(input, "\n\n")
+	fmt.Print("\r         ")
+	bold.Printf("\r%v\n\n", input)
 
 	// Handling each json
 	for scanner.Scan() {
@@ -87,15 +90,48 @@ func getData(input string, inputLength int) {
 		line := scanner.Text()
 		err := json.Unmarshal([]byte(line), &jsonObj)
 		if err != nil {
-			log.Fatal("Some error has occured")
+			fmt.Println("\rSome error has occured")
+			os.Exit(0)
 		}
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 
 		if count <= 0 {
 			oldLine = mainText
 			splitLine := strings.Split(oldLine, "")
+			// Iterating through each word
 			for _, word := range splitLine {
-				fmt.Print(word)
+				// If its a backtick
+				if word == "`" {
+					tickCount++
+					isTick = true
+
+					if tickCount == 2 && !previousWasTick {
+						tickCount = 0
+					} else if tickCount == 6 {
+						tickCount = 0
+					}
+					previousWasTick = true
+					isGreen = false
+					isCode = false
+
+				} else {
+					isTick = false
+					// If its a normal word
+					previousWasTick = false
+					if tickCount == 1 {
+						isGreen = true
+					} else if tickCount == 3 {
+						isCode = true
+					}
+				}
+
+				if isCode {
+					fmt.Print(color.BlueString(word))
+				} else if isGreen {
+					boldGreen.Print(word)
+				} else if !isTick {
+					fmt.Print(word)
+				}
 			}
 		} else {
 			newLine = mainText
@@ -154,16 +190,16 @@ func loading(stop *bool) {
 		if *stop {
 			break
 		}
-		fmt.Printf("\r%s Loading", spinChars[i])
+		fmt.Printf("\rLoading %s", spinChars[i])
 		i = (i + 1) % len(spinChars)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(80 * time.Millisecond)
 	}
 }
 
 func main() {
 	args := os.Args
 
-	if len(args) > 1 && len(args[1]) > 0 {
+	if len(args) > 1 && len(args[1]) > 1 {
 		input := args[1]
 
 		if input == "-h" || input == "--help" {
