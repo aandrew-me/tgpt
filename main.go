@@ -15,6 +15,7 @@ import (
 )
 
 const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const VERSION = "1.2.0"
 
 var stopSpin = false
 
@@ -202,7 +203,9 @@ func main() {
 	if len(args) > 1 && len(args[1]) > 1 {
 		input := args[1]
 
-		if strings.HasPrefix(input, "-") {
+		if input == "-v" || input == "--version"{
+			fmt.Println("tgpt", VERSION)
+		} else if strings.HasPrefix(input, "-") {
 			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
 		} else {
 			go loading(&stopSpin)
