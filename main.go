@@ -202,7 +202,7 @@ func main() {
 	if len(args) > 1 && len(args[1]) > 1 {
 		input := args[1]
 
-		if input == "-h" || input == "--help" {
+		if strings.HasPrefix(input, "-") {
 			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
 		} else {
 			go loading(&stopSpin)
