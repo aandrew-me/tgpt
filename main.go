@@ -15,7 +15,7 @@ import (
 )
 
 const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const VERSION = "1.2.0"
+const VERSION = "1.1.1"
 
 var stopSpin = false
 
@@ -43,6 +43,8 @@ func getData(input string, inputLength int) {
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
 		fmt.Println("\nSome error has occured. Code 1")
+		fmt.Println("Error:", err)
+		os.Exit(0)
 	}
 	// Setting all the required headers
 	req.Header.Set("Host", "chatbot.theb.ai")
@@ -59,6 +61,7 @@ func getData(input string, inputLength int) {
 	if err != nil {
 		stopSpin = true
 		fmt.Println("\rSome error has occured. Check your internet connection.")
+		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
 
@@ -92,6 +95,8 @@ func getData(input string, inputLength int) {
 		err := json.Unmarshal([]byte(line), &jsonObj)
 		if err != nil {
 			fmt.Println("\rSome error has occured")
+			fmt.Println("\nError:", err)
+			fmt.Println(line)
 			os.Exit(0)
 		}
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
@@ -209,7 +214,7 @@ func main() {
 			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
 		} else {
 			go loading(&stopSpin)
-			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
+			formattedInput := strings.TrimSpace(strings.ReplaceAll(input, `"`, `\"`))
 			inputLength := len(formattedInput) + 87
 			getData(formattedInput, inputLength)
 		}

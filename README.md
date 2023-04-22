@@ -4,7 +4,7 @@ This tool lets you use ChatGPT 3.5 in Terminal without any API KEYS. It communic
 
 ## Usage
 ```
-tgpt "Explain quantum computing in simple terms"
+tgpt "What is the purpose of life?"
 ```
 ![demo](https://user-images.githubusercontent.com/66430340/233759296-c4cf8cf2-0cab-48aa-9e84-40765b823282.gif)
 
