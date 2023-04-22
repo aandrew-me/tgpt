@@ -94,7 +94,11 @@ if [ -f "$tgpt" ]; then
 	fi
 	if [ $(which tgpt) ]; then
 		echo -e "Installed Successfully \n"
+		if [ "$bindir" == "$globalbin" ]; then
+		echo -e "Run tgpt -h to get started"
+		else
 		echo -e "Reload your terminal and run tgpt -h to get started"
+		fi
 	else
 		echo -e "tgpt not found in ${bindir}"
 	fi
