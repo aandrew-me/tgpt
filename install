@@ -1,14 +1,15 @@
 #!/bin/bash -i
 
+## Install script for GNU/Linux & MacOS
+
 localbin="$HOME/.local/bin"
 globalbin="/usr/local/bin"
 bashrc="$HOME/.bashrc"
 tmp="/tmp/tgpt"
 
-## Install script for GNU/Linux & MacOS
-
 set -e
 
+# Ask for installation type
 echo -e "Installation type?\n1) System wide installation
 2) User installation"
 read -r bindir
@@ -50,6 +51,7 @@ URL="https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-${OS}-${AR
 echo -e "Downloading...\n"
 curl -sSL "$URL" -o  "$tmp"
 
+# Create selected install directory if it doesn't exist
 if [ ! -d "$bindir" ]; then
 	if [ "$bindir" == "$globalbin" ]; then
 		echo "Creating ${bindir}..."
@@ -79,6 +81,7 @@ else
         fi
 fi
 
+# Check for selected installation directory in $PATH
 if [[ ":$PATH:" == *":$bindir:"* ]]; then
 	echo "Your path is correctly set"
 else
