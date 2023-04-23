@@ -15,8 +15,9 @@ import (
 )
 
 const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const VERSION = "1.1.2"
-
+const VERSION = "1.2.0"
+var bold = color.New(color.Bold)
+var boldGreen = color.New(color.Bold, color.FgGreen)
 var stopSpin = false
 
 func getRandomString(n int) string {
@@ -29,10 +30,6 @@ func getRandomString(n int) string {
 	return fullString
 }
 
-type ChatData struct {
-	Text string `json:"text"`
-}
-
 func getData(input string, inputLength int, chatId string, configDir string) {
 	randomString := getRandomString(15)
 	tr := &http.Transport{
@@ -42,7 +39,7 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"%v"}}`, input, chatId))
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
-		fmt.Println("\nSome error has occured. Code 1")
+		fmt.Println("\nSome error has occured.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
@@ -60,7 +57,7 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
-		fmt.Println("\rSome error has occured. Check your internet connection.")
+		bold.Println("\rSome error has occured. Check your internet connection.")
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
@@ -77,8 +74,6 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	var oldLine = ""
 	var newLine = ""
 	count := 0
-	bold := color.New(color.Bold)
-	boldGreen := color.New(color.Bold, color.FgGreen)
 	isCode := false
 	isGreen := false
 	tickCount := 0
@@ -97,8 +92,7 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 		line := scanner.Text()
 		err := json.Unmarshal([]byte(line), &jsonObj)
 		if err != nil {
-			fmt.Println("\rSome error has occured")
-			fmt.Println("\nError:", err)
+			bold.Println("\rError. Your IP is being blocked by the server.")
 			fmt.Println("Status Code:", code)
 			os.Exit(0)
 		}
