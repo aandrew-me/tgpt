@@ -42,16 +42,16 @@ jobs:
                   setx GOARCH 386
                   go build -o tgpt-i386.exe
 
-            - name: Create Release
-              if: matrix.os == 'ubuntu-20.04'
-              id: create_release
-              uses: actions/create-release@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  tag_name: v${{ github.run_number }}
-                  release_name: tgpt 
-                  draft: true
+            # - name: Create Release
+            #   if: matrix.os == 'ubuntu-20.04'
+            #   id: create_release
+            #   uses: actions/create-release@v1
+            #   env:
+            #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            #   with:
+            #       tag_name: v${{ github.run_number }}
+            #       release_name: tgpt 
+            #       draft: true
 
             - name: Upload Artifacts
               id: upload-artifacts
