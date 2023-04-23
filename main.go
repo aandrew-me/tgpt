@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -16,6 +15,7 @@ import (
 )
 
 const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const VERSION = "1.1.2"
 
 var stopSpin = false
 
@@ -42,7 +42,9 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"%v"}}`, input, chatId))
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
-		log.Fatal("Some error has occured. Code 1")
+		fmt.Println("\nSome error has occured. Code 1")
+		fmt.Println("Error:", err)
+		os.Exit(0)
 	}
 	// Setting all the required headers
 	req.Header.Set("Host", "chatbot.theb.ai")
@@ -57,7 +59,10 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	req.Header.Set("Cookie", "__cf_bm="+randomString)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal("Some error has occured. Check your internet connection.")
+		stopSpin = true
+		fmt.Println("\rSome error has occured. Check your internet connection.")
+		fmt.Println("\nError:", err)
+		os.Exit(0)
 	}
 
 	defer resp.Body.Close()
@@ -80,7 +85,8 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	isTick := false
 
 	// Print the Question
-	bold.Print(input, "\n\n")
+	fmt.Print("\r         ")
+	bold.Printf("\r%v\n\n", input)
 
 	gotId := false
 	id := ""
@@ -90,7 +96,10 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 		line := scanner.Text()
 		err := json.Unmarshal([]byte(line), &jsonObj)
 		if err != nil {
-			log.Fatal("Some error has occured")
+			fmt.Println("\rSome error has occured")
+			fmt.Println("\nError:", err)
+			fmt.Println(line)
+			os.Exit(0)
 		}
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 		if !gotId {
@@ -101,8 +110,40 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 		if count <= 0 {
 			oldLine = mainText
 			splitLine := strings.Split(oldLine, "")
+			// Iterating through each word
 			for _, word := range splitLine {
-				fmt.Print(word)
+				// If its a backtick
+				if word == "`" {
+					tickCount++
+					isTick = true
+
+					if tickCount == 2 && !previousWasTick {
+						tickCount = 0
+					} else if tickCount == 6 {
+						tickCount = 0
+					}
+					previousWasTick = true
+					isGreen = false
+					isCode = false
+
+				} else {
+					isTick = false
+					// If its a normal word
+					previousWasTick = false
+					if tickCount == 1 {
+						isGreen = true
+					} else if tickCount == 3 {
+						isCode = true
+					}
+				}
+
+				if isCode {
+					fmt.Print(color.BlueString(word))
+				} else if isGreen {
+					boldGreen.Print(word)
+				} else if !isTick {
+					fmt.Print(word)
+				}
 			}
 		} else {
 			newLine = mainText
@@ -168,13 +209,13 @@ func loading(stop *bool) {
 	}
 }
 
-func createConfig(dir string, chatId string){
+func createConfig(dir string, chatId string) {
 	err := os.MkdirAll(dir, 0755)
 	configTxt := "id:" + chatId
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		os.WriteFile(dir + "/config.txt", []byte(configTxt), 0755)
+		os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
 	}
 }
 
@@ -195,16 +236,18 @@ func main() {
 	}
 	args := os.Args
 
-	if len(args) > 1 {
+	if len(args) > 1 && len(args[1]) > 1 {
 		input := args[1]
 
-		if input == "-h" || input == "--help" {
+		if input == "-v" || input == "--version" {
+			fmt.Println("tgpt", VERSION)
+		} else if strings.HasPrefix(input, "-") {
 			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
 			inputLength := len(formattedInput) + 87
-			getData(formattedInput, inputLength, chatId, configDir + "/tgpt")
+			getData(formattedInput, inputLength, chatId, configDir+"/tgpt")
 		}
 
 	} else {
