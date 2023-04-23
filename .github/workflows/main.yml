@@ -7,7 +7,7 @@ permissions:
     contents: write
 
 jobs:
-    build:
+    build_and_release:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
@@ -41,30 +41,31 @@ jobs:
                   go build -o tgpt-amd64.exe
                   setx GOARCH 386
                   go build -o tgpt-i386.exe
-    upload:
-        - name: Create Release
-          id: create_release
-          uses: actions/create-release@v1
-          env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-              tag_name: v${{ github.run_number }}
-              release_name: tgpt
-              draft: true
 
-        - name: Upload Artifacts
-          id: upload-artifacts
-          uses: softprops/action-gh-release@v1
-          with:
-              files: |
-                  tgpt-linux-amd64
-                  tgpt-linux-i386
-                  tgpt-linux-arm64
-                  tgpt-amd64.exe
-                  tgpt-i386.exe
-                  tgpt-mac-amd64
-                  tgpt-mac-arm64
-              token: ${{ secrets.GITHUB_TOKEN }}
-              draft: true
-              tag_name: v
-              name: tgpt
+            - name: Create Release
+              if: matrix.os == 'ubuntu-20.04'
+              id: create_release
+              uses: actions/create-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  tag_name: v${{ github.run_number }}
+                  release_name: tgpt 
+                  draft: true
+
+            - name: Upload Artifacts
+              id: upload-artifacts
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: |
+                      tgpt-linux-amd64
+                      tgpt-linux-i386
+                      tgpt-linux-arm64
+                      tgpt-amd64.exe
+                      tgpt-i386.exe
+                      tgpt-mac-amd64
+                      tgpt-mac-arm64
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  draft: true
+                  tag_name: v
+                  name: tgpt
