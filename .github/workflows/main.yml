@@ -1,13 +1,11 @@
 name: Build Go Project and Create Release
-
-permissions:
-    contents: write
-
 on:
     push:
         branches: [release]
     pull_request:
         branches: [release]
+permissions:
+    contents: write
 
 jobs:
     build_and_release:
@@ -15,7 +13,6 @@ jobs:
         strategy:
             matrix:
                 os: [macos-latest, ubuntu-20.04, windows-latest]
-                arch: [amd64]
 
         steps:
             - name: Checkout code
@@ -26,26 +23,24 @@ jobs:
               with:
                   go-version: "1.20.x"
 
-            - name: Build Project
-              steps:
-                  - name: Linux
-                    if: matrix.os == 'ubuntu-20.04'
-                    run: |
-                        go build -o tgpt-linux-amd64
-                        GOARCH=386 go build -o tgpt-linux-i386
-                        GOARCH=arm64 go build -o tgpt-linux-arm64
+            - name: Linux
+              if: matrix.os == 'ubuntu-20.04'
+              run: |
+                  go build -o tgpt-linux-amd64
+                  GOARCH=386 go build -o tgpt-linux-i386
+                  GOARCH=arm64 go build -o tgpt-linux-arm64
 
-                  - name: MacOS
-                    if: matrix.os == 'macos-latest'
-                    run: |
-                        GOOS=darwin GOARCH=amd64 go build -o tgpt-mac-amd64
-                        GOOS=darwin GOARCH=arm64 go build -o tgpt-mac-arm64
+            - name: MacOS
+              if: matrix.os == 'macos-latest'
+              run: |
+                  GOOS=darwin GOARCH=amd64 go build -o tgpt-mac-amd64
+                  GOOS=darwin GOARCH=arm64 go build -o tgpt-mac-arm64
 
-                  - name: Windows
-                    if: matrix.os == 'windows-latest'
-                    run: |
-                        GOOS=windows GOARCH=amd64 go build -o tgpt-amd64.exe
-                        GOOS=windows GOARCH=386 go build -o tgpt-i386.exe
+            - name: Windows
+              if: matrix.os == 'windows-latest'
+              run: |
+                  GOOS=windows GOARCH=amd64 go build -o tgpt-amd64.exe
+                  GOOS=windows GOARCH=386 go build -o tgpt-i386.exeu
 
             - name: Create Release
               id: create_release
