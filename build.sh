@@ -3,6 +3,8 @@
 # For GNU Linux
 go build -o ./build/tgpt-linux-amd64
 GOARCH=386 go build -o ./build/tgpt-linux-i386
+GOARCH=arm64 go build -o ./build/tgpt-linux-arm64
+
 
 # For Windows
 GOOS=windows GOARCH=amd64 go build -o ./build/tgpt-amd64.exe
