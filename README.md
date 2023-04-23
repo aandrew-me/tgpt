@@ -1,6 +1,6 @@
 # Terminal GPT (tgpt)
 
-This tool lets you use ChatGPT 3.5 in Terminal without any API KEYS. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai). Its written in Go.
+This tool lets you use ChatGPT 3.5 in Terminal **without API KEYS**. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai). Its written in Go.
 
 # Usage
 ```
@@ -27,4 +27,4 @@ You can download an executable for your Operating System, then rename it to tgpt
 
 ## Donate
 
-<a href="https://www.buymeacoffee.com/aandrew" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<a href="https://www.buymeacoffee.com/aandrew" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 47px !important;width: 165px !important;" ></a>
