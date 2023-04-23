@@ -2,8 +2,7 @@ name: Build Go Project and Create Release
 on:
     push:
         branches: [release]
-    pull_request:
-        branches: [release]
+
 permissions:
     contents: write
 
@@ -33,14 +32,15 @@ jobs:
             - name: MacOS
               if: matrix.os == 'macos-latest'
               run: |
-                  GOOS=darwin GOARCH=amd64 go build -o tgpt-mac-amd64
-                  GOOS=darwin GOARCH=arm64 go build -o tgpt-mac-arm64
+                  GOARCH=amd64 go build -o tgpt-mac-amd64
+                  GOARCH=arm64 go build -o tgpt-mac-arm64
 
             - name: Windows
               if: matrix.os == 'windows-latest'
               run: |
-                  GOOS=windows GOARCH=amd64 go build -o tgpt-amd64.exe
-                  GOOS=windows GOARCH=386 go build -o tgpt-i386.exeu
+                  go build -o tgpt-amd64.exe
+                  setx GOARCH 386
+                  go build -o tgpt-i386.exe
 
             - name: Create Release
               id: create_release
