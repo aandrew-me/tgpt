@@ -2,8 +2,7 @@ name: Build Go Project and Create Release
 on:
     push:
         branches: [release]
-    pull_request:
-        branches: [release]
+
 permissions:
     contents: write
 
@@ -33,14 +32,15 @@ jobs:
             - name: MacOS
               if: matrix.os == 'macos-latest'
               run: |
-                  GOOS=darwin GOARCH=amd64 go build -o tgpt-mac-amd64
-                  GOOS=darwin GOARCH=arm64 go build -o tgpt-mac-arm64
+                  GOARCH=amd64 go build -o tgpt-mac-amd64
+                  GOARCH=arm64 go build -o tgpt-mac-arm64
 
             - name: Windows
               if: matrix.os == 'windows-latest'
               run: |
-                  GOOS=windows GOARCH=amd64 go build -o tgpt-amd64.exe
-                  GOOS=windows GOARCH=386 go build -o tgpt-i386.exeu
+                  go build -o tgpt-amd64.exe
+                  setx GOARCH 386
+                  go build -o tgpt-i386.exe
 
             - name: Create Release
               id: create_release
@@ -49,15 +49,14 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   tag_name: v${{ github.run_number }}
-                  release_name: Release ${{ github.run_number }}
+                  release_name: tgpt 
                   draft: true
 
             - name: Upload Artifacts
               id: upload-artifacts
-              uses: actions/upload-artifact@v2
+              uses: softprops/action-gh-release@v1
               with:
-                  name: myapp-binaries
-                  path: |
+                  files: |
                       tgpt-linux-amd64
                       tgpt-linux-i386
                       tgpt-linux-arm64
@@ -65,12 +64,7 @@ jobs:
                       tgpt-i386.exe
                       tgpt-mac-amd64
                       tgpt-mac-arm64
-            - name: Attach Artifacts to Release
-              uses: actions/upload-release-asset@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ${{ steps.upload-artifacts.outputs.myapp-binaries }}
-                  asset_name: myapp-${{ matrix.os }}-${{ matrix.arch }}
-                  asset_content_type: application/octet-stream
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  draft: true
+                  tag_name: v
+                  name: tgpt

@@ -64,6 +64,7 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
+	code := resp.StatusCode
 
 	defer resp.Body.Close()
 
@@ -98,9 +99,10 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 		if err != nil {
 			fmt.Println("\rSome error has occured")
 			fmt.Println("\nError:", err)
-			fmt.Println(line)
+			fmt.Println("Status Code:", code)
 			os.Exit(0)
 		}
+
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 		if !gotId {
 			id = fmt.Sprintf("%s", jsonObj["id"])
