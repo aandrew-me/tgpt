@@ -64,4 +64,7 @@ jobs:
                       tgpt-i386.exe
                       tgpt-mac-amd64
                       tgpt-mac-arm64
-                  token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  draft: true
+                  tag_name: v
+                  name: tgpt
