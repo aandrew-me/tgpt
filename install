@@ -19,7 +19,7 @@ elif [ "$bindir" == "2"  ]; then
 	bindir="$localbin"
 	tgpt="${bindir}/tgpt"
 else
-	echo -e "Wrong installation type, exiting..."
+	echo "Wrong installation type, exiting..."
 	exit 1
 fi
 
@@ -52,10 +52,10 @@ curl -sSL "$URL" -o  "$tmp"
 
 if [ ! -d "$bindir" ]; then
 	if [ "$bindir" == "$globalbin" ]; then
-		echo -e "Creating ${bindir}..."
+		echo "Creating ${bindir}..."
 		sudo mkdir -p "$bindir"
 	else
-                echo -e "Creating ${bindir}..."
+                echo "Creating ${bindir}..."
 		mkdir -p "$bindir"
 	fi
 fi
@@ -63,54 +63,54 @@ fi
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
 if [[ "$OS" == "linux" ]]; then
 	if [ "$bindir" == "$globalbin" ]; then
-		echo -e "Moving ${tmp} to ${bindir}..."
+		echo "Moving ${tmp} to ${bindir}..."
 		sudo mv "$tmp" "$bindir"
  	else
-		echo -e "Moving ${tmp} to ${bindir}..."
+		echo "Moving ${tmp} to ${bindir}..."
 		mv "$tmp" "$bindir"
 	fi
 else
         if [ "$bindir" == "$globalbin" ]; then
-		echo -e "Moving ${tmp} to ${bindir}..."
+		echo "Moving ${tmp} to ${bindir}..."
                 sudo mv "$tmp" "$bindir"
         else
-		echo -e "Moving ${tmp} to ${bindir}..."
+		echo "Moving ${tmp} to ${bindir}..."
                 mv "$tmp" "$bindir"
         fi
 fi
 
 if [[ ":$PATH:" == *":$bindir:"* ]]; then
-	echo -e "Your path is correctly set"
+	echo "Your path is correctly set"
 else
-	echo -e "Your path is missing ${bindir}"
+	echo "Your path is missing ${bindir}"
 	if [[ "$SHELL" == "/bin/bash" && -f "$bashrc" ]]; then
 cat << EOF >> "$bashrc"
 export PATH="$bindir:$PATH"
 EOF
 	source "$bashrc"
-	echo -e "Added ${bindir} to path"
+	echo "Added ${bindir} to path"
 	fi
 fi
 
 if [ -f "$tgpt" ]; then
 	if [ "$bindir" == "$globalbin" ]; then
-		echo -e "Making ${tgpt} executable..."
+		echo "Making ${tgpt} executable..."
 		sudo chmod +x "$tgpt"
 	else
-		echo -e "Making ${tgpt} executable..."
+		echo "Making ${tgpt} executable..."
 		chmod +x "$tgpt"
 	fi
 	if [ $(which tgpt) ]; then
 		echo -e "Installed Successfully \n"
 		if [ "$bindir" == "$globalbin" ]; then
-		echo -e "Run tgpt -h to get started"
+		echo "Run tgpt -h to get started"
 		else
-		echo -e "Reload your terminal and run tgpt -h to get started"
+		echo "Reload your terminal and run tgpt -h to get started"
 		fi
 	else
-		echo -e "tgpt not found in ${bindir}"
+		echo "tgpt not found in ${bindir}"
 	fi
 else
-	echo -e "there is no tgpt in ${bindir}"
+	echo "there is no tgpt in ${bindir}"
 fi
 
