@@ -52,8 +52,10 @@ curl -sSL "$URL" -o  "$tmp"
 
 if [ ! -d "$bindir" ]; then
 	if [ "$bindir" == "$globalbin" ]; then
+		echo -e "Creating ${bindir}..."
 		sudo mkdir -p "$bindir"
 	else
+                echo -e "Creating ${bindir}..."
 		mkdir -p "$bindir"
 	fi
 fi
@@ -61,14 +63,18 @@ fi
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
 if [[ "$OS" == "linux" ]]; then
 	if [ "$bindir" == "$globalbin" ]; then
+		echo -e "Moving ${tmp} to ${bindir}..."
 		sudo mv "$tmp" "$bindir"
  	else
+		echo -e "Moving ${tmp} to ${bindir}..."
 		mv "$tmp" "$bindir"
 	fi
 else
         if [ "$bindir" == "$globalbin" ]; then
+		echo -e "Moving ${tmp} to ${bindir}..."
                 sudo mv "$tmp" "$bindir"
         else
+		echo -e "Moving ${tmp} to ${bindir}..."
                 mv "$tmp" "$bindir"
         fi
 fi
@@ -88,8 +94,10 @@ fi
 
 if [ -f "$tgpt" ]; then
 	if [ "$bindir" == "$globalbin" ]; then
+		echo -e "Making ${tgpt} executable..."
 		sudo chmod +x "$tgpt"
 	else
+		echo -e "Making ${tgpt} executable..."
 		chmod +x "$tgpt"
 	fi
 	if [ $(which tgpt) ]; then
