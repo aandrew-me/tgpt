@@ -1,5 +1,8 @@
 name: Build Go Project and Create Release
 
+permissions:
+    contents: write
+    
 on:
   push:
     branches: [release]
