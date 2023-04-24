@@ -14,6 +14,13 @@ tgpt "What is the purpose of life?"
 ```
 curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash
 ```
+
+If you are using Arch Linux you can install the [AUR package](https://aur.archlinux.org/packages/tgpt-bin) with:
+  
+```
+paru -S tgpt-bin
+```
+
 ## With Go
 ```
 go install github.com/aandrew-me/tgpt@latest
