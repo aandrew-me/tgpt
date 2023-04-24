@@ -17,7 +17,7 @@ import (
 func getData(input string, inputLength int, chatId string, configDir string) {
 	randomString := getRandomString(15)
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
 	}
 	client := &http.Client{Transport: tr}
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"%v"}}`, input, chatId))
@@ -32,7 +32,7 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
+	req.Header.Set("Accept-Encoding", "identity")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Length", fmt.Sprintf(`"%v"`, inputLength))
 	req.Header.Set("Origin", "https://chatbot.theb.ai")
