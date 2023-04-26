@@ -37,8 +37,22 @@ func main() {
 
 		if input == "-v" || input == "--version" {
 			fmt.Println("tgpt", VERSION)
+		} else if input == "-f" || input == "--forget" {
+			error := os.Remove(configDir + "/tgpt/config.txt")
+			if error != nil {
+				fmt.Println("There is not history to remove")
+			} else {
+				fmt.Println("Chat history removed")
+			}
 		} else if strings.HasPrefix(input, "-") {
 			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
+			boldGreen.Println("Options:")
+			fmt.Printf("%-50v Forget chat history \n", "-f, --forget")
+			fmt.Printf("%-50v Print version \n", "-v, --version")
+			fmt.Printf("%-50v Print help message \n", "-h, --help")
+
+			boldGreen.Println("\nExample:")
+			fmt.Println("tgpt -f")
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
