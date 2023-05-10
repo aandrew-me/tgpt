@@ -231,16 +231,36 @@ func loading(stop *bool) {
 }
 
 func update() {
+
 	if runtime.GOOS == "windows" {
 		fmt.Println("This feature is not supported on Windows. :(")
 	} else {
+		jar := tls_client.NewCookieJar()
+		options := []tls_client.HttpClientOption{
+			tls_client.WithTimeoutSeconds(30),
+			tls_client.WithClientProfile(tls_client.Firefox_110),
+			tls_client.WithNotFollowRedirects(),
+			tls_client.WithCookieJar(jar), // create cookieJar instance and pass it as argument
+		}
+		client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 		url := "https://raw.githubusercontent.com/aandrew-me/tgpt/main/version.txt"
 
-		res, err := http.Get(url)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			// Handle error
 			fmt.Println("Error:", err)
 			return
+		}
+
+		res, err := client.Do(req)
+
+		if err != nil {
+			fmt.Println(err)
 		}
 
 		defer res.Body.Close()
@@ -258,7 +278,7 @@ func update() {
 		comparisonResult := semver.Compare("v"+localVersion, remoteVersion)
 
 		if comparisonResult == -1 {
-			fmt.Println("Updating to", remoteVersion)
+			fmt.Println("Updating...")
 			cmd := exec.Command("bash", "-c", "curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash")
 			_, err := cmd.CombinedOutput()
 			if err != nil {
