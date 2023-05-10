@@ -1,21 +1,31 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/fatih/color"
 )
 
-const letters string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const VERSION = "1.2.1"
+const VERSION = "1.3.0"
 
 var bold = color.New(color.Bold)
-var boldGreen = color.New(color.Bold, color.FgGreen)
+var boldBlue = color.New(color.Bold, color.FgBlue)
+var codeText = color.New(color.BgBlack, color.FgGreen)
 var stopSpin = false
 
 func main() {
+	terminate := make(chan os.Signal, 1)
+    signal.Notify(terminate, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+    go func() {
+        <-terminate
+        os.Exit(0)
+    }()
+
 	hasConfig := true
 	configDir, error := os.UserConfigDir()
 
@@ -37,6 +47,31 @@ func main() {
 
 		if input == "-v" || input == "--version" {
 			fmt.Println("tgpt", VERSION)
+		} else if input == "-i" || input == "--interactive" {
+			reader := bufio.NewReader(os.Stdin)
+			bold.Println("Interactive mode started. Press Ctrl + C or type exit to quit.\n")
+			serverID := chatId
+			for {
+				bold.Print(">> ")
+
+				input, err := reader.ReadString('\n')
+				if err != nil {
+					fmt.Println("Error reading input:", err)
+					break
+				}
+
+				if len(input) > 1 {
+					input = strings.TrimSpace(input)
+					if input == "exit" {
+						bold.Println("Exiting...")
+						return
+					}
+					serverID = getData(input, serverID, configDir+"/tgpt", true)
+
+				}
+
+			}
+
 		} else if input == "-f" || input == "--forget" {
 			error := os.Remove(configDir + "/tgpt/config.txt")
 			if error != nil {
@@ -46,23 +81,22 @@ func main() {
 			}
 		} else if strings.HasPrefix(input, "-") {
 			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
-			boldGreen.Println("Options:")
+			boldBlue.Println("Options:")
 			fmt.Printf("%-50v Forget chat history \n", "-f, --forget")
 			fmt.Printf("%-50v Print version \n", "-v, --version")
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
+			fmt.Printf("%-50v Start interactive mode \n", "-i, --interactive")
 
-			boldGreen.Println("\nExample:")
+			boldBlue.Println("\nExample:")
 			fmt.Println("tgpt -f")
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
-			inputLength := len(formattedInput) + 87
-			getData(formattedInput, inputLength, chatId, configDir+"/tgpt")
+			getData(formattedInput, chatId, configDir+"/tgpt", false)
 		}
 
 	} else {
 		color.Red("You have to write some text")
 		color.Blue(`Example: tgpt "Explain quantum computing in simple terms"`)
 	}
-
 }

@@ -5,19 +5,17 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/fatih/color"
 )
 
-func getData(input string, inputLength int, chatId string, configDir string) {
-	randomString := getRandomString(15)
+func getData(input string, chatId string, configDir string, isInteractive bool) (serverChatId string) {
+	// proxyUrl, _ := url.Parse("http://127.0.0.1:8080")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		// Proxy:           http.ProxyURL(proxyUrl),
 	}
 	client := &http.Client{Transport: tr}
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"%v"}}`, input, chatId))
@@ -34,10 +32,8 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Accept-Encoding", "identity")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Content-Length", fmt.Sprintf(`"%v"`, inputLength))
 	req.Header.Set("Origin", "https://chatbot.theb.ai")
 	req.Header.Set("Referer", "https://chatbot.theb.ai/")
-	req.Header.Set("Cookie", "__cf_bm="+randomString)
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
@@ -65,8 +61,12 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 	isTick := false
 
 	// Print the Question
-	fmt.Print("\r         ")
-	bold.Printf("\r%v\n\n", input)
+	if !isInteractive {
+		fmt.Print("\r         ")
+		bold.Printf("\r%v\n\n", input)
+	} else {
+		fmt.Println()
+	}
 
 	gotId := false
 	id := ""
@@ -82,8 +82,9 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 		}
 
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
+		id = fmt.Sprintf("%s", jsonObj["id"])
+
 		if !gotId {
-			id = fmt.Sprintf("%s", jsonObj["id"])
 			gotId = true
 		}
 
@@ -109,18 +110,19 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 				} else {
 					isTick = false
 					// If its a normal word
-					previousWasTick = false
+
 					if tickCount == 1 {
 						isGreen = true
 					} else if tickCount == 3 {
 						isCode = true
 					}
+					previousWasTick = false
 				}
 
 				if isCode {
-					fmt.Print(color.BlueString(word))
+					codeText.Print(word)
 				} else if isGreen {
-					boldGreen.Print(word)
+					boldBlue.Print(word)
 				} else if !isTick {
 					fmt.Print(word)
 				}
@@ -129,6 +131,8 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 			newLine = mainText
 			result := strings.Replace(newLine, oldLine, "", -1)
 			splitLine := strings.Split(result, "")
+			whiteSpaceFound := false
+
 			for _, word := range splitLine {
 				// If its a backtick
 				if word == "`" {
@@ -146,19 +150,30 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 
 				} else {
 					isTick = false
+					if word == "\n" {
+						whiteSpaceFound = true
+
+					} else {
+						whiteSpaceFound = false
+					}
 					// If its a normal word
-					previousWasTick = false
 					if tickCount == 1 {
 						isGreen = true
 					} else if tickCount == 3 {
-						isCode = true
+						if previousWasTick {
+						} else {
+							if whiteSpaceFound {
+								isCode = true
+							}
+						}
 					}
+					previousWasTick = false
 				}
 
 				if isCode {
-					fmt.Print(color.BlueString(word))
+					codeText.Print(word)
 				} else if isGreen {
-					boldGreen.Print(word)
+					boldBlue.Print(word)
 				} else if !isTick {
 					fmt.Print(word)
 				}
@@ -174,16 +189,7 @@ func getData(input string, inputLength int, chatId string, configDir string) {
 		panic(err)
 	}
 	createConfig(configDir, id)
-}
-
-func getRandomString(n int) string {
-	fullString := ""
-
-	for i := 0; i < n; i++ {
-		random := rand.Intn(51)
-		fullString += (string(letters[random]))
-	}
-	return fullString
+	return id
 }
 
 func createConfig(dir string, chatId string) {
