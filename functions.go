@@ -2,16 +2,17 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 	"time"
 
+	http "github.com/bogdanfinn/fhttp"
+
+	tls_client "github.com/bogdanfinn/tls-client"
 	"golang.org/x/mod/semver"
 )
 
@@ -20,12 +21,18 @@ type Data struct {
 }
 
 func getData(input string, chatId string, configDir string, isInteractive bool) (serverChatId string) {
-	// proxyUrl, _ := url.Parse("127.0.0.1:8080")
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		// Proxy:           http.ProxyURL(proxyUrl),
+	jar := tls_client.NewCookieJar()
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(30),
+		tls_client.WithClientProfile(tls_client.Firefox_110),
+		tls_client.WithNotFollowRedirects(),
+		tls_client.WithCookieJar(jar), // create cookieJar instance and pass it as argument
 	}
-	client := &http.Client{Transport: tr}
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"%v"}}`, input, chatId))
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
