@@ -42,7 +42,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	}
 	// Setting all the required headers
 	// req.Header.Set("Host", "chatbot.theb.ai")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	// req.Header.Set("Accept-Encoding", "identity")

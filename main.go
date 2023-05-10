@@ -78,7 +78,7 @@ func main() {
 		} else if input == "-f" || input == "--forget" {
 			error := os.Remove(configDir + "/tgpt/config.txt")
 			if error != nil {
-				fmt.Println("There is not history to remove")
+				fmt.Println("There is no history to remove")
 			} else {
 				fmt.Println("Chat history removed")
 			}
