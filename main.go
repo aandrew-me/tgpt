@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 
 	"github.com/fatih/color"
 )
 
-const VERSION = "1.3.0"
+const localVersion = "1.3.1"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -20,11 +21,11 @@ var stopSpin = false
 
 func main() {
 	terminate := make(chan os.Signal, 1)
-    signal.Notify(terminate, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-    go func() {
-        <-terminate
-        os.Exit(0)
-    }()
+	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		<-terminate
+		os.Exit(0)
+	}()
 
 	hasConfig := true
 	configDir, error := os.UserConfigDir()
@@ -46,7 +47,9 @@ func main() {
 		input := args[1]
 
 		if input == "-v" || input == "--version" {
-			fmt.Println("tgpt", VERSION)
+			fmt.Println("tgpt", localVersion)
+		} else if input == "-u" || input == "--update" {
+			update()
 		} else if input == "-i" || input == "--interactive" {
 			reader := bufio.NewReader(os.Stdin)
 			bold.Println("Interactive mode started. Press Ctrl + C or type exit to quit.\n")
@@ -86,6 +89,9 @@ func main() {
 			fmt.Printf("%-50v Print version \n", "-v, --version")
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
 			fmt.Printf("%-50v Start interactive mode \n", "-i, --interactive")
+			if runtime.GOOS != "windows" {
+				fmt.Printf("%-50v Update program \n", "-u, --update")
+			}
 
 			boldBlue.Println("\nExample:")
 			fmt.Println("tgpt -f")

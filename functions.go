@@ -7,12 +7,20 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
+
+	"golang.org/x/mod/semver"
 )
 
+type Data struct {
+	Version string `json:"version"`
+}
+
 func getData(input string, chatId string, configDir string, isInteractive bool) (serverChatId string) {
-	// proxyUrl, _ := url.Parse("http://127.0.0.1:8080")
+	// proxyUrl, _ := url.Parse("127.0.0.1:8080")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		// Proxy:           http.ProxyURL(proxyUrl),
@@ -26,11 +34,11 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		os.Exit(0)
 	}
 	// Setting all the required headers
-	req.Header.Set("Host", "chatbot.theb.ai")
+	// req.Header.Set("Host", "chatbot.theb.ai")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Set("Accept-Encoding", "identity")
+	// req.Header.Set("Accept-Encoding", "identity")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Origin", "https://chatbot.theb.ai")
 	req.Header.Set("Referer", "https://chatbot.theb.ai/")
@@ -212,5 +220,47 @@ func loading(stop *bool) {
 		fmt.Printf("\r%s Loading", spinChars[i])
 		i = (i + 1) % len(spinChars)
 		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func update() {
+	if runtime.GOOS == "windows" {
+		fmt.Println("This feature is not supported on Windows. :(")
+	} else {
+		url := "https://raw.githubusercontent.com/aandrew-me/tgpt/main/version.txt"
+
+		res, err := http.Get(url)
+		if err != nil {
+			// Handle error
+			fmt.Println("Error:", err)
+			return
+		}
+
+		defer res.Body.Close()
+
+		var data Data
+		err = json.NewDecoder(res.Body).Decode(&data)
+		if err != nil {
+			// Handle error
+			fmt.Println("Error:", err)
+			return
+		}
+
+		remoteVersion := "v" + data.Version
+
+		comparisonResult := semver.Compare("v"+localVersion, remoteVersion)
+
+		if comparisonResult == -1 {
+			fmt.Println("Updating to", remoteVersion)
+			cmd := exec.Command("bash", "-c", "curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash")
+			_, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Println("Error updating.", err)
+			}
+			fmt.Println("Successfully updated.")
+
+		} else {
+			fmt.Println("You are already using the latest version.")
+		}
 	}
 }
