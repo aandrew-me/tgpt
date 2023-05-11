@@ -12,7 +12,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const localVersion = "1.4.3"
+const localVersion = "1.4.4"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -48,6 +48,12 @@ func main() {
 
 		if input == "-v" || input == "--version" {
 			fmt.Println("tgpt", localVersion)
+		} else if input == "-s" || input == "--shell" {
+			prompt := args[2]
+			go loading(&stopSpin)
+			formattedInput := strings.ReplaceAll(prompt, `"`, `\"`)
+			formattedInput = strings.ReplaceAll(formattedInput, `\`, `\\`)
+			shellCommand(formattedInput)
 		} else if input == "-u" || input == "--update" {
 			update()
 		} else if input == "-i" || input == "--interactive" {
@@ -83,8 +89,8 @@ func main() {
 				fmt.Println("Chat history removed")
 			}
 		} else if strings.HasPrefix(input, "-") {
-			color.Blue(`Usage: tgpt "Explain quantum computing in simple terms"`)
-			boldBlue.Println("Options:")
+			color.Blue(`Usage: tgpt [Flag] [Prompt]`)
+			boldBlue.Println("\nFlags:")
 			fmt.Printf("%-50v Forget chat history \n", "-f, --forget")
 			fmt.Printf("%-50v Print version \n", "-v, --version")
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
@@ -93,11 +99,17 @@ func main() {
 				fmt.Printf("%-50v Update program \n", "-u, --update")
 			}
 
-			boldBlue.Println("\nExample:")
+			boldBlue.Println("\nOptions:")
+			fmt.Printf("%-50v Generate and Execute shell commands \n", "-s, --shell")
+
+
+			boldBlue.Println("\nExamples:")
 			fmt.Println("tgpt -f")
+			fmt.Println(`tgpt -s "How to update my system?"`)
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
+			formattedInput = strings.ReplaceAll(formattedInput, `\`, `\\`)
 			getData(formattedInput, chatId, configDir+"/tgpt", false)
 		}
 
