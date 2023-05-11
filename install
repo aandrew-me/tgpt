@@ -30,7 +30,7 @@ echo -e "Processor Architecture: ${ARCH}\n"
 URL="https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-${OS}-${ARCH}"
 # Download the executable
 echo -e "Downloading...\n"
-curl -sSL "$URL" -o /tmp/tgpt
+curl -SL --progress-bar "$URL" -o /tmp/tgpt
 
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
 if [[ $OS == "linux" ]]; then
