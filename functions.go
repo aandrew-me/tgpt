@@ -97,9 +97,14 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		}
 
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
-		id = fmt.Sprintf("%s", jsonObj["id"])
 
 		if !gotId {
+			if jsonObj == nil {
+				fmt.Println("Some error has occured")
+				os.Exit(0)
+			}
+
+			id = fmt.Sprintf("%s", jsonObj["id"])
 			gotId = true
 		}
 
@@ -146,7 +151,6 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 			newLine = mainText
 			result := strings.Replace(newLine, oldLine, "", -1)
 			splitLine := strings.Split(result, "")
-			whiteSpaceFound := false
 
 			for _, word := range splitLine {
 				// If its a backtick
@@ -156,7 +160,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 					if tickCount == 2 && !previousWasTick {
 						tickCount = 0
-					} else if tickCount == 6 {
+					} else if tickCount >= 6 && tickCount%2 == 0 && previousWasTick {
 						tickCount = 0
 					}
 					previousWasTick = true
@@ -165,22 +169,11 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 				} else {
 					isTick = false
-					if word == "\n" {
-						whiteSpaceFound = true
-
-					} else {
-						whiteSpaceFound = false
-					}
 					// If its a normal word
 					if tickCount == 1 {
 						isGreen = true
-					} else if tickCount == 3 {
-						if previousWasTick {
-						} else {
-							if whiteSpaceFound {
-								isCode = true
-							}
-						}
+					} else if tickCount >= 3 {
+						isCode = true
 					}
 					previousWasTick = false
 				}
@@ -191,6 +184,11 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 					boldBlue.Print(word)
 				} else if !isTick {
 					fmt.Print(word)
+				} else {
+					if tickCount > 3 {
+						fmt.Print(word)
+					}
+
 				}
 
 			}
@@ -199,22 +197,26 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 		count++
 	}
-	fmt.Println("")
 	if err := scanner.Err(); err != nil {
-		panic(err)
+		fmt.Println("Some error has occured. Error:", err)
+		os.Exit(0)
 	}
+	fmt.Println("")
 	createConfig(configDir, id)
 	return id
 }
 
 func createConfig(dir string, chatId string) {
-	err := os.MkdirAll(dir, 0755)
-	configTxt := "id:" + chatId
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
+	if strings.HasPrefix(chatId, "chatcmpl-") {
+		err := os.MkdirAll(dir, 0755)
+		configTxt := "id:" + chatId
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
+		}
 	}
+
 }
 
 func loading(stop *bool) {

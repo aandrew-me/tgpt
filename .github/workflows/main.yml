@@ -11,7 +11,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [macos-latest, ubuntu-20.04, windows-latest]
+                os: [ubuntu-20.04]
 
         steps:
             - name: Checkout code
@@ -28,19 +28,13 @@ jobs:
                   go build -o tgpt-linux-amd64
                   GOARCH=386 go build -o tgpt-linux-i386
                   GOARCH=arm64 go build -o tgpt-linux-arm64
-
-            - name: MacOS
-              if: matrix.os == 'macos-latest'
-              run: |
                   GOARCH=amd64 go build -o tgpt-mac-amd64
                   GOARCH=arm64 go build -o tgpt-mac-arm64
-
-            - name: Windows
-              if: matrix.os == 'windows-latest'
-              run: |
-                  go build -o tgpt-amd64.exe
-                  setx GOARCH 386
-                  go build -o tgpt-i386.exe
+                  GOOS=windows GOARCH=amd64 go build -o tgpt-amd64.exe
+                  GOOS=windows GOARCH=arm64 go build -o tgpt-arm64.exe
+                  GOOS=windows GOARCH=386 go build -o tgpt-i386.exe
+                  GOOS=darwin GOARCH=amd64 go build -o tgpt-mac-amd64
+                  GOOS=darwin GOARCH=arm64 go build -o tgpt-mac-arm64
 
             - name: Upload Artifacts
               id: upload-artifacts
