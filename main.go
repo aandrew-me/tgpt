@@ -100,7 +100,7 @@ func main() {
 			}
 
 			boldBlue.Println("\nOptions:")
-			fmt.Printf("%-50v Generate and Execute shell commands \n", "-s, --shell")
+			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
 
 
 			boldBlue.Println("\nExamples:")

@@ -42,11 +42,9 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		os.Exit(0)
 	}
 	// Setting all the required headers
-	// req.Header.Set("Host", "chatbot.theb.ai")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	// req.Header.Set("Accept-Encoding", "identity")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Origin", "https://chatbot.theb.ai")
 	req.Header.Set("Referer", "https://chatbot.theb.ai/")
@@ -78,6 +76,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	tickCount := 0
 	previousWasTick := false
 	isTick := false
+	isRealCode := false
 
 	// Print the Question
 	if !isInteractive {
@@ -156,6 +155,12 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 			result := strings.Replace(newLine, oldLine, "", -1)
 			splitLine := strings.Split(result, "")
 
+			if result == "``" || result == "```"{
+				isRealCode = true
+			} else {
+				isRealCode = false
+			}
+
 			for _, word := range splitLine {
 				// If its a backtick
 				if word == "`" {
@@ -167,7 +172,6 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 					} else if tickCount >= 6 && tickCount%2 == 0 && previousWasTick {
 						tickCount = 0
 					}
-					previousWasTick = true
 					isGreen = false
 					isCode = false
 
@@ -179,7 +183,6 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 					} else if tickCount >= 3 {
 						isCode = true
 					}
-					previousWasTick = false
 				}
 
 				if isCode {
@@ -189,10 +192,15 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 				} else if !isTick {
 					fmt.Print(word)
 				} else {
-					if tickCount > 3 {
+					if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick){
 						fmt.Print(word)
 					}
 
+				}
+				if word == "`"{
+					previousWasTick = true
+				} else {
+					previousWasTick = false
 				}
 
 			}
@@ -224,7 +232,7 @@ func createConfig(dir string, chatId string) {
 }
 
 func loading(stop *bool) {
-	spinChars := []string{"|", "/", "-", "\\"}
+	spinChars := []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "}
 	i := 0
 	for {
 		if *stop {
@@ -232,7 +240,7 @@ func loading(stop *bool) {
 		}
 		fmt.Printf("\r%s Loading", spinChars[i])
 		i = (i + 1) % len(spinChars)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(80 * time.Millisecond)
 	}
 }
 
