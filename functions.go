@@ -451,7 +451,11 @@ func getCommand(shellPrompt string) {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		_ = cmd.Run()
+		err = cmd.Run()
+
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Println("Some error has occured. Error:", err)
