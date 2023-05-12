@@ -8,12 +8,14 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	http "github.com/bogdanfinn/fhttp"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 	"golang.org/x/mod/semver"
+	"golang.org/x/term"
 )
 
 type Data struct {
@@ -88,6 +90,13 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 	gotId := false
 	id := ""
+	lineLength := 0
+	termWidth, _, err := term.GetSize(int(syscall.Stdin))
+
+	if err != nil {
+		fmt.Println("Error occured getting terminal width. Error:", err)
+		os.Exit(0)
+	}
 	// Handling each json
 	for scanner.Scan() {
 		var jsonObj map[string]interface{}
@@ -113,6 +122,12 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 		if count <= 0 {
 			oldLine = mainText
+			wordLength := len(mainText)
+			if termWidth-lineLength < wordLength {
+				fmt.Print("\n")
+				lineLength = 0
+			}
+			lineLength += wordLength
 			splitLine := strings.Split(oldLine, "")
 			// Iterating through each word
 			for _, word := range splitLine {
@@ -153,9 +168,16 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		} else {
 			newLine = mainText
 			result := strings.Replace(newLine, oldLine, "", -1)
+			wordLength := len(result)
+
+			if termWidth-lineLength < wordLength {
+				fmt.Print("\n")
+				lineLength = 0
+			}
+			lineLength += wordLength
 			splitLine := strings.Split(result, "")
 
-			if result == "``" || result == "```"{
+			if result == "``" || result == "```" {
 				isRealCode = true
 			} else {
 				isRealCode = false
@@ -176,6 +198,9 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 					isCode = false
 
 				} else {
+					if word == "\n" {
+						lineLength = 0
+					}
 					isTick = false
 					// If its a normal word
 					if tickCount == 1 {
@@ -192,12 +217,12 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 				} else if !isTick {
 					fmt.Print(word)
 				} else {
-					if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick){
+					if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
 						fmt.Print(word)
 					}
 
 				}
-				if word == "`"{
+				if word == "`" {
 					previousWasTick = true
 				} else {
 					previousWasTick = false

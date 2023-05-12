@@ -12,10 +12,10 @@ import (
 	"github.com/fatih/color"
 )
 
-const localVersion = "1.4.4"
+const localVersion = "1.4.5"
 
 var bold = color.New(color.Bold)
-var boldBlue = color.New(color.Bold, color.FgBlue)
+var boldBlue = color.New(color.Bold, color.FgBlue, color.BgBlack)
 var codeText = color.New(color.BgBlack, color.FgGreen)
 var stopSpin = false
 

@@ -7,6 +7,7 @@ require (
 	github.com/bogdanfinn/tls-client v1.3.11
 	github.com/fatih/color v1.15.0
 	golang.org/x/mod v0.10.0
+	golang.org/x/term v0.1.0
 )
 
 require (
