@@ -1,16 +1,16 @@
 {
     "homepage": "https://github.com/aandrew-me/tgpt",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "description": "ChatGPT in terminal without needing API keys",
     "license": "GPL-3",
     "architecture": {
         "64bit":{
-            "url": "https://github.com/aandrew-me/tgpt/releases/download/v1.4.3/tgpt-amd64.exe",
-            "hash": "sha256:57ad55e2a7d7becca3fce8afd1957ad36c2824139cb958a2467e451e239727da"
+            "url": "https://github.com/aandrew-me/tgpt/releases/download/v1.4.4/tgpt-amd64.exe",
+            "hash": "sha256:506fec02ff8971ea378fabfd5c616a4df0b344314f3033bd50bcdcd46f6b4992"
         },
         "32bit":{
-            "url":"https://github.com/aandrew-me/tgpt/releases/download/v1.4.3/tgpt-i386.exe",
-            "hash":"a9caa8edce2225a8fb2e1ba8678a22907d39afad2b41eb0325b0f3c140dfb356"
+            "url":"https://github.com/aandrew-me/tgpt/releases/download/v1.4.4/tgpt-i386.exe",
+            "hash":"84c6c4c4d99b50f9ed37084b56f49bdc9be4009b19033a0a42c00005ba367138"
         }
     },
     
