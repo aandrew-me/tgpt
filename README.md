@@ -14,7 +14,7 @@ tgpt "What is the purpose of life?"
 
 # Installation ⏬
 
-## Download for Linux 🐧 or Mac 🍎 with this one line
+## Download for GNU/Linux 🐧 or MacOS 🍎 with this one line
 ```
 curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash
 ```
