@@ -1,35 +1,32 @@
 {
-    "homepage": "https://github.com/aandrew-me/tgpt",
-    "version": "1.4.4",
-    "description": "ChatGPT in terminal without needing API keys",
-    "license": "GPL-3",
-    "architecture": {
-        "64bit":{
-            "url": "https://github.com/aandrew-me/tgpt/releases/download/v1.4.4/tgpt-amd64.exe",
-            "hash": "sha256:506fec02ff8971ea378fabfd5c616a4df0b344314f3033bd50bcdcd46f6b4992"
-        },
-        "32bit":{
-            "url":"https://github.com/aandrew-me/tgpt/releases/download/v1.4.4/tgpt-i386.exe",
-            "hash":"84c6c4c4d99b50f9ed37084b56f49bdc9be4009b19033a0a42c00005ba367138"
-        }
-    },
-    
-    "bin": ["tgpt-amd64.exe", ["tgpt-amd64.exe", "tgpt"]],
-    "checkver": {
-        "github": "https://github.com/aandrew-me/tgpt"
-    },
-    "autoupdate": {
-        "architecture": {
-            "64bit":{
-                "url": "https://github.com/aandrew-me/tgpt/releases/download/v$version/tgpt-amd64.exe"
-            },
-            "32bit":{
-                "url":"https://github.com/aandrew-me/tgpt/releases/download/v$version/tgpt-i386.exe"
-            }
-        },
-        "hash": {
-            "url": "$url.sha256"
-        }
-    }
-}
+	"homepage": "https://github.com/aandrew-me/tgpt",
+	"version": "1.4.4",
+	"description": "ChatGPT in terminal without needing API keys",
+	"license": "GPL-3",
+	"architecture": {
+		"64bit": {
+			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.4.4/tgpt-amd64.exe"
+		},
+		"32bit": {
+			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.4.4/tgpt-i386.exe"
+		}
+	},
 
+	"bin": ["tgpt-amd64.exe", ["tgpt-amd64.exe", "tgpt"]],
+	"checkver": {
+		"github": "https://github.com/aandrew-me/tgpt"
+	},
+	"autoupdate": {
+		"architecture": {
+			"64bit": {
+				"url": "https://github.com/aandrew-me/tgpt/releases/download/v$version/tgpt-amd64.exe"
+			},
+			"32bit": {
+				"url": "https://github.com/aandrew-me/tgpt/releases/download/v$version/tgpt-i386.exe"
+			}
+		},
+		"hash": {
+			"url": "$url.sha256"
+		}
+	}
+}
