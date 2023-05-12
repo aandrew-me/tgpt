@@ -42,4 +42,4 @@ scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
 
 You can download an executable for your Operating System, then rename it to tgpt or whatever you want. Then you can execute it by typing `./tgpt` being in that directory. Or you can add it to the Environmental Variable **PATH** and then you can execute it by just typing `tgpt`.
 
-If you liked this project, give it a star!
+If you liked this project, give it a star! ⭐
