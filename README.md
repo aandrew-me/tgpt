@@ -1,5 +1,9 @@
 # Terminal GPT (tgpt)
 
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/aandrew-me/tgpt)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)
+![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)
+
 tgpt is a cross-platform cli (commandline) tool that lets you use ChatGPT 3.5 in Terminal **without API KEYS**. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai). Its written in Go.
 
 # Usage
