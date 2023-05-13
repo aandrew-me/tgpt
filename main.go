@@ -169,6 +169,7 @@ func initialModel() model {
 	termWidth := size.Col()
 	ti := textarea.New()
 	ti.SetWidth(termWidth)
+	ti.CharLimit = 200000
 	ti.ShowLineNumbers = false
 	ti.Placeholder = "Enter your prompt"
 	ti.Focus()
