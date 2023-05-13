@@ -4,6 +4,19 @@
 ## Install script for GNU/Linux & MacOS
 
 set -e
+path=/usr/local/bin
+
+if ! [ -z "$1" ]; then
+    path=$1
+fi
+
+echo "Download location: $path"
+
+if [ ! -w "$path" ]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
 
 # Check the system architecture
 if [[ $(uname -m) == "x86_64" ]]; then
@@ -34,15 +47,23 @@ curl -SL --progress-bar "$URL" -o /tmp/tgpt
 
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
 if [[ $OS == "linux" ]]; then
-    sudo mv /tmp/tgpt /usr/local/bin/
+    $SUDO mv /tmp/tgpt $path
 else
-    sudo mv /tmp/tgpt /usr/local/bin/
+    $SUDO mv /tmp/tgpt $path
 fi
 
-sudo chmod +x /usr/local/bin/tgpt
+if [ -d "$path" ]; then
+    $SUDO chmod +x $path/tgpt
+elif [ -f "$path" ]; then
+    $SUDO chmod +x $path
+fi
 
 echo -e "Installed Successfully \n"
 
+if [[ $path != "/usr/local/bin" ]]; then
+echo "Make sure your file is in PATH"
+echo "Then run tgpt -h to get started"
+else
 echo -e "Run tgpt -h to get started"
-
+fi
 

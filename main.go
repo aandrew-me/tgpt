@@ -26,8 +26,13 @@ var programLoop = true
 var serverID = ""
 var configDir = ""
 var userInput = ""
+var executablePath = ""
 
 func main() {
+	execPath, err := os.Executable()
+	if err == nil {
+		executablePath = execPath
+	}
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
@@ -35,7 +40,6 @@ func main() {
 		os.Exit(0)
 	}()
 
-	var err error
 	hasConfig := true
 	configDir, err = os.UserConfigDir()
 
