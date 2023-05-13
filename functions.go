@@ -8,14 +8,13 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"syscall"
 	"time"
 
 	http "github.com/bogdanfinn/fhttp"
+	"github.com/olekukonko/ts"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 	"golang.org/x/mod/semver"
-	"golang.org/x/term"
 )
 
 type Data struct {
@@ -36,7 +35,11 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		fmt.Println(err)
 		return
 	}
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","options":{"parentMessageId":"%v"}}`, input, chatId))
+
+	safeInput, _ := json.Marshal(input)
+
+	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"options":{"parentMessageId":"%v"}}`, string(safeInput), chatId))
+
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
 		fmt.Println("\nSome error has occured.")
@@ -82,7 +85,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 	// Print the Question
 	if !isInteractive {
-		fmt.Print("\r         ")
+		fmt.Print("\r          \r")
 		bold.Printf("\r%v\n\n", input)
 	} else {
 		fmt.Println()
@@ -91,7 +94,8 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	gotId := false
 	id := ""
 	lineLength := 0
-	termWidth, _, err := term.GetSize(int(syscall.Stdin))
+	size, _ := ts.GetSize()
+	termWidth := size.Col()
 
 	if err != nil {
 		fmt.Println("Error occured getting terminal width. Error:", err)
@@ -103,7 +107,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		line := scanner.Text()
 		err := json.Unmarshal([]byte(line), &jsonObj)
 		if err != nil {
-			bold.Println("\rError. Your IP is being blocked by the server.")
+			bold.Println("\rError. Your request is being blocked by the server.")
 			fmt.Println("Status Code:", code)
 			os.Exit(0)
 		}
@@ -415,7 +419,7 @@ func getCommand(shellPrompt string) {
 	defer resp.Body.Close()
 
 	stopSpin = true
-	fmt.Print("\r         \r")
+	fmt.Print("\r          \r")
 
 	scanner := bufio.NewScanner(resp.Body)
 
