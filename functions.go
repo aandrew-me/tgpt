@@ -318,7 +318,7 @@ func update() {
 
 		if comparisonResult == -1 {
 			fmt.Println("Updating...")
-			cmd := exec.Command("bash", "-c", "curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash")
+			cmd := exec.Command("bash", "-c", "curl -SL --progress-bar https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash")
 			_, err := cmd.CombinedOutput()
 			if err != nil {
 				fmt.Println("Error updating.", err)
