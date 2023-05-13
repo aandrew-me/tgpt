@@ -15,7 +15,7 @@ import (
 const localVersion = "1.4.5"
 
 var bold = color.New(color.Bold)
-var boldBlue = color.New(color.Bold, color.FgBlue, color.BgBlack)
+var boldBlue = color.New(color.Bold, color.FgBlue)
 var codeText = color.New(color.BgBlack, color.FgGreen)
 var stopSpin = false
 
@@ -90,7 +90,11 @@ func main() {
 			}
 		} else if strings.HasPrefix(input, "-") {
 			color.Blue(`Usage: tgpt [Flag] [Prompt]`)
+
 			boldBlue.Println("\nFlags:")
+			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
+			
+			boldBlue.Println("\nOptions:")
 			fmt.Printf("%-50v Forget chat history \n", "-f, --forget")
 			fmt.Printf("%-50v Print version \n", "-v, --version")
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
@@ -98,9 +102,6 @@ func main() {
 			if runtime.GOOS != "windows" {
 				fmt.Printf("%-50v Update program \n", "-u, --update")
 			}
-
-			boldBlue.Println("\nOptions:")
-			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
 
 
 			boldBlue.Println("\nExamples:")

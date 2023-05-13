@@ -441,7 +441,7 @@ func getCommand(shellPrompt string) {
 		bold.Print(result)
 		oldLine = newLine
 	}
-	boldBlue.Print("\nExecute shell command? [y/n]: ")
+	bold.Print("\n\nExecute shell command? [y/n]: ")
 	var userInput string
 	fmt.Scan(&userInput)
 	if userInput == "y" {
