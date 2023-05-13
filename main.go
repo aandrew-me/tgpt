@@ -94,7 +94,7 @@ func main() {
 
 			}
 
-		} else if input == "-m" || input == "--multi" {
+		} else if input == "-m" || input == "--multiline" {
 			/////////////////////
 			// Multiline interactive
 			/////////////////////
