@@ -14,9 +14,12 @@ tgpt "What is the purpose of life?"
 
 # Installation ⏬
 
-## Download for GNU/Linux 🐧 or MacOS 🍎 with this one line
+## Download for GNU/Linux 🐧 or MacOS 🍎 
+The default download location is /usr/local/bin. But you can change it in the command and use your own location. However make sure its in PATH, if you want it to be easily accessible. 
+
+You can download with this command :-
 ```
-curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash
+curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
 ```
 
 If you are using Arch Linux you can install the [AUR package](https://aur.archlinux.org/packages/tgpt-bin) with `paru`:
