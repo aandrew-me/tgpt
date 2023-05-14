@@ -62,11 +62,18 @@ func main() {
 		if input == "-v" || input == "--version" {
 			fmt.Println("tgpt", localVersion)
 		} else if input == "-s" || input == "--shell" {
-			prompt := args[2]
-			go loading(&stopSpin)
-			formattedInput := strings.ReplaceAll(prompt, `"`, `\"`)
-			formattedInput = strings.ReplaceAll(formattedInput, `\`, `\\`)
-			shellCommand(formattedInput)
+			if len(args) > 2 && len(args[2]) > 1 {
+				prompt := args[2]
+				go loading(&stopSpin)
+				formattedInput := strings.ReplaceAll(prompt, `"`, `\"`)
+				formattedInput = strings.ReplaceAll(formattedInput, `\`, `\\`)
+				shellCommand(formattedInput)
+			} else {
+				fmt.Println("You need to provide some text")
+				fmt.Println(`Example: tgpt -s "How to update system"`)
+				os.Exit(0)
+			}
+
 		} else if input == "-u" || input == "--update" {
 			update()
 		} else if input == "-i" || input == "--interactive" {
