@@ -1,3 +1,5 @@
+<p align="center"><img src="tgpt.svg"></p>
+
 # Terminal GPT (tgpt) 🚀
 
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/aandrew-me/tgpt)
