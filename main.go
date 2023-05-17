@@ -89,7 +89,6 @@ func main() {
 				boldBlue.Println("╭─ You")
 				boldBlue.Print("╰─> ")
 
-
 				input, err := reader.ReadString('\n')
 				if err != nil {
 					fmt.Println("Error reading input:", err)
@@ -98,11 +97,14 @@ func main() {
 
 				if len(input) > 1 {
 					input = strings.TrimSpace(input)
-					if input == "exit" {
-						bold.Println("Exiting...")
-						return
+					if len(input) > 1 {
+						fmt.Println(len(input))
+						if input == "exit" {
+							bold.Println("Exiting...")
+							return
+						}
+						serverID = getData(input, serverID, configDir+"/tgpt", true)
 					}
-					serverID = getData(input, serverID, configDir+"/tgpt", true)
 
 				}
 
