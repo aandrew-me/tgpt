@@ -89,6 +89,8 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		bold.Printf("\r%v\n\n", input)
 	} else {
 		fmt.Println()
+		boldViolet.Println("╭─ Bot")
+		boldViolet.Print("╰─ ")
 	}
 
 	gotId := false
@@ -242,7 +244,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		fmt.Println("Some error has occured. Error:", err)
 		os.Exit(0)
 	}
-	fmt.Println("")
+	fmt.Print("\n\n")
 	createConfig(configDir, id)
 	return id
 }

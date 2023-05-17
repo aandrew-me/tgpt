@@ -19,6 +19,7 @@ const localVersion = "1.5.2"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
+var boldViolet = color.New(color.Bold, color.FgMagenta)
 var codeText = color.New(color.BgBlack, color.FgGreen)
 var stopSpin = false
 
@@ -85,7 +86,9 @@ func main() {
 			bold.Println("Interactive mode started. Press Ctrl + C or type exit to quit.\n")
 			serverID = chatId
 			for {
-				bold.Print(">> ")
+				boldBlue.Println("╭─ You")
+				boldBlue.Print("╰─> ")
+
 
 				input, err := reader.ReadString('\n')
 				if err != nil {
