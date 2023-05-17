@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.5.3"
+const localVersion = "1.6.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -66,15 +66,34 @@ func main() {
 			if len(args) > 2 && len(args[2]) > 1 {
 				prompt := args[2]
 				go loading(&stopSpin)
-				formattedInput := strings.ReplaceAll(prompt, `"`, `\"`)
-				formattedInput = strings.ReplaceAll(formattedInput, `\`, `\\`)
-				shellCommand(formattedInput)
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					fmt.Println("You need to provide some text")
+					fmt.Println(`Example: tgpt -s "How to update system"`)
+					os.Exit(0)
+				}
+				shellCommand(trimmedPrompt)
 			} else {
 				fmt.Println("You need to provide some text")
 				fmt.Println(`Example: tgpt -s "How to update system"`)
 				os.Exit(0)
 			}
 
+		} else if input == "-c" || input == "--code" {
+			if len(args) > 2 && len(args[2]) > 1 {
+				prompt := args[2]
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					fmt.Println("You need to provide some text")
+					fmt.Println(`Example: tgpt -c "Hello world in Python"`)
+					os.Exit(0)
+				}
+				codeGenerate(trimmedPrompt)
+			} else {
+				fmt.Println("You need to provide some text")
+				fmt.Println(`Example: tgpt -c "Hello world in Python"`)
+				os.Exit(0)
+			}
 		} else if input == "-u" || input == "--update" {
 			update()
 		} else if input == "-i" || input == "--interactive" {
@@ -145,6 +164,7 @@ func main() {
 
 			boldBlue.Println("\nFlags:")
 			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
+			fmt.Printf("%-50v Generate Code.\n", "-c, --code (Experimental)")
 
 			boldBlue.Println("\nOptions:")
 			fmt.Printf("%-50v Forget chat history \n", "-f, --forget")

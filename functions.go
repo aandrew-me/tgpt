@@ -324,7 +324,7 @@ func update() {
 
 		if comparisonResult == -1 {
 			fmt.Println("Updating...")
-			cmd := exec.Command("bash", "-c", "curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s " + executablePath)
+			cmd := exec.Command("bash", "-c", "curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s "+executablePath)
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
@@ -340,6 +340,77 @@ func update() {
 			fmt.Println("You are already using the latest version.", remoteVersion)
 		}
 	}
+}
+
+func codeGenerate(input string) {
+	codePrompt := fmt.Sprintf(`Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:`, input)
+	jar := tls_client.NewCookieJar()
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(120),
+		tls_client.WithClientProfile(tls_client.Firefox_110),
+		tls_client.WithNotFollowRedirects(),
+		tls_client.WithCookieJar(jar),
+		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
+	}
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, codePrompt))
+	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
+	if err != nil {
+		fmt.Println("\nSome error has occured.")
+		fmt.Println("Error:", err)
+		os.Exit(0)
+	}
+	// Setting all the required headers
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Origin", "https://chatbot.theb.ai")
+	req.Header.Set("Referer", "https://chatbot.theb.ai/")
+	resp, err := client.Do(req)
+	if err != nil {
+		stopSpin = true
+		bold.Println("\rSome error has occured. Check your internet connection.")
+		fmt.Println("\nError:", err)
+		os.Exit(0)
+	}
+	code := resp.StatusCode
+
+	defer resp.Body.Close()
+
+	scanner := bufio.NewScanner(resp.Body)
+
+	// Variables
+	var oldLine = ""
+	var newLine = ""
+	fullLine := ""
+	// Handling each json
+	for scanner.Scan() {
+		var jsonObj map[string]interface{}
+		line := scanner.Text()
+		err := json.Unmarshal([]byte(line), &jsonObj)
+		if err != nil {
+			bold.Println("\rError. Your request has been blocked by the server.")
+			fmt.Println("Status Code:", code)
+			os.Exit(0)
+		}
+		mainText := fmt.Sprintf("%s", jsonObj["text"])
+
+		newLine = mainText
+		result := strings.Replace(newLine, oldLine, "", -1)
+		fullLine += result
+		bold.Print(result)
+		oldLine = newLine
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Some error has occured. Error:", err)
+		os.Exit(0)
+	}
+
 }
 
 func shellCommand(input string) {
@@ -378,7 +449,7 @@ func shellCommand(input string) {
 	}
 
 	shellPrompt := fmt.Sprintf(
-		`Provide only %s commands for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:`, shellName, operatingSystem, input)
+		`Your role: Provide a terse, single sentence description of the given shell command. Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. If you need to store any data, assume it will be stored in the chat. Provide only %s commands for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:`, shellName, operatingSystem, input)
 
 	getCommand(shellPrompt)
 }
@@ -452,25 +523,28 @@ func getCommand(shellPrompt string) {
 		bold.Print(result)
 		oldLine = newLine
 	}
-	bold.Print("\n\nExecute shell command? [y/n]: ")
-	var userInput string
-	fmt.Scan(&userInput)
-	if userInput == "y" {
-		cmdArray := strings.Split(strings.TrimSpace(fullLine), " ")
-		cmd := exec.Command(cmdArray[0], cmdArray[1:]...)
+	lineCount := strings.Count(fullLine, "\n") + 1
+	if lineCount == 1 {
+		bold.Print("\n\nExecute shell command? [y/n]: ")
+		var userInput string
+		fmt.Scan(&userInput)
+		if userInput == "y" {
+			cmdArray := strings.Split(strings.TrimSpace(fullLine), " ")
+			cmd := exec.Command(cmdArray[0], cmdArray[1:]...)
 
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
+			cmd.Stdin = os.Stdin
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
 
-		if err != nil {
-			fmt.Println(err)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Some error has occured. Error:", err)
-		os.Exit(0)
+		if err := scanner.Err(); err != nil {
+			fmt.Println("Some error has occured. Error:", err)
+			os.Exit(0)
+		}
 	}
 
 }
