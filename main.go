@@ -164,7 +164,7 @@ func main() {
 
 			boldBlue.Println("\nFlags:")
 			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
-			fmt.Printf("%-50v Generate Code.\n", "-c, --code (Experimental)")
+			fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
 
 			boldBlue.Println("\nOptions:")
 			fmt.Printf("%-50v Forget chat history \n", "-f, --forget")
