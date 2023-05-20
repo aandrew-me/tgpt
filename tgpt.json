@@ -1,6 +1,6 @@
 {
 	"homepage": "https://github.com/aandrew-me/tgpt",
-	"version": "1.6.0",
+	"version": "1.6.1",
 	"description": "ChatGPT in terminal without needing API keys",
 	"license": "GPL-3",
 	"architecture": {
