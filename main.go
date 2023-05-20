@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.6.0"
+const localVersion = "1.6.1"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -117,7 +117,6 @@ func main() {
 				if len(input) > 1 {
 					input = strings.TrimSpace(input)
 					if len(input) > 1 {
-						fmt.Println(len(input))
 						if input == "exit" {
 							bold.Println("Exiting...")
 							return
