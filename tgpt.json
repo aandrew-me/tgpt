@@ -5,10 +5,10 @@
 	"license": "GPL-3",
 	"architecture": {
 		"64bit": {
-			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.5.3/tgpt-amd64.exe"
+			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.6.1/tgpt-amd64.exe"
 		},
 		"32bit": {
-			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.5.3/tgpt-i386.exe"
+			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.6.1/tgpt-i386.exe"
 		}
 	},
 
