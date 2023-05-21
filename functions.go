@@ -405,6 +405,13 @@ func codeGenerate(input string) {
 			fmt.Println("Status Code:", code)
 			os.Exit(0)
 		}
+
+		if jsonObj["text"] == nil {
+			msg := jsonObj["message"]
+			fmt.Printf("Error: %s\n", msg)
+			os.Exit(0)
+		}
+
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 
 		newLine = mainText
@@ -522,6 +529,13 @@ func getCommand(shellPrompt string) {
 			fmt.Println("Status Code:", code)
 			os.Exit(0)
 		}
+
+		if jsonObj["text"] == nil {
+			msg := jsonObj["message"]
+			fmt.Printf("Error: %s\n", msg)
+			os.Exit(0)
+		}
+		
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 
 		newLine = mainText
