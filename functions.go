@@ -114,6 +114,13 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 			os.Exit(0)
 		}
 
+		
+		if jsonObj["text"] == nil {
+			msg := jsonObj["message"]
+			fmt.Printf("Error: %s\n", msg)
+			os.Exit(0)
+		}
+		
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 
 		if !gotId {
