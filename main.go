@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.6.2"
+const localVersion = "1.6.3"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -53,7 +53,10 @@ func main() {
 	}
 	chatId := ""
 	if hasConfig {
-		chatId = strings.Split(string(configTxtByte), ":")[1]
+		configArr := strings.Split(string(configTxtByte), ":")
+		if len(configArr) == 2 {
+			chatId = configArr[1]
+		}
 	}
 	args := os.Args
 
