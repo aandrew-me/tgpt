@@ -90,7 +90,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	} else {
 		fmt.Println()
 		boldViolet.Println("╭─ Bot")
-		boldViolet.Print("╰─ ")
+		// boldViolet.Print("╰─ ")
 	}
 
 	gotId := false
