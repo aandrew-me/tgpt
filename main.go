@@ -20,7 +20,7 @@ const localVersion = "1.6.4"
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
 var boldViolet = color.New(color.Bold, color.FgMagenta)
-var codeText = color.New(color.BgBlack, color.FgGreen)
+var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
 
 var programLoop = true
@@ -162,14 +162,14 @@ func main() {
 				fmt.Println("Chat history removed")
 			}
 		} else if strings.HasPrefix(input, "-") {
-			color.Blue(`Usage: tgpt [Flag] [Prompt]`)
+			boldBlue.Println(`Usage: tgpt [Flag] [Prompt]`)
 
 			boldBlue.Println("\nFlags:")
 			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
 			fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
 
 			boldBlue.Println("\nOptions:")
-			fmt.Printf("%-50v Forget chat history \n", "-f, --forget")
+			fmt.Printf("%-50v Forget Chat ID \n", "-f, --forget")
 			fmt.Printf("%-50v Print version \n", "-v, --version")
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
 			fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
