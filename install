@@ -19,16 +19,12 @@ else
 fi
 
 # Check the system architecture
-if [[ $(uname -m) == "x86_64" ]]; then
-    ARCH="amd64"
-elif [[ $(uname -m) == "i386" || $(uname -m) == "i686" ]]; then
-    ARCH="i386"
-elif [[ $(uname -m) == "arm64" || $(uname -m) == "aarch64" ]]; then
-    ARCH="arm64"
-else
-    echo "Unsupported architecture: $(uname -m)"
-    exit 1
-fi
+case $(uname -m) in
+    x86_64) ARCH="amd64"   ;;
+    i386 | i686) ARCH="i386"   ;;
+    arm64 | aarch64) ARCH="arm64"   ;;
+    *) echo "Unsupported architecture: $(uname -m)"; exit 1   ;;
+esac
 
 # Check if the system is macOS
 if [[ $(uname -s) == "Darwin" ]]; then
@@ -46,11 +42,7 @@ echo -e "Downloading...\n"
 curl -SL --progress-bar "$URL" -o /tmp/tgpt
 
 # Move the executable to a directory in PATH (e.g. /usr/local/bin/ on Linux, /usr/local/bin/ or /usr/local/opt/ on macOS)
-if [[ $OS == "linux" ]]; then
-    $SUDO mv /tmp/tgpt $path
-else
-    $SUDO mv /tmp/tgpt $path
-fi
+$SUDO mv /tmp/tgpt $path
 
 if [ -d "$path" ]; then
     $SUDO chmod +x $path/tgpt
@@ -66,4 +58,3 @@ echo "Run tgpt -h to for help"
 else
 echo -e "Run tgpt -h for help"
 fi
-
