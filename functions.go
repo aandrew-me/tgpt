@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -90,7 +91,6 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	} else {
 		fmt.Println()
 		boldViolet.Println("╭─ Bot")
-		// boldViolet.Print("╰─ ")
 	}
 
 	gotId := false
@@ -114,13 +114,12 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 			os.Exit(0)
 		}
 
-		
 		if jsonObj["text"] == nil {
 			msg := jsonObj["message"]
 			fmt.Printf("Error: %s\n", msg)
 			os.Exit(0)
 		}
-		
+
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 
 		if !gotId {
@@ -252,7 +251,10 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		os.Exit(0)
 	}
 	fmt.Print("\n\n")
-	createConfig(configDir, id)
+	if configDir != "" && id != "" {
+		createConfig(configDir, id)
+	}
+
 	return id
 }
 
@@ -535,7 +537,7 @@ func getCommand(shellPrompt string) {
 			fmt.Printf("Error: %s\n", msg)
 			os.Exit(0)
 		}
-		
+
 		mainText := fmt.Sprintf("%s", jsonObj["text"])
 
 		newLine = mainText
@@ -568,4 +570,48 @@ func getCommand(shellPrompt string) {
 		}
 	}
 
+}
+
+type RESPONSE struct {
+	Tagname string `json:"tag_name"`
+	Body    string `json:"body"`
+}
+
+func getVersionHistory() {
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases", nil)
+
+	if err != nil {
+		fmt.Print("Some error has occured\n\n")
+		fmt.Println("Error:", err)
+		os.Exit(0)
+	}
+
+	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger())
+
+	res, err := client.Do(req)
+
+	if err != nil {
+		fmt.Print("Check your internet connection\n\n")
+		fmt.Println("Error:", err)
+		os.Exit(0)
+	}
+
+	resBody, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	defer res.Body.Close()
+
+	var releases []RESPONSE
+
+	json.Unmarshal(resBody, &releases)
+
+	for i := len(releases) - 1; i >= 0; i-- {
+		boldBlue.Println("Release", releases[i].Tagname)
+		fmt.Println(releases[i].Body)
+		fmt.Println()
+	}
 }

@@ -65,6 +65,8 @@ func main() {
 
 		if input == "-v" || input == "--version" {
 			fmt.Println("tgpt", localVersion)
+		} else if input == "-c" || input == "--changelog" {
+			getVersionHistory()
 		} else if input == "-s" || input == "--shell" {
 			if len(args) > 2 && len(args[2]) > 1 {
 				prompt := args[2]
@@ -105,7 +107,7 @@ func main() {
 			/////////////////////
 
 			reader := bufio.NewReader(os.Stdin)
-			bold.Println("Interactive mode started. Press Ctrl + C or type exit to quit.\n")
+			bold.Print("Interactive mode started. Press Ctrl + C or type exit to quit.\n\n")
 			serverID = chatId
 			for {
 				boldBlue.Println("╭─ You")
@@ -174,6 +176,8 @@ func main() {
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
 			fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 			fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
+			fmt.Printf("%-50v See changelog of versions \n", "-c, --changelog")
+
 			if runtime.GOOS != "windows" {
 				fmt.Printf("%-50v Update program \n", "-u, --update")
 			}
@@ -183,7 +187,7 @@ func main() {
 			fmt.Println(`tgpt -s "How to update my system?"`)
 		} else {
 			go loading(&stopSpin)
-			formattedInput := strings.ReplaceAll(input, `"`, `\"`)
+			formattedInput := strings.TrimSpace(input)
 			getData(formattedInput, chatId, configDir+"/tgpt", false)
 		}
 
