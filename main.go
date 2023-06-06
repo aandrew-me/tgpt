@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.6.6"
+const localVersion = "1.6.7"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -65,7 +65,7 @@ func main() {
 
 		if input == "-v" || input == "--version" {
 			fmt.Println("tgpt", localVersion)
-		} else if input == "-c" || input == "--changelog" {
+		} else if input == "-cl" || input == "--changelog" {
 			getVersionHistory()
 		} else if input == "-s" || input == "--shell" {
 			if len(args) > 2 && len(args[2]) > 1 {
@@ -176,7 +176,7 @@ func main() {
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
 			fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 			fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
-			fmt.Printf("%-50v See changelog of versions \n", "-c, --changelog")
+			fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
 
 			if runtime.GOOS != "windows" {
 				fmt.Printf("%-50v Update program \n", "-u, --update")
