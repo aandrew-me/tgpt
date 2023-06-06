@@ -64,6 +64,19 @@ go install github.com/aandrew-me/tgpt@latest
     scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
     ```
 
+-   ### PowerShell
+    Open your PowerShell as Admin and run the following command:
+    
+    ```
+    Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
+    ```
+
+    If you receive **execution of scripts is disabled on this system** error, run this command (and confirm with a "Y"):
+    
+    ```
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned; Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
+    ``` 
+
 ## From Release
 
 You can download an executable for your Operating System, then rename it to tgpt or whatever you want. Then you can execute it by typing `./tgpt` being in that directory. Or you can add it to the Environmental Variable **PATH** and then you can execute it by just typing `tgpt`.
