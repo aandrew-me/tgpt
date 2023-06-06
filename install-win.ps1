@@ -6,10 +6,10 @@
 #Requires -RunAsAdministrator
 $ErrorActionPreference = "Stop"
 
-# First of all check if "choco" or "scoop" exists
 function Check-Command($cmdname){
     return [bool](Get-Command -Name $cmdname -ErrorAction SilentlyContinue)
 }
+
 
 # Or download and install it from source
 $target_dir = 'C:\Program Files\TGPT' # <-- here we wanna store our executable file
@@ -47,30 +47,14 @@ Move-item -Path $PWD\$prog_name -destination $target_dir\$prog_name
 
 # And add it to PATH
 write "Adding TGPT to the PATH"
-$add_to_profile = "`$env:Path += ';$target_dir'"
-if (!(test-path $profile)){
-    New-Item -Path $profile -Type File -Force
-    $add_to_profile | Out-File $profile
+if (Check-Command -cmdname $prog_name){
+    write "$prog_name is already in PATH"
 }
 else {
-    if (Check-Command -cmdname $prog_name){
-        write "$prog_name is already in PATH"
-    }
-    else {
-        $add_to_profile | Out-File $profile
-    }
+    setx /M PATH "`$Env:PATH;$target_dir"
 }
 
-
-# Reload profile
-. $profile
-
-if (Check-Command -cmdname $prog_name){
-    write-host "Done! Terminal GPT is installed in '$target_dir\'."
+write-host "Done! Terminal GPT is installed in '$target_dir\'."
 #   Remove last dot from variable prog_name
-    $new = $prog_name.Substring(0, $prog_name.lastIndexOf('.'))
-    write-host "Run '$prog_name -h' or '$new -h' for help."
-}
-else{
-    write-host "Looks like the file is not in PATH."
-}
+$new = $prog_name.Substring(0, $prog_name.lastIndexOf('.'))
+write-host "Now restart your terminal and run '$prog_name -h' or '$new -h' for help."
