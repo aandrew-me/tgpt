@@ -1,14 +1,14 @@
 {
 	"homepage": "https://github.com/aandrew-me/tgpt",
-	"version": "1.6.6",
+	"version": "1.6.7",
 	"description": "ChatGPT in terminal without needing API keys",
 	"license": "GPL-3",
 	"architecture": {
 		"64bit": {
-			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.6.6/tgpt-amd64.exe"
+			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.6.7/tgpt-amd64.exe"
 		},
 		"32bit": {
-			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.6.6/tgpt-i386.exe"
+			"url": "https://github.com/aandrew-me/tgpt/releases/download/v1.6.7/tgpt-i386.exe"
 		}
 	},
 
