@@ -54,7 +54,7 @@ echo -e "Installed Successfully \n"
 
 if [[ $path != "/usr/local/bin" ]]; then
 echo "Make sure your file is in PATH"
-echo "Run tgpt -h to for help"
+echo "Run tgpt -h for help"
 else
 echo -e "Run tgpt -h for help"
 fi
