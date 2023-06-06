@@ -11,17 +11,6 @@ function Check-Command($cmdname){
     return [bool](Get-Command -Name $cmdname -ErrorAction SilentlyContinue)
 }
 
-if (Check-Command -cmdname 'choco'){
-    write "Installing TGPT using 'choco'"
-    choco install tgpt
-    exit
-}
-elseif (Check-Command -cmdname 'scoop'){
-    write "Installing TGPT using 'scoop'"
-    scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
-    exit
-}
-
 # Or download and install it from source
 $target_dir = 'C:\Program Files\TGPT' # <-- here we wanna store our executable file
 $prog_name = "tgpt.exe" # <-- this is how we wanna call our executable
