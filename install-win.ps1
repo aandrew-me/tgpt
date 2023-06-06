@@ -10,7 +10,6 @@ function Check-Command($cmdname){
     return [bool](Get-Command -Name $cmdname -ErrorAction SilentlyContinue)
 }
 
-
 # Or download and install it from source
 $target_dir = 'C:\Program Files\TGPT' # <-- here we wanna store our executable file
 $prog_name = "tgpt.exe" # <-- this is how we wanna call our executable
@@ -57,4 +56,4 @@ else {
 write-host "Done! Terminal GPT is installed in '$target_dir\'."
 #   Remove last dot from variable prog_name
 $new = $prog_name.Substring(0, $prog_name.lastIndexOf('.'))
-write-host "Now restart your terminal and run '$prog_name -h' or '$new -h' for help."
+write-host "Now you can open cmd and type '$new -h' for help."
