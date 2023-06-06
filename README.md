@@ -12,7 +12,7 @@ tgpt is a cross-platform cli (commandline) tool that lets you use ChatGPT 3.5 in
 # Usage 💬
 
 ```
-tgpt "What is the purpose of life?"
+tgpt "What can you do?"
 ```
 
 ![demo](https://user-images.githubusercontent.com/66430340/233759296-c4cf8cf2-0cab-48aa-9e84-40765b823282.gif)
