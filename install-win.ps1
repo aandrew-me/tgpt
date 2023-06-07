@@ -10,7 +10,6 @@ function Check-Command($cmdname){
     return [bool](Get-Command -Name $cmdname -ErrorAction SilentlyContinue)
 }
 
-# Or download and install it from source
 $target_dir = 'C:\Program Files\TGPT' # <-- here we wanna store our executable file
 $prog_name = "tgpt.exe" # <-- this is how we wanna call our executable
 
