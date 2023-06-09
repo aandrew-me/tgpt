@@ -553,7 +553,24 @@ func getCommand(shellPrompt string) {
 		fmt.Scan(&userInput)
 		if userInput == "y" {
 			cmdArray := strings.Split(strings.TrimSpace(fullLine), " ")
-			cmd := exec.Command(cmdArray[0], cmdArray[1:]...)
+			var cmd *exec.Cmd
+			if runtime.GOOS == "windows" {
+				shellName := "cmd"
+
+				if len(os.Getenv("PSModulePath")) > 0 {
+					shellName = "powershell"
+				}
+				if shellName == "cmd" {
+					cmd = exec.Command("cmd", "/C", fullLine)
+
+				} else {
+					cmd = exec.Command("powershell", fullLine)
+				}
+
+			} else {
+				cmd = exec.Command(cmdArray[0], cmdArray[1:]...)
+
+			}
 
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
