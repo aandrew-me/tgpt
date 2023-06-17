@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.6.8"
+const localVersion = "1.6.9"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -183,7 +183,9 @@ func main() {
 			}
 
 			boldBlue.Println("\nExamples:")
+			fmt.Println(`tgpt "What is internet?"`)
 			fmt.Println("tgpt -f")
+			fmt.Println(`tgpt -m`)
 			fmt.Println(`tgpt -s "How to update my system?"`)
 		} else {
 			go loading(&stopSpin)

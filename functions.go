@@ -120,7 +120,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 			os.Exit(0)
 		}
 
-		mainText := fmt.Sprintf("%s", jsonObj["text"])
+		mainText := fmt.Sprintf("%s", jsonObj["delta"])
 
 		if !gotId {
 			if jsonObj == nil {
@@ -179,17 +179,16 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 			}
 		} else {
 			newLine = mainText
-			result := strings.Replace(newLine, oldLine, "", -1)
-			wordLength := len(result)
+			wordLength := len(mainText)
 
 			if termWidth-lineLength < wordLength {
 				fmt.Print("\n")
 				lineLength = 0
 			}
 			lineLength += wordLength
-			splitLine := strings.Split(result, "")
+			splitLine := strings.Split(mainText, "")
 
-			if result == "``" || result == "```" {
+			if mainText == "``" || mainText == "```" {
 				isRealCode = true
 			} else {
 				isRealCode = false
