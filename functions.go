@@ -43,7 +43,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
-		fmt.Println("\nSome error has occured.")
+		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
@@ -60,7 +60,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 	if err != nil {
 		stopSpin = true
-		bold.Println("\rSome error has occured. Check your internet connection.")
+		bold.Println("\rSome error has occurred. Check your internet connection.")
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
@@ -74,8 +74,6 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
-	var oldLine = ""
-	var newLine = ""
 	count := 0
 	isCode := false
 	isGreen := false
@@ -100,7 +98,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	termWidth := size.Col()
 
 	if err != nil {
-		fmt.Println("Error occured getting terminal width. Error:", err)
+		fmt.Println("Error occurred getting terminal width. Error:", err)
 		os.Exit(0)
 	}
 	// Handling each json
@@ -124,7 +122,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 		if !gotId {
 			if jsonObj == nil {
-				fmt.Println("Some error has occured")
+				fmt.Println("Some error has occurred")
 				os.Exit(0)
 			}
 
@@ -133,14 +131,13 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		}
 
 		if count <= 0 {
-			oldLine = mainText
 			wordLength := len(mainText)
 			if termWidth-lineLength < wordLength {
 				fmt.Print("\n")
 				lineLength = 0
 			}
 			lineLength += wordLength
-			splitLine := strings.Split(oldLine, "")
+			splitLine := strings.Split(mainText, "")
 			// Iterating through each word
 			for _, word := range splitLine {
 				// If its a backtick
@@ -178,7 +175,6 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 				}
 			}
 		} else {
-			newLine = mainText
 			wordLength := len(mainText)
 
 			if termWidth-lineLength < wordLength {
@@ -240,13 +236,12 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 				}
 
 			}
-			oldLine = newLine
 		}
 
 		count++
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Some error has occured. Error:", err)
+		fmt.Println("Some error has occurred. Error:", err)
 		os.Exit(0)
 	}
 	fmt.Print("\n\n")
@@ -368,7 +363,7 @@ func codeGenerate(input string) {
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, codePrompt))
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
-		fmt.Println("\nSome error has occured.")
+		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
@@ -382,7 +377,7 @@ func codeGenerate(input string) {
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
-		bold.Println("\rSome error has occured. Check your internet connection.")
+		bold.Println("\rSome error has occurred. Check your internet connection.")
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
@@ -393,9 +388,6 @@ func codeGenerate(input string) {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
-	var oldLine = ""
-	var newLine = ""
-	fullLine := ""
 	// Handling each json
 	for scanner.Scan() {
 		var jsonObj map[string]interface{}
@@ -413,16 +405,11 @@ func codeGenerate(input string) {
 			os.Exit(0)
 		}
 
-		mainText := fmt.Sprintf("%s", jsonObj["text"])
-
-		newLine = mainText
-		result := strings.Replace(newLine, oldLine, "", -1)
-		fullLine += result
-		bold.Print(result)
-		oldLine = newLine
+		mainText := fmt.Sprintf("%s", jsonObj["delta"])
+		bold.Print(mainText)
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Some error has occured. Error:", err)
+		fmt.Println("Some error has occurred. Error:", err)
 		os.Exit(0)
 	}
 
@@ -489,7 +476,7 @@ func getCommand(shellPrompt string) {
 	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, shellPrompt))
 	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
-		fmt.Println("\nSome error has occured.")
+		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
@@ -503,7 +490,7 @@ func getCommand(shellPrompt string) {
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
-		bold.Println("\rSome error has occured. Check your internet connection.")
+		bold.Println("\rSome error has occurred. Check your internet connection.")
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
@@ -517,8 +504,6 @@ func getCommand(shellPrompt string) {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
-	var oldLine = ""
-	var newLine = ""
 	fullLine := ""
 	// Handling each json
 	for scanner.Scan() {
@@ -537,13 +522,10 @@ func getCommand(shellPrompt string) {
 			os.Exit(0)
 		}
 
-		mainText := fmt.Sprintf("%s", jsonObj["text"])
+		mainText := fmt.Sprintf("%s", jsonObj["delta"])
 
-		newLine = mainText
-		result := strings.Replace(newLine, oldLine, "", -1)
-		fullLine += result
-		bold.Print(result)
-		oldLine = newLine
+		bold.Print(mainText)
+
 	}
 	lineCount := strings.Count(fullLine, "\n") + 1
 	if lineCount == 1 {
@@ -581,7 +563,7 @@ func getCommand(shellPrompt string) {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			fmt.Println("Some error has occured. Error:", err)
+			fmt.Println("Some error has occurred. Error:", err)
 			os.Exit(0)
 		}
 	}
@@ -597,7 +579,7 @@ func getVersionHistory() {
 	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases", nil)
 
 	if err != nil {
-		fmt.Print("Some error has occured\n\n")
+		fmt.Print("Some error has occurred\n\n")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
