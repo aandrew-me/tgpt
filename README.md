@@ -6,8 +6,9 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)
 ![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)
 ![Chocolatey Version](https://img.shields.io/chocolatey/v/tgpt)
+<!-- [![Go Report Card](https://goreportcard.com/badge/github.com/aandrew-me/tgpt)](https://goreportcard.com/report/github.com/aandrew-me/tgpt) -->
 
-tgpt is a cross-platform cli (commandline) tool that lets you use ChatGPT 3.5 in Terminal **without API KEYS**. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai). Its written in Go.
+tgpt is a cross-platform cli (command-line) tool that lets you use ChatGPT 3.5 in Terminal **without API KEYS**. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai). Its written in Go.
 
 # Usage 💬
 
