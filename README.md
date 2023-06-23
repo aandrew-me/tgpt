@@ -65,7 +65,7 @@ go install github.com/aandrew-me/tgpt@latest
     scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
     ```
 
--   ### PowerShell
+<!-- -   ### PowerShell
     Open your PowerShell as Admin and run the following command:
     
     ```
@@ -76,7 +76,7 @@ go install github.com/aandrew-me/tgpt@latest
     
     ```
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned; Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
-    ``` 
+    ```  -->
 
 ## From Release
 
