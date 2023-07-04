@@ -523,6 +523,7 @@ func getCommand(shellPrompt string) {
 		}
 
 		mainText := fmt.Sprintf("%s", jsonObj["delta"])
+		fullLine += mainText
 
 		bold.Print(mainText)
 
