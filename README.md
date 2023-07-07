@@ -2,84 +2,79 @@
 
 # Terminal GPT (tgpt) 🚀
 
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/aandrew-me/tgpt)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)
-![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)
-![Chocolatey Version](https://img.shields.io/chocolatey/v/tgpt)
-<!-- [![Go Report Card](https://goreportcard.com/badge/github.com/aandrew-me/tgpt)](https://goreportcard.com/report/github.com/aandrew-me/tgpt) -->
+[![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/aandrew-me/tgpt)](https://github.com/aandrew-me/tgpt)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)](https://github.com/aandrew-me/tgpt/releases/latest)
+[![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)](https://aur.archlinux.org/packages/tgpt-bin)
+[![Chocolatey Version](https://img.shields.io/chocolatey/v/tgpt)](https://community.chocolatey.org/packages/tgpt)
 
-tgpt is a cross-platform cli (command-line) tool that lets you use ChatGPT 3.5 in Terminal **without API KEYS**. It communicates with the Backend of [Bai chatbot](https://chatbot.theb.ai). Its written in Go.
+tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. It communicates with the backend of [Bai chatbot](https://chatbot.theb.ai) and is written in Go.
 
-# Usage 💬
+## Usage 💬
 
-```
+```bash
 tgpt "What can you do?"
 ```
 
 ![demo](https://user-images.githubusercontent.com/66430340/233759296-c4cf8cf2-0cab-48aa-9e84-40765b823282.gif)
 
-# Installation ⏬
+## Installation ⏬
 
-## Download for GNU/Linux 🐧 or MacOS 🍎
+### Download for GNU/Linux 🐧 or MacOS 🍎
 
-The default download location is /usr/local/bin. But you can change it in the command and use your own location. However make sure its in PATH, if you want it to be easily accessible.
+The default download location is `/usr/local/bin`, but you can change it in the command to use a different location. However, make sure the location is added to your PATH environment variable for easy accessibility.
 
-You can download with this command :-
+You can download it with the following command:
 
-```
+```bash
 curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
 ```
 
-If you are using Arch Linux you can install the [AUR package](https://aur.archlinux.org/packages/tgpt-bin) with `paru`:
+If you are using Arch Linux, you can install the [AUR package](https://aur.archlinux.org/packages/tgpt-bin) with `paru`:
 
-```
+```bash
 paru -S tgpt-bin
 ```
 
-Or with `yay`
+Or with `yay`:
 
-```
+```bash
 yay -S tgpt-bin
 ```
 
-## With Go
+### Install with Go
 
-```
+```bash
 go install github.com/aandrew-me/tgpt@latest
 ```
 
-## Windows 🪟
+### Windows 🪟
 
--   ### Chocolatey
+-   **Chocolatey:** You can install tgpt from [Chocolatey](https://community.chocolatey.org/packages/tgpt) using the following command:
 
-    It can be installed from [Chocolatey](https://community.chocolatey.org/packages/tgpt) with
-
-    ```
+    ```bash
     choco install tgpt
     ```
 
--   ### Scoop
-    Package can be installed with [scoop](https://scoop.sh/) with the following command -
+-   **Scoop:** Package installation with [Scoop](https://scoop.sh/) can be done using the following command:
 
-    ```
+    ```bash
     scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
     ```
 
-<!-- -   ### PowerShell
-    Open your PowerShell as Admin and run the following command:
+<!-- -   **PowerShell:** Open PowerShell as administrator and run the following command:
     
-    ```
+    ```bash
     Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
     ```
 
-    If you receive **execution of scripts is disabled on this system** error, run this command (and confirm with a "Y"):
-    
-    ```
+    If you receive an error stating "execution of scripts is disabled on this system," run this command instead (and confirm with a "Y"):
+
+    ```bash
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned; Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
-    ```  -->
+    ``` -->
 
-## From Release
+### From Release
 
-You can download an executable for your Operating System, then rename it to tgpt or whatever you want. Then you can execute it by typing `./tgpt` being in that directory. Or you can add it to the Environmental Variable **PATH** and then you can execute it by just typing `tgpt`.
+You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
 
-### If you liked this project, give it a star! ⭐
+If you find this project useful, please give it a star! ⭐
