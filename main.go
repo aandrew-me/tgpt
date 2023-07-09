@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.6.12"
+const localVersion = "1.7.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -67,6 +67,36 @@ func main() {
 			fmt.Println("tgpt", localVersion)
 		} else if input == "-cl" || input == "--changelog" {
 			getVersionHistory()
+		} else if input == "-w" || input == "--whole" {
+			if len(args) > 2 && len(args[2]) > 1 {
+				prompt := args[2]
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					fmt.Println("You need to provide some text")
+					fmt.Println(`Example: tgpt -w "What is encryption?"`)
+					os.Exit(0)
+				}
+				getWholeText(trimmedPrompt, chatId, configDir+"/tgpt")
+			} else {
+				fmt.Println("You need to provide some text")
+				fmt.Println(`Example: tgpt -w "What is encryption?"`)
+				os.Exit(0)
+			}
+		} else if input == "-q" || input == "--quiet" {
+			if len(args) > 2 && len(args[2]) > 1 {
+				prompt := args[2]
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					fmt.Println("You need to provide some text")
+					fmt.Println(`Example: tgpt -q "What is encryption?"`)
+					os.Exit(0)
+				}
+				getSilentText(trimmedPrompt, chatId, configDir+"/tgpt")
+			} else {
+				fmt.Println("You need to provide some text")
+				fmt.Println(`Example: tgpt -q "What is encryption?"`)
+				os.Exit(0)
+			}
 		} else if input == "-s" || input == "--shell" {
 			if len(args) > 2 && len(args[2]) > 1 {
 				prompt := args[2]
@@ -169,6 +199,8 @@ func main() {
 			boldBlue.Println("\nFlags:")
 			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
 			fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
+			fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
+			fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
 
 			boldBlue.Println("\nOptions:")
 			fmt.Printf("%-50v Forget Chat ID \n", "-f, --forget")

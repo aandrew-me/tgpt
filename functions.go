@@ -614,3 +614,169 @@ func getVersionHistory() {
 		fmt.Println()
 	}
 }
+
+func getWholeText(prompt string, chatId string, configDir string) {
+	jar := tls_client.NewCookieJar()
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(120),
+		tls_client.WithClientProfile(tls_client.Firefox_110),
+		tls_client.WithNotFollowRedirects(),
+		tls_client.WithCookieJar(jar),
+		tls_client.WithProxyUrl("http://127.0.0.1:8080"),
+		tls_client.WithInsecureSkipVerify(),
+	}
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	safeInput, _ := json.Marshal(prompt)
+
+	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"options":{"parentMessageId":"%v"}}`, string(safeInput), chatId))
+
+	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
+	if err != nil {
+		fmt.Println("\nSome error has occurred.")
+		fmt.Println("Error:", err)
+		os.Exit(0)
+	}
+	// Setting all the required headers
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Origin", "https://chatbot.theb.ai")
+	req.Header.Set("Referer", "https://chatbot.theb.ai/")
+	resp, err := client.Do(req)
+	if err != nil {
+		stopSpin = true
+		bold.Println("\rSome error has occurred. Check your internet connection.")
+		fmt.Println("\nError:", err)
+		os.Exit(0)
+	}
+	code := resp.StatusCode
+
+	defer resp.Body.Close()
+
+	scanner := bufio.NewScanner(resp.Body)
+
+	// Variables
+	gotId := false
+	id := ""
+	fullText := ""
+	// Handling each json
+	for scanner.Scan() {
+		var jsonObj map[string]interface{}
+		line := scanner.Text()
+		err := json.Unmarshal([]byte(line), &jsonObj)
+		if err != nil {
+			bold.Println("\rError. Your request has been blocked by the server.")
+			fmt.Println("Status Code:", code)
+			os.Exit(0)
+		}
+
+		if jsonObj["text"] == nil {
+			msg := jsonObj["message"]
+			fmt.Printf("Error: %s\n", msg)
+			os.Exit(0)
+		}
+
+		if !gotId {
+			if jsonObj == nil {
+				fmt.Println("Some error has occurred")
+				os.Exit(0)
+			}
+
+			id = fmt.Sprintf("%s", jsonObj["id"])
+			gotId = true
+		}
+
+		mainText := fmt.Sprintf("%s", jsonObj["delta"])
+		fullText += mainText
+	}
+	fmt.Println(fullText)
+	createConfig(configDir, id)
+}
+
+func getSilentText(prompt string, chatId string, configDir string) {
+
+	jar := tls_client.NewCookieJar()
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(120),
+		tls_client.WithClientProfile(tls_client.Firefox_110),
+		tls_client.WithNotFollowRedirects(),
+		tls_client.WithCookieJar(jar),
+		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
+		tls_client.WithInsecureSkipVerify(),
+	}
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	safeInput, _ := json.Marshal(prompt)
+
+	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"options":{"parentMessageId":"%v"}}`, string(safeInput), chatId))
+
+	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
+	if err != nil {
+		fmt.Println("\nSome error has occurred.")
+		fmt.Println("Error:", err)
+		os.Exit(0)
+	}
+	// Setting all the required headers
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Origin", "https://chatbot.theb.ai")
+	req.Header.Set("Referer", "https://chatbot.theb.ai/")
+	resp, err := client.Do(req)
+	if err != nil {
+		stopSpin = true
+		bold.Println("\rSome error has occurred. Check your internet connection.")
+		fmt.Println("\nError:", err)
+		os.Exit(0)
+	}
+	code := resp.StatusCode
+
+	defer resp.Body.Close()
+
+	scanner := bufio.NewScanner(resp.Body)
+
+	// Variables
+	gotId := false
+	id := ""
+	// Handling each json
+	for scanner.Scan() {
+		var jsonObj map[string]interface{}
+		line := scanner.Text()
+		err := json.Unmarshal([]byte(line), &jsonObj)
+		if err != nil {
+			bold.Println("\rError. Your request has been blocked by the server.")
+			fmt.Println("Status Code:", code)
+			os.Exit(0)
+		}
+
+		if jsonObj["text"] == nil {
+			msg := jsonObj["message"]
+			fmt.Printf("Error: %s\n", msg)
+			os.Exit(0)
+		}
+
+		if !gotId {
+			if jsonObj == nil {
+				fmt.Println("Some error has occurred")
+				os.Exit(0)
+			}
+
+			id = fmt.Sprintf("%s", jsonObj["id"])
+			gotId = true
+		}
+
+		mainText := fmt.Sprintf("%s", jsonObj["delta"])
+		fmt.Print(mainText)
+	}
+
+	createConfig(configDir, id)
+}
