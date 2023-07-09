@@ -622,7 +622,7 @@ func getWholeText(prompt string, chatId string, configDir string) {
 		tls_client.WithClientProfile(tls_client.Firefox_110),
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(jar),
-		tls_client.WithProxyUrl("http://127.0.0.1:8080"),
+		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
 		tls_client.WithInsecureSkipVerify(),
 	}
 	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
