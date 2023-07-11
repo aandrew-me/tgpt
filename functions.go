@@ -22,7 +22,7 @@ type Data struct {
 	Version string `json:"version"`
 }
 
-func getData(input string, chatId string, configDir string, isInteractive bool) (serverChatId string) {
+func newClient() (tls_client.HttpClient, error) {
 	jar := tls_client.NewCookieJar()
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(120),
@@ -30,8 +30,13 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(jar),
 		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
+		// tls_client.WithInsecureSkipVerify(),
 	}
-	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+}
+
+func getData(input string, chatId string, configDir string, isInteractive bool) (serverChatId string) {
+	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -283,14 +288,7 @@ func update() {
 	if runtime.GOOS == "windows" {
 		fmt.Println("This feature is not supported on Windows. :(")
 	} else {
-		jar := tls_client.NewCookieJar()
-		options := []tls_client.HttpClientOption{
-			tls_client.WithTimeoutSeconds(30),
-			tls_client.WithClientProfile(tls_client.Firefox_110),
-			tls_client.WithNotFollowRedirects(),
-			tls_client.WithCookieJar(jar),
-		}
-		client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+		client, err := newClient()
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -347,15 +345,7 @@ func update() {
 
 func codeGenerate(input string) {
 	codePrompt := fmt.Sprintf(`Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:`, input)
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(120),
-		tls_client.WithClientProfile(tls_client.Firefox_110),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
-		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
-	}
-	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -458,17 +448,8 @@ func shellCommand(input string) {
 
 // Get a command in response
 func getCommand(shellPrompt string) {
-
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(120),
-		tls_client.WithClientProfile(tls_client.Firefox_110),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
-		// tls_client.WithProxyUrl("http://127.0.0.1:8000"),
-		tls_client.WithInsecureSkipVerify(),
-	}
-	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
+	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -616,16 +597,8 @@ func getVersionHistory() {
 }
 
 func getWholeText(prompt string, chatId string, configDir string) {
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(120),
-		tls_client.WithClientProfile(tls_client.Firefox_110),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
-		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
-		tls_client.WithInsecureSkipVerify(),
-	}
-	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
+	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -699,17 +672,8 @@ func getWholeText(prompt string, chatId string, configDir string) {
 }
 
 func getSilentText(prompt string, chatId string, configDir string) {
-
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(120),
-		tls_client.WithClientProfile(tls_client.Firefox_110),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
-		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
-		tls_client.WithInsecureSkipVerify(),
-	}
-	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
+	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		return
