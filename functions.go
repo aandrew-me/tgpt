@@ -36,7 +36,8 @@ func newClient() (tls_client.HttpClient, error) {
 }
 
 func getData(input string, chatId string, configDir string, isInteractive bool) (serverChatId string) {
-	if client, err := newClient(); err != nil {
+	client, err := newClient()
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -287,7 +288,8 @@ func update() {
 	if runtime.GOOS == "windows" {
 		fmt.Println("This feature is not supported on Windows. :(")
 	} else {
-		if client, err := newClient(); err != nil {
+		client, err := newClient()
+		if err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -343,7 +345,8 @@ func update() {
 
 func codeGenerate(input string) {
 	codePrompt := fmt.Sprintf(`Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:`, input)
-	if client, err := newClient(); err != nil {
+	client, err := newClient()
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -446,7 +449,8 @@ func shellCommand(input string) {
 // Get a command in response
 func getCommand(shellPrompt string) {
 	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
-	if client, err := newClient(); err != nil {
+	client, err := newClient()
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -594,7 +598,8 @@ func getVersionHistory() {
 
 func getWholeText(prompt string, chatId string, configDir string) {
 	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
-	if client, err := newClient(); err != nil {
+	client, err := newClient()
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -668,7 +673,8 @@ func getWholeText(prompt string, chatId string, configDir string) {
 
 func getSilentText(prompt string, chatId string, configDir string) {
 	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
-	if client, err := newClient(); err != nil {
+	client, err := newClient()
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
