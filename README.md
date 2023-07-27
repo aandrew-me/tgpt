@@ -12,7 +12,28 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 ## Usage 💬
 
 ```bash
-tgpt "What can you do?"
+Usage: tgpt [Flag] [Prompt]
+
+Flags:
+-s, --shell                                        Generate and Execute shell commands. (Experimental) 
+-c, --code                                         Generate Code. (Experimental)
+-q, --quiet                                        Gives response back without loading animation
+-w, --whole                                        Gives response back as a whole text
+
+Options:
+-f, --forget                                       Forget Chat ID 
+-v, --version                                      Print version 
+-h, --help                                         Print help message 
+-i, --interactive                                  Start normal interactive mode 
+-m, --multiline                                    Start multi-line interactive mode 
+-cl, --changelog                                   See changelog of versions 
+-u, --update                                       Update program 
+
+Examples:
+tgpt "What is internet?"
+tgpt -f
+tgpt -m
+tgpt -s "How to update my system?"
 ```
 
 ![demo](https://user-images.githubusercontent.com/66430340/233759296-c4cf8cf2-0cab-48aa-9e84-40765b823282.gif)

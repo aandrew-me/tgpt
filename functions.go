@@ -448,7 +448,6 @@ func shellCommand(input string) {
 
 // Get a command in response
 func getCommand(shellPrompt string) {
-	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -597,7 +596,6 @@ func getVersionHistory() {
 }
 
 func getWholeText(prompt string, chatId string, configDir string) {
-	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -672,7 +670,6 @@ func getWholeText(prompt string, chatId string, configDir string) {
 }
 
 func getSilentText(prompt string, chatId string, configDir string) {
-	// FIXME this one had tls_client.WithInsecureSkipVerify(), confirm whether we need this option
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
