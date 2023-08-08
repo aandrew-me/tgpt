@@ -44,21 +44,17 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 
 	safeInput, _ := json.Marshal(input)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"options":{"parentMessageId":"%v"}}`, string(safeInput), chatId))
+	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":%v}],
+	"stream":true}`, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
+	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
 	// Setting all the required headers
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Origin", "https://chatbot.theb.ai")
-	req.Header.Set("Referer", "https://chatbot.theb.ai/")
 
 	// Receiving response
 	resp, err := client.Do(req)
@@ -69,7 +65,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
-	code := resp.StatusCode
+	// code := resp.StatusCode
 
 	defer resp.Body.Close()
 
@@ -96,7 +92,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		boldViolet.Println("╭─ Bot")
 	}
 
-	gotId := false
+	// gotId := false
 	id := ""
 	lineLength := 0
 	size, _ := ts.GetSize()
@@ -106,33 +102,36 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		fmt.Println("Error occurred getting terminal width. Error:", err)
 		os.Exit(0)
 	}
-	// Handling each json
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
+	// Handling each part
+
 	for scanner.Scan() {
-		var jsonObj map[string]interface{}
+		var mainText string
 		line := scanner.Text()
-		err := json.Unmarshal([]byte(line), &jsonObj)
-		if err != nil {
-			bold.Println("\rError. Your request is being blocked by the server.")
-			fmt.Println("Status Code:", code)
-			os.Exit(0)
+		var obj = "{}"
+		if line != "" {
+			obj = strings.Split(line, "data: ")[1]
+		}
+		type Data struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
 		}
 
-		if jsonObj["text"] == nil {
-			msg := jsonObj["message"]
-			fmt.Printf("Error: %s\n", msg)
-			os.Exit(0)
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
 		}
 
-		mainText := fmt.Sprintf("%s", jsonObj["delta"])
-
-		if !gotId {
-			if jsonObj == nil {
-				fmt.Println("Some error has occurred")
-				os.Exit(0)
-			}
-
-			id = fmt.Sprintf("%s", jsonObj["id"])
-			gotId = true
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
 		}
 
 		if count <= 0 {
@@ -250,25 +249,21 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		os.Exit(0)
 	}
 	fmt.Print("\n\n")
-	if configDir != "" && id != "" {
-		createConfig(configDir, id)
-	}
-
 	return id
 }
 
-func createConfig(dir string, chatId string) {
-	if strings.HasPrefix(chatId, "chatcmpl-") {
-		err := os.MkdirAll(dir, 0755)
-		configTxt := "id:" + chatId
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
-		}
-	}
+// func createConfig(dir string, chatId string) {
+// 	if strings.HasPrefix(chatId, "chatcmpl-") {
+// 		err := os.MkdirAll(dir, 0755)
+// 		configTxt := "id:" + chatId
+// 		if err != nil {
+// 			fmt.Println(err)
+// 		} else {
+// 			os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
+// 		}
+// 	}
 
-}
+// }
 
 func loading(stop *bool) {
 	spinChars := []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "}
@@ -350,20 +345,18 @@ func codeGenerate(input string) {
 		fmt.Println(err)
 		return
 	}
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, codePrompt))
-	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
+	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"%v"}],
+	"stream":true}`, codePrompt))
+
+	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
 	// Setting all the required headers
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Origin", "https://chatbot.theb.ai")
-	req.Header.Set("Referer", "https://chatbot.theb.ai/")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
@@ -371,31 +364,41 @@ func codeGenerate(input string) {
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
-	code := resp.StatusCode
 
 	defer resp.Body.Close()
 
 	scanner := bufio.NewScanner(resp.Body)
 
-	// Variables
-	// Handling each json
+	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
-		var jsonObj map[string]interface{}
+		var mainText string
 		line := scanner.Text()
-		err := json.Unmarshal([]byte(line), &jsonObj)
-		if err != nil {
-			bold.Println("\rError. Your request has been blocked by the server.")
-			fmt.Println("Status Code:", code)
-			os.Exit(0)
+		var obj = "{}"
+		if line != "" {
+			obj = strings.Split(line, "data: ")[1]
+		}
+		type Data struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
 		}
 
-		if jsonObj["text"] == nil {
-			msg := jsonObj["message"]
-			fmt.Printf("Error: %s\n", msg)
-			os.Exit(0)
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
 		}
 
-		mainText := fmt.Sprintf("%s", jsonObj["delta"])
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
+		}
 		bold.Print(mainText)
 	}
 	if err := scanner.Err(); err != nil {
@@ -453,20 +456,17 @@ func getCommand(shellPrompt string) {
 		fmt.Println(err)
 		return
 	}
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, shellPrompt))
-	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
+	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"%v"}],
+	"stream":true}`, shellPrompt))
+	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
+
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
 	// Setting all the required headers
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Origin", "https://chatbot.theb.ai")
-	req.Header.Set("Referer", "https://chatbot.theb.ai/")
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
@@ -474,7 +474,6 @@ func getCommand(shellPrompt string) {
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
-	code := resp.StatusCode
 
 	defer resp.Body.Close()
 
@@ -485,28 +484,38 @@ func getCommand(shellPrompt string) {
 
 	// Variables
 	fullLine := ""
-	// Handling each json
+	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
-		var jsonObj map[string]interface{}
+		var mainText string
 		line := scanner.Text()
-		err := json.Unmarshal([]byte(line), &jsonObj)
-		if err != nil {
-			bold.Println("\rError. Your request has been blocked by the server.")
-			fmt.Println("Status Code:", code)
-			os.Exit(0)
+		var obj = "{}"
+		if len(line) > 1 {
+			obj = strings.Split(line, "data: ")[1]
+		}
+		type Data struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
 		}
 
-		if jsonObj["text"] == nil {
-			msg := jsonObj["message"]
-			fmt.Printf("Error: %s\n", msg)
-			os.Exit(0)
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
 		}
 
-		mainText := fmt.Sprintf("%s", jsonObj["delta"])
-		fullLine += mainText
-
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
+			fullLine += mainText
+		}
 		bold.Print(mainText)
-
 	}
 	lineCount := strings.Count(fullLine, "\n") + 1
 	if lineCount == 1 {
@@ -603,21 +612,18 @@ func getWholeText(prompt string, chatId string, configDir string) {
 	}
 	safeInput, _ := json.Marshal(prompt)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"options":{"parentMessageId":"%v"}}`, string(safeInput), chatId))
+	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":%v}],
+	"stream":true}`, string(safeInput)))
+	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
 
-	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
 	// Setting all the required headers
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Origin", "https://chatbot.theb.ai")
-	req.Header.Set("Referer", "https://chatbot.theb.ai/")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
@@ -625,48 +631,46 @@ func getWholeText(prompt string, chatId string, configDir string) {
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
-	code := resp.StatusCode
 
 	defer resp.Body.Close()
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
-	gotId := false
-	id := ""
 	fullText := ""
-	// Handling each json
+	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
-		var jsonObj map[string]interface{}
+		var mainText string
 		line := scanner.Text()
-		err := json.Unmarshal([]byte(line), &jsonObj)
-		if err != nil {
-			bold.Println("\rError. Your request has been blocked by the server.")
-			fmt.Println("Status Code:", code)
-			os.Exit(0)
+		var obj = "{}"
+		if line != "" {
+			obj = strings.Split(line, "data: ")[1]
+		}
+		type Data struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
 		}
 
-		if jsonObj["text"] == nil {
-			msg := jsonObj["message"]
-			fmt.Printf("Error: %s\n", msg)
-			os.Exit(0)
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
 		}
 
-		if !gotId {
-			if jsonObj == nil {
-				fmt.Println("Some error has occurred")
-				os.Exit(0)
-			}
-
-			id = fmt.Sprintf("%s", jsonObj["id"])
-			gotId = true
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
+			fullText += mainText
 		}
-
-		mainText := fmt.Sprintf("%s", jsonObj["delta"])
-		fullText += mainText
 	}
 	fmt.Println(fullText)
-	createConfig(configDir, id)
 }
 
 func getSilentText(prompt string, chatId string, configDir string) {
@@ -677,21 +681,17 @@ func getSilentText(prompt string, chatId string, configDir string) {
 	}
 	safeInput, _ := json.Marshal(prompt)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"options":{"parentMessageId":"%v"}}`, string(safeInput), chatId))
-
-	req, err := http.NewRequest("POST", "https://chatbot.theb.ai/api/chat-process", data)
+	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":%v}],
+	"stream":true}`, string(safeInput)))
+	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
 	// Setting all the required headers
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/110.0")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Origin", "https://chatbot.theb.ai")
-	req.Header.Set("Referer", "https://chatbot.theb.ai/")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
@@ -699,45 +699,42 @@ func getSilentText(prompt string, chatId string, configDir string) {
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
-	code := resp.StatusCode
 
 	defer resp.Body.Close()
 
 	scanner := bufio.NewScanner(resp.Body)
 
-	// Variables
-	gotId := false
-	id := ""
-	// Handling each json
+	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
-		var jsonObj map[string]interface{}
+		var mainText string
 		line := scanner.Text()
-		err := json.Unmarshal([]byte(line), &jsonObj)
-		if err != nil {
-			bold.Println("\rError. Your request has been blocked by the server.")
-			fmt.Println("Status Code:", code)
-			os.Exit(0)
+		var obj = "{}"
+		if line != "" {
+			obj = strings.Split(line, "data: ")[1]
+		}
+		type Data struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
 		}
 
-		if jsonObj["text"] == nil {
-			msg := jsonObj["message"]
-			fmt.Printf("Error: %s\n", msg)
-			os.Exit(0)
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
 		}
 
-		if !gotId {
-			if jsonObj == nil {
-				fmt.Println("Some error has occurred")
-				os.Exit(0)
-			}
-
-			id = fmt.Sprintf("%s", jsonObj["id"])
-			gotId = true
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
+			fmt.Print(mainText)
 		}
-
-		mainText := fmt.Sprintf("%s", jsonObj["delta"])
-		fmt.Print(mainText)
 	}
 
-	createConfig(configDir, id)
 }

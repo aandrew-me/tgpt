@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.7.0"
+const localVersion = "1.7.1"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -226,8 +226,12 @@ func main() {
 		}
 
 	} else {
-		color.Red("You have to write some text")
-		color.Blue(`Example: tgpt "Explain quantum computing in simple terms"`)
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		input := scanner.Text()
+		go loading(&stopSpin)
+		formattedInput := strings.TrimSpace(input)
+		getData(formattedInput, chatId, configDir+"/tgpt", false)
 	}
 }
 
