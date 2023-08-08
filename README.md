@@ -7,7 +7,9 @@
 [![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)](https://aur.archlinux.org/packages/tgpt-bin)
 [![Chocolatey Version](https://img.shields.io/chocolatey/v/tgpt)](https://community.chocolatey.org/packages/tgpt)
 
-tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. It communicates with the backend of [Bai chatbot](https://chatbot.theb.ai) and is written in Go.
+tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. 
+
+API used: https://free.churchless.tech/v1/chat/completions
 
 ## Usage 💬
 
@@ -97,5 +99,3 @@ go install github.com/aandrew-me/tgpt@latest
 ### From Release
 
 You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
-
-If you find this project useful, please give it a star! ⭐
