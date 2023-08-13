@@ -116,7 +116,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		var mainText string
 		line := scanner.Text()
 		var obj = "{}"
-		if line != "" {
+		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
 		}
 		type Data struct {
@@ -382,7 +382,7 @@ func codeGenerate(input string) {
 		var mainText string
 		line := scanner.Text()
 		var obj = "{}"
-		if line != "" {
+		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
 		}
 		type Data struct {
@@ -651,7 +651,7 @@ func getWholeText(prompt string, chatId string, configDir string) {
 		var mainText string
 		line := scanner.Text()
 		var obj = "{}"
-		if line != "" {
+		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
 		}
 		type Data struct {
@@ -717,7 +717,7 @@ func getSilentText(prompt string, chatId string, configDir string) {
 		var mainText string
 		line := scanner.Text()
 		var obj = "{}"
-		if line != "" {
+		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
 		}
 		type Data struct {
