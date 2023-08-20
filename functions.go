@@ -65,7 +65,12 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
-	// code := resp.StatusCode
+	code := resp.StatusCode
+
+	if (code >= 400){
+		bold.Println("\rSome error has occurred. Please try again")
+		os.Exit(0)
+	}
 
 	defer resp.Body.Close()
 
@@ -117,7 +122,11 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		line := scanner.Text()
 		var obj = "{}"
 		if len(line) > 1 {
-			obj = strings.Split(line, "data: ")[1]
+			splitLine := strings.Split(line, "data: ")
+			if len(splitLine) > 1 {
+				obj = splitLine[1]
+			}
+
 		}
 		type Data struct {
 			Delta struct {
@@ -367,6 +376,13 @@ func codeGenerate(input string) {
 
 	defer resp.Body.Close()
 
+	code := resp.StatusCode
+
+	if (code >= 400){
+		bold.Println("\rSome error has occurred. Please try again")
+		os.Exit(0)
+	}
+
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Handling each part
@@ -478,6 +494,14 @@ func getCommand(shellPrompt string) {
 	defer resp.Body.Close()
 
 	stopSpin = true
+
+	code := resp.StatusCode
+
+	if (code >= 400){
+		bold.Println("\rSome error has occurred. Please try again")
+		os.Exit(0)
+	}
+
 	fmt.Print("\r          \r")
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -634,6 +658,13 @@ func getWholeText(prompt string, chatId string, configDir string) {
 
 	defer resp.Body.Close()
 
+	code := resp.StatusCode
+
+	if (code >= 400){
+		bold.Println("\rSome error has occurred. Please try again")
+		os.Exit(0)
+	}
+
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
@@ -701,6 +732,13 @@ func getSilentText(prompt string, chatId string, configDir string) {
 	}
 
 	defer resp.Body.Close()
+
+	code := resp.StatusCode
+
+	if (code >= 400){
+		bold.Println("\rSome error has occurred. Please try again")
+		os.Exit(0)
+	}
 
 	scanner := bufio.NewScanner(resp.Body)
 
