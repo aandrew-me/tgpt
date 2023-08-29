@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,7 +16,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.7.2"
+const localVersion = "1.7.3"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -28,9 +29,12 @@ var serverID = ""
 var configDir = ""
 var userInput = ""
 var executablePath = ""
+var AUTH_KEY []byte
 
 func main() {
 	execPath, err := os.Executable()
+	AUTH_KEY, _ = base64.StdEncoding.DecodeString("QmVhcmVyIHNrLWI0N3cxTTFJMGRxNGFzcEdncjZhVDNCbGJrRkppcDFMNGN6UklzMFQyaklEUXBNdA==")
+
 	if err == nil {
 		executablePath = execPath
 	}

@@ -47,7 +47,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":%v}],
 	"stream":true}`, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -55,6 +55,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", string(AUTH_KEY))
 
 	// Receiving response
 	resp, err := client.Do(req)
@@ -67,7 +68,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	}
 	code := resp.StatusCode
 
-	if (code >= 400){
+	if code >= 400 {
 		bold.Println("\rSome error has occurred. Please try again")
 		os.Exit(0)
 	}
@@ -357,7 +358,7 @@ func codeGenerate(input string) {
 	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"%v"}],
 	"stream":true}`, codePrompt))
 
-	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -365,6 +366,7 @@ func codeGenerate(input string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", string(AUTH_KEY))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -378,7 +380,7 @@ func codeGenerate(input string) {
 
 	code := resp.StatusCode
 
-	if (code >= 400){
+	if code >= 400 {
 		bold.Println("\rSome error has occurred. Please try again")
 		os.Exit(0)
 	}
@@ -474,7 +476,7 @@ func getCommand(shellPrompt string) {
 	}
 	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"%v"}],
 	"stream":true}`, shellPrompt))
-	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", data)
 
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
@@ -483,6 +485,8 @@ func getCommand(shellPrompt string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", string(AUTH_KEY))
+	
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
@@ -497,7 +501,7 @@ func getCommand(shellPrompt string) {
 
 	code := resp.StatusCode
 
-	if (code >= 400){
+	if code >= 400 {
 		bold.Println("\rSome error has occurred. Please try again")
 		os.Exit(0)
 	}
@@ -638,7 +642,7 @@ func getWholeText(prompt string, chatId string, configDir string) {
 
 	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":%v}],
 	"stream":true}`, string(safeInput)))
-	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", data)
 
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
@@ -647,6 +651,7 @@ func getWholeText(prompt string, chatId string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", string(AUTH_KEY))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -660,7 +665,7 @@ func getWholeText(prompt string, chatId string, configDir string) {
 
 	code := resp.StatusCode
 
-	if (code >= 400){
+	if code >= 400 {
 		bold.Println("\rSome error has occurred. Please try again")
 		os.Exit(0)
 	}
@@ -714,7 +719,7 @@ func getSilentText(prompt string, chatId string, configDir string) {
 
 	var data = strings.NewReader(fmt.Sprintf(`{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":%v}],
 	"stream":true}`, string(safeInput)))
-	req, err := http.NewRequest("POST", "https://free.churchless.tech/v1/chat/completions", data)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -722,6 +727,7 @@ func getSilentText(prompt string, chatId string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", string(AUTH_KEY))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -735,7 +741,7 @@ func getSilentText(prompt string, chatId string, configDir string) {
 
 	code := resp.StatusCode
 
-	if (code >= 400){
+	if code >= 400 {
 		bold.Println("\rSome error has occurred. Please try again")
 		os.Exit(0)
 	}
