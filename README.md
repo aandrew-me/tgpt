@@ -9,8 +9,6 @@
 
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. 
 
-API used: https://free.churchless.tech/v1/chat/completions
-
 ## Usage 💬
 
 ```bash
