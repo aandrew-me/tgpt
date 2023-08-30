@@ -16,7 +16,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.7.3"
+const localVersion = "1.7.4"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -33,7 +33,7 @@ var AUTH_KEY []byte
 
 func main() {
 	execPath, err := os.Executable()
-	AUTH_KEY, _ = base64.StdEncoding.DecodeString("QmVhcmVyIHNrLWI0N3cxTTFJMGRxNGFzcEdncjZhVDNCbGJrRkppcDFMNGN6UklzMFQyaklEUXBNdA==")
+	AUTH_KEY, _ = base64.StdEncoding.DecodeString("QmVhcmVyIHNrLUJEMmoxMlYxSnRrRFNPdkJCRkl6VDNCbGJrRkpGQ090SThjbUR1dE5KcmIxVUJBZw==")
 
 	if err == nil {
 		executablePath = execPath
