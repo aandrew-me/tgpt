@@ -103,7 +103,6 @@ Support:
 - Socks5 Auth [ socks5://user:pass@ip:port ]
 
 For using with proxy you can put ur proxy in proxy.conf
-
 and the proxy.conf should like this
 
 ```bash
