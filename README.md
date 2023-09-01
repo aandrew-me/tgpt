@@ -97,10 +97,10 @@ go install github.com/aandrew-me/tgpt@latest
 ### Proxy
 
 Support:
-- Http Proxy [ http://ip:port ]
-- Http Auth [ http://user:pass@ip:port ]
-- Socks5 Proxy [ socks5://ip:port ]
-- Socks5 Auth [ socks5://user:pass@ip:port ]
+- Http Proxy [ `http://ip:port` ]
+- Http Auth [ `http://user:pass@ip:port` ]
+- Socks5 Proxy [ `socks5://ip:port ]`
+- Socks5 Auth [ `socks5://user:pass@ip:port` ]
 
 If you want to use a proxy, create `config.txt` file in the same directory where the program is located and write your proxy configuration there.
 
