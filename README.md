@@ -94,6 +94,21 @@ go install github.com/aandrew-me/tgpt@latest
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned; Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
     ``` -->
 
+### Use with Proxy
+
+Support:
+- Http Proxy [ http://ip:port ]
+- Http Auth [ http://user:pass@ip:port ]
+- Socks5 Proxy [ socks5://ip:port ]
+- Socks5 Auth [ socks5://user:pass@ip:port ]
+
+For using with proxy you can put ur proxy in proxy.conf
+and the proxy.conf should like this
+
+```bash
+http://127.0.0.1:8080
+```
+
 ### From Release
 
 You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
