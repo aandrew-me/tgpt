@@ -94,7 +94,7 @@ go install github.com/aandrew-me/tgpt@latest
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned; Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
     ``` -->
 
-### Use with Proxy
+### Proxy
 
 Support:
 - Http Proxy [ http://ip:port ]
@@ -102,8 +102,9 @@ Support:
 - Socks5 Proxy [ socks5://ip:port ]
 - Socks5 Auth [ socks5://user:pass@ip:port ]
 
-For using with proxy you can put ur proxy in proxy.conf
-and the proxy.conf should like this
+If you want to use a proxy, create `config.txt` file in the same directory where the program is located and write your proxy configuration there.
+
+Example:
 
 ```bash
 http://127.0.0.1:8080

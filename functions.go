@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-	"io/ioutil"
 
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/olekukonko/ts"
@@ -33,11 +32,11 @@ func newClient() (tls_client.HttpClient, error) {
 		// tls_client.WithInsecureSkipVerify(),
 	}
 
-	_, err := os.Stat("proxy.conf")
+	_, err := os.Stat("proxy.txt")
 	if err == nil {
-		proxyConfig, readErr := ioutil.ReadFile("proxy.conf")
+		proxyConfig, readErr := os.ReadFile("proxy.txt")
 		if readErr != nil {
-			fmt.Println("Error reading proxy.conf:", readErr)
+			fmt.Println("Error reading file proxy.txt:", readErr)
 			return nil, readErr
 		}
 
@@ -49,8 +48,6 @@ func newClient() (tls_client.HttpClient, error) {
 			}
 		}
 	}
-
-	fmt.Println(options)
 
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
@@ -506,7 +503,7 @@ func getCommand(shellPrompt string) {
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", string(AUTH_KEY))
-	
+
 	resp, err := client.Do(req)
 	if err != nil {
 		stopSpin = true
