@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"io/ioutil"
 
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/olekukonko/ts"
@@ -29,9 +30,28 @@ func newClient() (tls_client.HttpClient, error) {
 		tls_client.WithClientProfile(tls_client.Firefox_110),
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(jar),
-		// tls_client.WithProxyUrl("http://127.0.0.1:8080"),
 		// tls_client.WithInsecureSkipVerify(),
 	}
+
+	_, err := os.Stat("proxy.conf")
+	if err == nil {
+		proxyConfig, readErr := ioutil.ReadFile("proxy.conf")
+		if readErr != nil {
+			fmt.Println("Error reading proxy.conf:", readErr)
+			return nil, readErr
+		}
+
+		proxyAddress := strings.TrimSpace(string(proxyConfig))
+		if proxyAddress != "" {
+			if strings.HasPrefix(proxyAddress, "http://") || strings.HasPrefix(proxyAddress, "socks5://") {
+				proxyOption := tls_client.WithProxyUrl(proxyAddress)
+				options = append(options, proxyOption)
+			}
+		}
+	}
+
+	fmt.Println(options)
+
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
 
