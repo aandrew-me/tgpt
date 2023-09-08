@@ -16,7 +16,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.7.7"
+const localVersion = "1.8.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -29,12 +29,10 @@ var serverID = ""
 var configDir = ""
 var userInput = ""
 var executablePath = ""
-var AUTH_KEY []byte
+var AUTH_KEY string
 
 func main() {
 	execPath, err := os.Executable()
-	AUTH_KEY, _ = base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXRJN1FKcXhMb1k0bWJwZHcycHF0VDNCbGJrRko3NjdIb3JLMkZWVlBhVmdNNUcwRg==")
-
 	if err == nil {
 		executablePath = execPath
 	}
@@ -44,6 +42,8 @@ func main() {
 		<-terminate
 		os.Exit(0)
 	}()
+	auth_key, _ := base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXVCckYxSHNpSHp5U3l4MlVtaFZQVDNCbGJrRkp5VUw5aUxhSmtxRXhEU0tOWDNBag==")
+	AUTH_KEY = string(auth_key)
 
 	hasConfig := true
 	configDir, err = os.UserConfigDir()
@@ -55,11 +55,14 @@ func main() {
 	if err != nil {
 		hasConfig = false
 	}
-	chatId := ""
 	if hasConfig {
 		configArr := strings.Split(string(configTxtByte), ":")
 		if len(configArr) == 2 {
-			chatId = configArr[1]
+			key := configArr[1]
+			auth_key, _ = base64.StdEncoding.DecodeString(key)
+			if err == nil {
+				AUTH_KEY = string(auth_key)
+			}
 		}
 	}
 	args := os.Args
@@ -80,7 +83,7 @@ func main() {
 					fmt.Println(`Example: tgpt -w "What is encryption?"`)
 					os.Exit(0)
 				}
-				getWholeText(trimmedPrompt, chatId, configDir+"/tgpt")
+				getWholeText(trimmedPrompt, configDir+"/tgpt")
 			} else {
 				fmt.Println("You need to provide some text")
 				fmt.Println(`Example: tgpt -w "What is encryption?"`)
@@ -95,7 +98,7 @@ func main() {
 					fmt.Println(`Example: tgpt -q "What is encryption?"`)
 					os.Exit(0)
 				}
-				getSilentText(trimmedPrompt, chatId, configDir+"/tgpt")
+				getSilentText(trimmedPrompt, configDir+"/tgpt")
 			} else {
 				fmt.Println("You need to provide some text")
 				fmt.Println(`Example: tgpt -q "What is encryption?"`)
@@ -142,7 +145,6 @@ func main() {
 
 			reader := bufio.NewReader(os.Stdin)
 			bold.Print("Interactive mode started. Press Ctrl + C or type exit to quit.\n\n")
-			serverID = chatId
 			for {
 				boldBlue.Println("╭─ You")
 				boldBlue.Print("╰─> ")
@@ -160,7 +162,7 @@ func main() {
 							bold.Println("Exiting...")
 							return
 						}
-						serverID = getData(input, serverID, configDir+"/tgpt", true)
+						getData(input, configDir+"/tgpt", true)
 					}
 
 				}
@@ -171,8 +173,6 @@ func main() {
 			/////////////////////
 			// Multiline interactive
 			/////////////////////
-			serverID = chatId
-
 			fmt.Print("\nPress Tab to submit and Ctrl + C to exit.\n")
 
 			for programLoop {
@@ -185,7 +185,7 @@ func main() {
 					os.Exit(0)
 				}
 				if len(userInput) > 0 {
-					serverID = getData(userInput, serverID, configDir+"/tgpt", true)
+					getData(userInput, configDir+"/tgpt", true)
 				}
 
 			}
@@ -226,7 +226,7 @@ func main() {
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.TrimSpace(input)
-			getData(formattedInput, chatId, configDir+"/tgpt", false)
+			getData(formattedInput, configDir+"/tgpt", false)
 		}
 
 	} else {
@@ -235,7 +235,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(formattedInput, chatId, configDir+"/tgpt", false)
+		getData(formattedInput, configDir+"/tgpt", false)
 	}
 }
 

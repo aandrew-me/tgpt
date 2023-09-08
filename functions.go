@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -52,7 +53,7 @@ func newClient() (tls_client.HttpClient, error) {
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
 
-func getData(input string, chatId string, configDir string, isInteractive bool) (serverChatId string) {
+func getData(input string, configDir string, isInteractive bool) {
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -72,7 +73,7 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", string(AUTH_KEY))
+	req.Header.Set("Authorization", AUTH_KEY)
 
 	// Receiving response
 	resp, err := client.Do(req)
@@ -86,7 +87,22 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred. Please try again")
+		stopSpin = true
+		fmt.Print("\r")
+
+		bold.Println("\rSome error has occurred.")
+
+		fmt.Println("Trying to get new app key")
+
+		app_key, _ := getKey()
+		if app_key == AUTH_KEY {
+			fmt.Println("No new app key found. Try again later.")
+		} else {
+			AUTH_KEY = app_key
+			fmt.Println("App key updated. Try again.")
+
+			createConfig(configDir)
+		}
 		os.Exit(0)
 	}
 
@@ -115,8 +131,6 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		boldViolet.Println("╭─ Bot")
 	}
 
-	// gotId := false
-	id := ""
 	lineLength := 0
 	size, _ := ts.GetSize()
 	termWidth := size.Col()
@@ -276,21 +290,17 @@ func getData(input string, chatId string, configDir string, isInteractive bool) 
 		os.Exit(0)
 	}
 	fmt.Print("\n\n")
-	return id
 }
 
-// func createConfig(dir string, chatId string) {
-// 	if strings.HasPrefix(chatId, "chatcmpl-") {
-// 		err := os.MkdirAll(dir, 0755)
-// 		configTxt := "id:" + chatId
-// 		if err != nil {
-// 			fmt.Println(err)
-// 		} else {
-// 			os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
-// 		}
-// 	}
-
-// }
+func createConfig(dir string) {
+	err := os.MkdirAll(dir, 0755)
+	configTxt := AUTH_KEY
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
+	}
+}
 
 func loading(stop *bool) {
 	spinChars := []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "}
@@ -383,7 +393,7 @@ func codeGenerate(input string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", string(AUTH_KEY))
+	req.Header.Set("Authorization", AUTH_KEY)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -502,7 +512,7 @@ func getCommand(shellPrompt string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", string(AUTH_KEY))
+	req.Header.Set("Authorization", AUTH_KEY)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -649,7 +659,7 @@ func getVersionHistory() {
 	}
 }
 
-func getWholeText(prompt string, chatId string, configDir string) {
+func getWholeText(prompt string, configDir string) {
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -668,7 +678,7 @@ func getWholeText(prompt string, chatId string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", string(AUTH_KEY))
+	req.Header.Set("Authorization", AUTH_KEY)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -726,7 +736,7 @@ func getWholeText(prompt string, chatId string, configDir string) {
 	fmt.Println(fullText)
 }
 
-func getSilentText(prompt string, chatId string, configDir string) {
+func getSilentText(prompt string, configDir string) {
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -744,7 +754,7 @@ func getSilentText(prompt string, chatId string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", string(AUTH_KEY))
+	req.Header.Set("Authorization", AUTH_KEY)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -797,5 +807,38 @@ func getSilentText(prompt string, chatId string, configDir string) {
 			fmt.Print(mainText)
 		}
 	}
+
+}
+
+func getKey() (key string, errorMsg string) {
+	req, err := http.NewRequest("GET", "https://raw.githubusercontent.com/aandrew-me/tgpt/main/imp.txt", nil)
+
+	if err != nil {
+		return "", err.Error()
+	}
+
+	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger())
+
+	res, err := client.Do(req)
+
+	if err != nil {
+		return "", "Failed to get key. Error: " + err.Error()
+	}
+
+	defer res.Body.Close()
+
+	resBody, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		return "", "Failed to get key. Error: " + err.Error()
+	}
+
+	decodedKey, err := base64.StdEncoding.DecodeString(string(resBody))
+
+	if err != nil {
+		return "", "Failed to decode key. Error: " + err.Error()
+	}
+
+	return string(decodedKey), ""
 
 }
