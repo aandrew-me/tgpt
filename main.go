@@ -42,7 +42,7 @@ func main() {
 		<-terminate
 		os.Exit(0)
 	}()
-	auth_key, _ := base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXVCckYxSHNpSHp5U3l4MlVtaFZQVDNCbGJrRkp5VUw5aUxhSmtxRXhEU0tOWDNBag==")
+	auth_key, _ := base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXRJN1FKcXhMb1k0bWJwZHcycHF0VDNCbGJrRko3NjdIb3JLMkZWVlBhVmdNNUcwRg==")
 	AUTH_KEY = string(auth_key)
 
 	hasConfig := true
@@ -57,7 +57,7 @@ func main() {
 	}
 	if hasConfig {
 		configArr := strings.Split(string(configTxtByte), ":")
-		if len(configArr) == 2 {
+		if (len(configArr) == 2 && configArr[0] == "KEY") {
 			key := configArr[1]
 			auth_key, _ = base64.StdEncoding.DecodeString(key)
 			if err == nil {

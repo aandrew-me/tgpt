@@ -91,18 +91,7 @@ func getData(input string, configDir string, isInteractive bool) {
 		fmt.Print("\r")
 
 		bold.Println("\rSome error has occurred.")
-
-		fmt.Println("Trying to get new app key")
-
-		app_key, _ := getKey()
-		if app_key == AUTH_KEY {
-			fmt.Println("No new app key found. Try again later.")
-		} else {
-			AUTH_KEY = app_key
-			fmt.Println("App key updated. Try again.")
-
-			createConfig(configDir)
-		}
+		newAppKey()
 		os.Exit(0)
 	}
 
@@ -293,8 +282,9 @@ func getData(input string, configDir string, isInteractive bool) {
 }
 
 func createConfig(dir string) {
+	dir = dir + "/tgpt"
 	err := os.MkdirAll(dir, 0755)
-	configTxt := AUTH_KEY
+	configTxt := "KEY:" + base64.StdEncoding.EncodeToString([]byte(AUTH_KEY))
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -408,7 +398,8 @@ func codeGenerate(input string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred. Please try again")
+		bold.Println("\rSome error has occurred.")
+		newAppKey()
 		os.Exit(0)
 	}
 
@@ -529,7 +520,8 @@ func getCommand(shellPrompt string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred. Please try again")
+		bold.Println("\rSome error has occurred.")
+		newAppKey()
 		os.Exit(0)
 	}
 
@@ -693,7 +685,8 @@ func getWholeText(prompt string, configDir string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred. Please try again")
+		bold.Println("\rSome error has occurred.")
+		newAppKey()
 		os.Exit(0)
 	}
 
@@ -769,7 +762,8 @@ func getSilentText(prompt string, configDir string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred. Please try again")
+		bold.Println("\rSome error has occurred.")
+		newAppKey()
 		os.Exit(0)
 	}
 
@@ -841,4 +835,18 @@ func getKey() (key string, errorMsg string) {
 
 	return string(decodedKey), ""
 
+}
+
+func newAppKey() {
+	fmt.Println("Trying to get new app key")
+
+	app_key, _ := getKey()
+	if app_key == AUTH_KEY {
+		fmt.Println("No new app key found. Try again later.")
+	} else {
+		AUTH_KEY = app_key
+		fmt.Println("App key updated. Try again.")
+
+		createConfig(configDir)
+	}
 }
