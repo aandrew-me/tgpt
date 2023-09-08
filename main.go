@@ -33,7 +33,7 @@ var AUTH_KEY []byte
 
 func main() {
 	execPath, err := os.Executable()
-	AUTH_KEY, _ = base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXVCckYxSHNpSHp5U3l4MlVtaFZQVDNCbGJrRkp5VUw5aUxhSmtxRXhEU0tOWDNBag==")
+	AUTH_KEY, _ = base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXRJN1FKcXhMb1k0bWJwZHcycHF0VDNCbGJrRko3NjdIb3JLMkZWVlBhVmdNNUcwRg==")
 
 	if err == nil {
 		executablePath = execPath
