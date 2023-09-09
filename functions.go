@@ -54,6 +54,9 @@ func newClient() (tls_client.HttpClient, error) {
 }
 
 func getData(input string, configDir string, isInteractive bool) {
+
+	checkInputLength(input)
+
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -361,6 +364,8 @@ func update() {
 }
 
 func codeGenerate(input string) {
+	checkInputLength(input)
+
 	codePrompt := fmt.Sprintf(`Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:`, input)
 	client, err := newClient()
 	if err != nil {
@@ -477,6 +482,8 @@ func shellCommand(input string) {
 
 // Get a command in response
 func getCommand(shellPrompt string) {
+	checkInputLength(shellPrompt)
+
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -637,6 +644,8 @@ func getVersionHistory() {
 }
 
 func getWholeText(prompt string, configDir string) {
+	checkInputLength(prompt)
+
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -710,6 +719,8 @@ func getWholeText(prompt string, configDir string) {
 }
 
 func getSilentText(prompt string, configDir string) {
+	checkInputLength(prompt)
+
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -823,5 +834,12 @@ func newAppKey() {
 		fmt.Println("App key updated. Try again.")
 
 		createConfig(configDir)
+	}
+}
+
+func checkInputLength(input string){
+	if len(input) > 4000 {
+		fmt.Println("Input exceeds the input limit of 4000 characters")
+		os.Exit(0)
 	}
 }
