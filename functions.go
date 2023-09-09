@@ -149,11 +149,6 @@ func getData(input string, configDir string, isInteractive bool) {
 			}
 
 		}
-		type Data struct {
-			Delta struct {
-				Content string `json:"content"`
-			} `json:"delta"`
-		}
 
 		var d Response
 		if err := json.Unmarshal([]byte(obj), &d); err != nil {
@@ -421,11 +416,6 @@ func codeGenerate(input string) {
 		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
 		}
-		type Data struct {
-			Delta struct {
-				Content string `json:"content"`
-			} `json:"delta"`
-		}
 
 		var d Response
 		if err := json.Unmarshal([]byte(obj), &d); err != nil {
@@ -546,11 +536,6 @@ func getCommand(shellPrompt string) {
 		var obj = "{}"
 		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
-		}
-		type Data struct {
-			Delta struct {
-				Content string `json:"content"`
-			} `json:"delta"`
 		}
 
 		var d Response
@@ -710,11 +695,6 @@ func getWholeText(prompt string, configDir string) {
 		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
 		}
-		type Data struct {
-			Delta struct {
-				Content string `json:"content"`
-			} `json:"delta"`
-		}
 
 		var d Response
 		if err := json.Unmarshal([]byte(obj), &d); err != nil {
@@ -784,11 +764,6 @@ func getSilentText(prompt string, configDir string) {
 		var obj = "{}"
 		if len(line) > 1 {
 			obj = strings.Split(line, "data: ")[1]
-		}
-		type Data struct {
-			Delta struct {
-				Content string `json:"content"`
-			} `json:"delta"`
 		}
 
 		var d Response
