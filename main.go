@@ -25,7 +25,6 @@ var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
 
 var programLoop = true
-var serverID = ""
 var configDir = ""
 var userInput = ""
 var executablePath = ""
@@ -42,7 +41,7 @@ func main() {
 		<-terminate
 		os.Exit(0)
 	}()
-	auth_key, _ := base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXRJN1FKcXhMb1k0bWJwZHcycHF0VDNCbGJrRko3NjdIb3JLMkZWVlBhVmdNNUcwRg==")
+	auth_key, _ := base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXI0RWhyRlhsbkh1b0ZjRlRUcVlaVDNCbGJrRkpjSDQ1WWVXVWNXaDZRemdwYmhQVA==")
 	AUTH_KEY = string(auth_key)
 
 	hasConfig := true
@@ -51,13 +50,13 @@ func main() {
 	if err != nil {
 		hasConfig = false
 	}
-	configTxtByte, err := os.ReadFile(configDir + "/tgpt/config.txt")
+	configTxtByte, err := os.ReadFile(configDir + "/tgpt/key.txt")
 	if err != nil {
 		hasConfig = false
 	}
 	if hasConfig {
 		configArr := strings.Split(string(configTxtByte), ":")
-		if (len(configArr) == 2 && configArr[0] == "KEY") {
+		if len(configArr) == 2 && configArr[0] == "KEY" {
 			key := configArr[1]
 			auth_key, _ = base64.StdEncoding.DecodeString(key)
 			if err == nil {
@@ -190,13 +189,6 @@ func main() {
 
 			}
 
-		} else if input == "-f" || input == "--forget" {
-			error := os.Remove(configDir + "/tgpt/config.txt")
-			if error != nil {
-				fmt.Println("There is no history to remove")
-			} else {
-				fmt.Println("Chat history removed")
-			}
 		} else if strings.HasPrefix(input, "-") {
 			boldBlue.Println(`Usage: tgpt [Flag] [Prompt]`)
 
@@ -207,7 +199,7 @@ func main() {
 			fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
 
 			boldBlue.Println("\nOptions:")
-			fmt.Printf("%-50v Forget Chat ID \n", "-f, --forget")
+			fmt.Printf("%-50v Remove key file \n", "-f, --forget")
 			fmt.Printf("%-50v Print version \n", "-v, --version")
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
 			fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")

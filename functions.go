@@ -288,7 +288,7 @@ func createConfig(dir string) {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		os.WriteFile(dir+"/config.txt", []byte(configTxt), 0755)
+		os.WriteFile(dir+"/key.txt", []byte(configTxt), 0755)
 	}
 }
 
