@@ -76,4 +76,36 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   draft: true
                   tag_name: v
-                  name: tgpt
+                  name: tgptname: Create and Publish Snap Package
+
+            - name: Install Snapcraft
+              run: |
+                sudo apt update
+                sudo apt install snapd jq
+                sudo snap install core
+                sudo snap install snapcraft --classic
+
+            - name: Build Snap package
+              run: |
+                snapcraft init
+                echo "name: Terminal GPT" >> snap/snapcraft.yaml
+                echo "version: $(jq ".version" < version.txt')" >> snap/snapcraft.yaml
+                echo "summary: CLI tool for ChatGPT 3.5" >> snap/snapcraft.yaml
+                echo "description: |" >> snap/snapcraft.yaml
+                echo "  gpt is a cross-platform command-line interface (CLI) tool that allows you to" >> snap/snapcraft.yaml
+                echo "  use ChatGPT 3.5 in your Terminal without requiring API keys." >> snap/snapcraft.yaml
+                echo "confinement: strict" >> snap/snapcraft.yaml
+                echo "parts:" >> snap/snapcraft.yaml
+                echo "  tgpt:" >> snap/snapcraft.yaml
+                echo "    plugin: go" >> snap/snapcraft.yaml
+                echo "    source: https://raw.githubusercontent.com/aandrew-me/tgpt/main/install" >> snap/snapcraft.yaml
+                echo "apps:" >> snap/snapcraft.yaml
+                echo "  tgpt:" >> snap/snapcraft.yaml
+                echo "    command: tgpt" >> snap/snapcraft.yaml
+                echo "    plugs: [home, network, network-bind]" >> snap/snapcraft.yaml
+                snapcraft
+
+            - name: Publish to Snap Store
+              run: |
+                snapcraft login --with <your-snapcraft-store-key>
+                snapcraft push --release=edge *.snap
