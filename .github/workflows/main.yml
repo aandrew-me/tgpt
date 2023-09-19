@@ -106,6 +106,7 @@ jobs:
                 snapcraft
 
             - name: Publish to Snap Store
+              env:  
+                SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
               run: |
-                snapcraft login --with <your-snapcraft-store-key>
                 snapcraft push --release=edge *.snap
