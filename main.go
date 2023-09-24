@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"os/signal"
@@ -16,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.8.1"
+const localVersion = "1.9.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -25,10 +24,11 @@ var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
 
 var programLoop = true
+var chatId = ""
+var cookies = ""
 var configDir = ""
 var userInput = ""
 var executablePath = ""
-var AUTH_KEY string
 
 func main() {
 	execPath, err := os.Executable()
@@ -41,29 +41,7 @@ func main() {
 		<-terminate
 		os.Exit(0)
 	}()
-	auth_key, _ := base64.StdEncoding.DecodeString("QmVhcmVyIHNrLXI0RWhyRlhsbkh1b0ZjRlRUcVlaVDNCbGJrRkpjSDQ1WWVXVWNXaDZRemdwYmhQVA==")
-	AUTH_KEY = string(auth_key)
-
-	hasConfig := true
-	configDir, err = os.UserConfigDir()
-
-	if err != nil {
-		hasConfig = false
-	}
-	configTxtByte, err := os.ReadFile(configDir + "/tgpt/key.txt")
-	if err != nil {
-		hasConfig = false
-	}
-	if hasConfig {
-		configArr := strings.Split(string(configTxtByte), ":")
-		if len(configArr) == 2 && configArr[0] == "KEY" {
-			key := configArr[1]
-			auth_key, _ = base64.StdEncoding.DecodeString(key)
-			if err == nil {
-				AUTH_KEY = string(auth_key)
-			}
-		}
-	}
+	
 	args := os.Args
 
 	if len(args) > 1 && len(args[1]) > 1 {
@@ -307,3 +285,16 @@ func (m model) View() string {
 }
 
 //////////////////////////////
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+    return b / 1024 / 1024
+}
