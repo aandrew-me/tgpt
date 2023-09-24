@@ -163,7 +163,7 @@ func getData(input string, configDir string, isInteractive bool) {
 		}
 
 		if count <= 0 {
-			wordLength := len(mainText)
+			wordLength := len([]rune(mainText))
 			if termWidth-lineLength < wordLength {
 				fmt.Print("\n")
 				lineLength = 0
@@ -207,7 +207,7 @@ func getData(input string, configDir string, isInteractive bool) {
 				}
 			}
 		} else {
-			wordLength := len(mainText)
+			wordLength := len([]rune(mainText))
 
 			if termWidth-lineLength < wordLength {
 				fmt.Print("\n")
