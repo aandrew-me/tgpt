@@ -5,7 +5,6 @@
 [![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/aandrew-me/tgpt)](https://github.com/aandrew-me/tgpt)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)](https://github.com/aandrew-me/tgpt/releases/latest)
 [![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)](https://aur.archlinux.org/packages/tgpt-bin)
-[![Chocolatey Version](https://img.shields.io/chocolatey/v/tgpt)](https://community.chocolatey.org/packages/tgpt)
 
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. 
 
@@ -69,12 +68,6 @@ go install github.com/aandrew-me/tgpt@latest
 ```
 
 ### Windows 🪟
-
--   **Chocolatey:** You can install tgpt from [Chocolatey](https://community.chocolatey.org/packages/tgpt) using the following command:
-
-    ```bash
-    choco install tgpt
-    ```
 
 -   **Scoop:** Package installation with [Scoop](https://scoop.sh/) can be done using the following command:
 
