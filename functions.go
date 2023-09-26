@@ -452,7 +452,7 @@ func getCommand(shellPrompt string) {
 		fmt.Println(err)
 		return
 	}
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","temperature":0.8,"top_p":1}`, shellPrompt))
+	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, shellPrompt))
 	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
 
 	if err != nil {
