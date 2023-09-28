@@ -58,7 +58,6 @@ func newClient() (tls_client.HttpClient, error) {
 }
 
 func getData(input string, configDir string, isInteractive bool) {
-
 	checkInputLength(input)
 
 	client, err := newClient()
@@ -69,7 +68,7 @@ func getData(input string, configDir string, isInteractive bool) {
 
 	safeInput, _ := json.Marshal(input)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"options": {"parentMessageId": "%v"},"prompt":%v,"temperature":0.8,"top_p":1}`, chatId, string(safeInput)))
+	data := strings.NewReader(fmt.Sprintf(`{"options": {"parentMessageId": "%v"},"prompt":%v,"temperature":0.8,"top_p":1}`, chatId, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
 	if err != nil {
@@ -88,7 +87,6 @@ func getData(input string, configDir string, isInteractive bool) {
 
 	// Receiving response
 	resp, err := client.Do(req)
-
 	if err != nil {
 		stopSpin = true
 		bold.Println("\rSome error has occurred. Check your internet connection.")
@@ -96,7 +94,9 @@ func getData(input string, configDir string, isInteractive bool) {
 		os.Exit(0)
 	}
 	// code := resp.StatusCode
-	cookies = resp.Cookies()[0].String()
+	if len(resp.Cookies()) > 0 {
+		cookies = resp.Cookies()[0].String()
+	}
 	defer resp.Body.Close()
 
 	stopSpin = true
@@ -247,7 +247,6 @@ func getData(input string, configDir string, isInteractive bool) {
 					if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
 						fmt.Print(word)
 					}
-
 				}
 				if word == "`" {
 					previousWasTick = true
@@ -265,7 +264,6 @@ func getData(input string, configDir string, isInteractive bool) {
 		os.Exit(0)
 	}
 	fmt.Print("\n\n")
-
 }
 
 func loading(stop *bool) {
@@ -282,7 +280,6 @@ func loading(stop *bool) {
 }
 
 func update() {
-
 	if runtime.GOOS == "windows" {
 		fmt.Println("This feature is not supported on Windows. :(")
 	} else {
@@ -302,7 +299,6 @@ func update() {
 		}
 
 		res, err := client.Do(req)
-
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -350,7 +346,7 @@ func codeGenerate(input string) {
 		fmt.Println(err)
 		return
 	}
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v","top_p":1}`, codePrompt))
+	data := strings.NewReader(fmt.Sprintf(`{"prompt":"%v","top_p":1}`, codePrompt))
 
 	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
 	if err != nil {
@@ -399,7 +395,6 @@ func codeGenerate(input string) {
 		fmt.Println("Some error has occurred. Error:", err)
 		os.Exit(0)
 	}
-
 }
 
 func shellCommand(input string) {
@@ -452,9 +447,8 @@ func getCommand(shellPrompt string) {
 		fmt.Println(err)
 		return
 	}
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, shellPrompt))
+	data := strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, shellPrompt))
 	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
-
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -520,14 +514,12 @@ func getCommand(shellPrompt string) {
 				}
 				if shellName == "cmd" {
 					cmd = exec.Command("cmd", "/C", fullLine)
-
 				} else {
 					cmd = exec.Command("powershell", fullLine)
 				}
 
 			} else {
 				cmd = exec.Command(cmdArray[0], cmdArray[1:]...)
-
 			}
 
 			cmd.Stdin = os.Stdin
@@ -544,7 +536,6 @@ func getCommand(shellPrompt string) {
 			os.Exit(0)
 		}
 	}
-
 }
 
 type RESPONSE struct {
@@ -554,7 +545,6 @@ type RESPONSE struct {
 
 func getVersionHistory() {
 	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases", nil)
-
 	if err != nil {
 		fmt.Print("Some error has occurred\n\n")
 		fmt.Println("Error:", err)
@@ -564,7 +554,6 @@ func getVersionHistory() {
 	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger())
 
 	res, err := client.Do(req)
-
 	if err != nil {
 		fmt.Print("Check your internet connection\n\n")
 		fmt.Println("Error:", err)
@@ -572,7 +561,6 @@ func getVersionHistory() {
 	}
 
 	resBody, err := io.ReadAll(res.Body)
-
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
@@ -601,9 +589,8 @@ func getWholeText(prompt string, configDir string) {
 	}
 	safeInput, _ := json.Marshal(prompt)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"temperature":0.8,"top_p":1}`, string(safeInput)))
+	data := strings.NewReader(fmt.Sprintf(`{"prompt":%v,"temperature":0.8,"top_p":1}`, string(safeInput)))
 	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
-
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -662,7 +649,7 @@ func getSilentText(prompt string, configDir string) {
 	}
 	safeInput, _ := json.Marshal(prompt)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"prompt":%v,"temperature":0.8,"top_p":1}`, string(safeInput)))
+	data := strings.NewReader(fmt.Sprintf(`{"prompt":%v,"temperature":0.8,"top_p":1}`, string(safeInput)))
 	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
@@ -706,7 +693,6 @@ func getSilentText(prompt string, configDir string) {
 			fmt.Print(mainText)
 		}
 	}
-
 }
 
 func checkInputLength(input string) {
