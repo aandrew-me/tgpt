@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "1.9.1"
+const localVersion = "1.9.2"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -24,8 +24,6 @@ var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
 
 var programLoop = true
-var chatId = ""
-var cookies = ""
 var configDir = ""
 var userInput = ""
 var executablePath = ""

@@ -68,9 +68,9 @@ func getData(input string, configDir string, isInteractive bool) {
 
 	safeInput, _ := json.Marshal(input)
 
-	data := strings.NewReader(fmt.Sprintf(`{"options": {"parentMessageId": "%v"},"prompt":%v,"temperature":0.8,"top_p":1}`, chatId, string(safeInput)))
+	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}`, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
+	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -78,12 +78,10 @@ func getData(input string, configDir string, isInteractive bool) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Referer", "https://www.aitianhu.com/")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Host", "www.aitianhu.com/")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
-	req.Header.Set("cookie", cookies)
+	// req.Header.Set("cookie", cookies)
 
 	// Receiving response
 	resp, err := client.Do(req)
@@ -94,9 +92,6 @@ func getData(input string, configDir string, isInteractive bool) {
 		os.Exit(0)
 	}
 	// code := resp.StatusCode
-	if len(resp.Cookies()) > 0 {
-		cookies = resp.Cookies()[0].String()
-	}
 	defer resp.Body.Close()
 
 	stopSpin = true
@@ -112,7 +107,6 @@ func getData(input string, configDir string, isInteractive bool) {
 	previousWasTick := false
 	isTick := false
 	isRealCode := false
-	gotId := false
 
 	// Print the Question
 	if !isInteractive {
@@ -136,18 +130,10 @@ func getData(input string, configDir string, isInteractive bool) {
 		var mainText string
 		obj := scanner.Text()
 
-		var d Response
-		if err := json.Unmarshal([]byte(obj), &d); err != nil {
-			continue
-		}
+		var d = obj
 
-		if !gotId {
-			chatId = d.ID
-			gotId = true
-		}
-
-		if len(d.Delta) > 0 {
-			mainText = d.Delta
+		if len(d) > 0 {
+			mainText = d
 		}
 
 		if count <= 0 {
