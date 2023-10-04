@@ -81,7 +81,6 @@ func getData(input string, configDir string, isInteractive bool) {
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
-	// req.Header.Set("cookie", cookies)
 
 	// Receiving response
 	resp, err := client.Do(req)
@@ -128,9 +127,7 @@ func getData(input string, configDir string, isInteractive bool) {
 	// Handling each part
 	for scanner.Scan() {
 		var mainText string
-		obj := scanner.Text()
-
-		var d = obj
+		d := scanner.Text()
 
 		if len(d) > 0 {
 			mainText = d
@@ -332,9 +329,9 @@ func codeGenerate(input string) {
 		fmt.Println(err)
 		return
 	}
-	data := strings.NewReader(fmt.Sprintf(`{"prompt":"%v","top_p":1}`, codePrompt))
+	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":"%v"}],"temperature":1,"password":""}`, codePrompt))
 
-	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
+	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -342,9 +339,8 @@ func codeGenerate(input string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Referer", "https://www.aitianhu.com/")
+
 	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Host", "www.aitianhu.com/")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
 
@@ -365,15 +361,10 @@ func codeGenerate(input string) {
 	// Handling each part
 	for scanner.Scan() {
 		var mainText string
-		obj := scanner.Text()
+		d := scanner.Text()
 
-		var d Response
-		if err := json.Unmarshal([]byte(obj), &d); err != nil {
-			continue
-		}
-
-		if len(d.Delta) > 0 {
-			mainText = d.Delta
+		if len(d) > 0 {
+			mainText = d
 		}
 		bold.Print(mainText)
 	}
@@ -433,8 +424,8 @@ func getCommand(shellPrompt string) {
 		fmt.Println(err)
 		return
 	}
-	data := strings.NewReader(fmt.Sprintf(`{"prompt":"%v"}`, shellPrompt))
-	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
+	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":"%v"}],"temperature":1,"password":""}`, shellPrompt))
+	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -442,9 +433,7 @@ func getCommand(shellPrompt string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Referer", "https://www.aitianhu.com/")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Host", "www.aitianhu.com/")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
 
@@ -471,16 +460,10 @@ func getCommand(shellPrompt string) {
 	// Handling each part
 	for scanner.Scan() {
 		var mainText string
-		obj := scanner.Text()
+		d := scanner.Text()
 
-		var d Response
-		if err := json.Unmarshal([]byte(obj), &d); err != nil {
-			continue
-		}
-
-		if len(d.Delta) > 0 {
-			mainText = d.Delta
-			fullLine += mainText
+		if len(d) > 0 {
+			mainText = d
 		}
 		bold.Print(mainText)
 	}
@@ -575,8 +558,8 @@ func getWholeText(prompt string, configDir string) {
 	}
 	safeInput, _ := json.Marshal(prompt)
 
-	data := strings.NewReader(fmt.Sprintf(`{"prompt":%v,"temperature":0.8,"top_p":1}`, string(safeInput)))
-	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
+	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}`, string(safeInput)))
+	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -584,9 +567,7 @@ func getWholeText(prompt string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Referer", "https://www.aitianhu.com/")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Host", "www.aitianhu.com/")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
 
@@ -610,15 +591,10 @@ func getWholeText(prompt string, configDir string) {
 	// Handling each part
 	for scanner.Scan() {
 		var mainText string
-		obj := scanner.Text()
+		d := scanner.Text()
 
-		var d Response
-		if err := json.Unmarshal([]byte(obj), &d); err != nil {
-			continue
-		}
-
-		if len(d.Delta) > 0 {
-			mainText = d.Delta
+		if len(d) > 0 {
+			mainText = d
 			fullText += mainText
 		}
 	}
@@ -635,8 +611,8 @@ func getSilentText(prompt string, configDir string) {
 	}
 	safeInput, _ := json.Marshal(prompt)
 
-	data := strings.NewReader(fmt.Sprintf(`{"prompt":%v,"temperature":0.8,"top_p":1}`, string(safeInput)))
-	req, err := http.NewRequest("POST", "https://www.aitianhu.com/api/chat-process", data)
+	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}`, string(safeInput)))
+	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -644,9 +620,7 @@ func getSilentText(prompt string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Referer", "https://www.aitianhu.com/")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Host", "www.aitianhu.com/")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
 
@@ -667,15 +641,10 @@ func getSilentText(prompt string, configDir string) {
 	// Handling each part
 	for scanner.Scan() {
 		var mainText string
-		obj := scanner.Text()
+		d := scanner.Text()
 
-		var d Response
-		if err := json.Unmarshal([]byte(obj), &d); err != nil {
-			continue
-		}
-
-		if len(d.Delta) > 0 {
-			mainText = d.Delta
+		if len(d) > 0 {
+			mainText = d
 			fmt.Print(mainText)
 		}
 	}
