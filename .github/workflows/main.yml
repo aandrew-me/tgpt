@@ -37,28 +37,28 @@ jobs:
                   GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-mac-arm64
 
                   echo "SHA256 hashes of the built binaries:"
-                  echo "SHA256 hashes of the built binaries:" > hashes.txt
+                  echo "SHA256 hashes of the built binaries:" > ${{ github.workspace }}-CHANGELOG.txt
 
                   sha256sum tgpt-linux-amd64 
-                  sha256sum tgpt-linux-amd64 >> hashes.txt
+                  sha256sum tgpt-linux-amd64 >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-linux-i386
-                  sha256sum tgpt-linux-i386 >> hashes.txt
+                  sha256sum tgpt-linux-i386 >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-linux-arm64
-                  sha256sum tgpt-linux-arm64 >> hashes.txt
+                  sha256sum tgpt-linux-arm64 >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-amd64.exe
-                  sha256sum tgpt-amd64.exe >> hashes.txt
+                  sha256sum tgpt-amd64.exe >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-i386.exe
-                  sha256sum tgpt-i386.exe >> hashes.txt
+                  sha256sum tgpt-i386.exe >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-mac-amd64
-                  sha256sum tgpt-mac-amd64 >> hashes.txt
+                  sha256sum tgpt-mac-amd64 >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-mac-arm64
-                  sha256sum tgpt-mac-arm64 >> hashes.txt
+                  sha256sum tgpt-mac-arm64 >> ${{ github.workspace }}-CHANGELOG.txt
 
             - name: Upload Artifacts
               id: upload-artifacts
@@ -76,6 +76,7 @@ jobs:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   draft: true
                   tag_name: v
+                  body_path: ${{ github.workspace }}-CHANGELOG.txt
 
             # - name: Install Snapcraft
             #   run: |
