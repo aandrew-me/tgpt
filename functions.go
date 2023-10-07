@@ -22,11 +22,6 @@ type Data struct {
 	Version string `json:"version"`
 }
 
-type Response struct {
-	Delta string `json:"delta"`
-	ID    string `json:"id"`
-}
-
 func newClient() (tls_client.HttpClient, error) {
 	jar := tls_client.NewCookieJar()
 	options := []tls_client.HttpClientOption{
@@ -34,7 +29,7 @@ func newClient() (tls_client.HttpClient, error) {
 		tls_client.WithClientProfile(tls_client.Firefox_110),
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(jar),
-		tls_client.WithInsecureSkipVerify(),
+		// tls_client.WithInsecureSkipVerify(),
 	}
 
 	_, err := os.Stat("proxy.txt")
@@ -58,6 +53,7 @@ func newClient() (tls_client.HttpClient, error) {
 }
 
 func getData(input string, configDir string, isInteractive bool) {
+
 	checkInputLength(input)
 
 	client, err := newClient()
@@ -66,11 +62,12 @@ func getData(input string, configDir string, isInteractive bool) {
 		return
 	}
 
-	safeInput, _ := json.Marshal(input)
+	message := fmt.Sprintf(`{"history":[{"speaker":"human","text":"%v"}]}`, input)
+	safeInput, _ := json.Marshal(message)
 
-	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}`, string(safeInput)))
+	var data = strings.NewReader(fmt.Sprintf(`{"conversation":%v,"temperature":"0.7"}`, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
+	req, err := http.NewRequest("POST", "https://app.vitalentum.io/api/converse-edge", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -78,19 +75,28 @@ func getData(input string, configDir string, isInteractive bool) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
+
 
 	// Receiving response
 	resp, err := client.Do(req)
+
 	if err != nil {
 		stopSpin = true
 		bold.Println("\rSome error has occurred. Check your internet connection.")
 		fmt.Println("\nError:", err)
 		os.Exit(0)
 	}
-	// code := resp.StatusCode
+	code := resp.StatusCode
+
+	if code >= 400 {
+		stopSpin = true
+		fmt.Print("\r")
+
+		bold.Println("\rSome error has occurred.")
+
+		os.Exit(0)
+	}
+
 	defer resp.Body.Close()
 
 	stopSpin = true
@@ -124,13 +130,35 @@ func getData(input string, configDir string, isInteractive bool) {
 		fmt.Println("Error occurred getting terminal width. Error:", err)
 		os.Exit(0)
 	}
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	// Handling each part
+
 	for scanner.Scan() {
 		var mainText string
-		d := scanner.Text()
+		line := scanner.Text()
+		var obj = "{}"
+		if len(line) > 1 {
+			splitLine := strings.Split(line, "data: ")
+			if len(splitLine) > 1 {
+				obj = splitLine[1]
+			}
 
-		if len(d) > 0 {
-			mainText = d
+		}
+
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
+		}
+
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
 		}
 
 		if count <= 0 {
@@ -230,6 +258,7 @@ func getData(input string, configDir string, isInteractive bool) {
 					if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
 						fmt.Print(word)
 					}
+
 				}
 				if word == "`" {
 					previousWasTick = true
@@ -263,6 +292,7 @@ func loading(stop *bool) {
 }
 
 func update() {
+
 	if runtime.GOOS == "windows" {
 		fmt.Println("This feature is not supported on Windows. :(")
 	} else {
@@ -282,6 +312,7 @@ func update() {
 		}
 
 		res, err := client.Do(req)
+
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -329,9 +360,12 @@ func codeGenerate(input string) {
 		fmt.Println(err)
 		return
 	}
-	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":"%v"}],"temperature":1,"password":""}`, codePrompt))
+	message := fmt.Sprintf(`{"history":[{"speaker":"human","text":"%v"}]}`, codePrompt)
+	safeInput, _ := json.Marshal(message)
 
-	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
+	var data = strings.NewReader(fmt.Sprintf(`{"conversation":%v,"temperature":"0.7"}`, string(safeInput)))
+
+	req, err := http.NewRequest("POST", "https://app.vitalentum.io/api/converse-edge", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -340,9 +374,6 @@ func codeGenerate(input string) {
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
 
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -354,17 +385,39 @@ func codeGenerate(input string) {
 
 	defer resp.Body.Close()
 
-	// code := resp.StatusCode
+	code := resp.StatusCode
+
+	if code >= 400 {
+		bold.Println("\rSome error has occurred.")
+		os.Exit(0)
+	}
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
 		var mainText string
-		d := scanner.Text()
+		line := scanner.Text()
+		var obj = "{}"
+		if len(line) > 1 {
+			obj = strings.Split(line, "data: ")[1]
+		}
 
-		if len(d) > 0 {
-			mainText = d
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
+		}
+
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
 		}
 		bold.Print(mainText)
 	}
@@ -372,6 +425,7 @@ func codeGenerate(input string) {
 		fmt.Println("Some error has occurred. Error:", err)
 		os.Exit(0)
 	}
+
 }
 
 func shellCommand(input string) {
@@ -424,8 +478,13 @@ func getCommand(shellPrompt string) {
 		fmt.Println(err)
 		return
 	}
-	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":"%v"}],"temperature":1,"password":""}`, shellPrompt))
-	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
+	message := fmt.Sprintf(`{"history":[{"speaker":"human","text":"%v"}]}`, shellPrompt)
+	safeInput, _ := json.Marshal(message)
+
+	var data = strings.NewReader(fmt.Sprintf(`{"conversation":%v,"temperature":"0.7"}`, string(safeInput)))
+
+	req, err := http.NewRequest("POST", "https://app.vitalentum.io/api/converse-edge", data)
+
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -433,9 +492,7 @@ func getCommand(shellPrompt string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
+
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -449,7 +506,13 @@ func getCommand(shellPrompt string) {
 
 	stopSpin = true
 
-	// code := resp.StatusCode
+	code := resp.StatusCode
+
+	if code >= 400 {
+		bold.Println("\rSome error has occurred.")
+
+		os.Exit(0)
+	}
 
 	fmt.Print("\r          \r")
 
@@ -458,12 +521,30 @@ func getCommand(shellPrompt string) {
 	// Variables
 	fullLine := ""
 	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
 		var mainText string
-		d := scanner.Text()
+		line := scanner.Text()
+		var obj = "{}"
+		if len(line) > 1 {
+			obj = strings.Split(line, "data: ")[1]
+		}
 
-		if len(d) > 0 {
-			mainText = d
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
+		}
+
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
+			fullLine += mainText
 		}
 		bold.Print(mainText)
 	}
@@ -483,12 +564,14 @@ func getCommand(shellPrompt string) {
 				}
 				if shellName == "cmd" {
 					cmd = exec.Command("cmd", "/C", fullLine)
+
 				} else {
 					cmd = exec.Command("powershell", fullLine)
 				}
 
 			} else {
 				cmd = exec.Command(cmdArray[0], cmdArray[1:]...)
+
 			}
 
 			cmd.Stdin = os.Stdin
@@ -505,6 +588,7 @@ func getCommand(shellPrompt string) {
 			os.Exit(0)
 		}
 	}
+
 }
 
 type RESPONSE struct {
@@ -514,6 +598,7 @@ type RESPONSE struct {
 
 func getVersionHistory() {
 	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases", nil)
+
 	if err != nil {
 		fmt.Print("Some error has occurred\n\n")
 		fmt.Println("Error:", err)
@@ -523,6 +608,7 @@ func getVersionHistory() {
 	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger())
 
 	res, err := client.Do(req)
+
 	if err != nil {
 		fmt.Print("Check your internet connection\n\n")
 		fmt.Println("Error:", err)
@@ -530,6 +616,7 @@ func getVersionHistory() {
 	}
 
 	resBody, err := io.ReadAll(res.Body)
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
@@ -548,18 +635,20 @@ func getVersionHistory() {
 	}
 }
 
-func getWholeText(prompt string, configDir string) {
-	checkInputLength(prompt)
+func getWholeText(input string, configDir string) {
+	checkInputLength(input)
 
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	safeInput, _ := json.Marshal(prompt)
+	message := fmt.Sprintf(`{"history":[{"speaker":"human","text":"%v"}]}`, input)
+	safeInput, _ := json.Marshal(message)
 
-	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}`, string(safeInput)))
-	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
+	var data = strings.NewReader(fmt.Sprintf(`{"conversation":%v,"temperature":"0.7"}`, string(safeInput)))
+	req, err := http.NewRequest("POST", "https://app.vitalentum.io/api/converse-edge", data)
+
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -567,9 +656,7 @@ func getWholeText(prompt string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
+
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -581,38 +668,62 @@ func getWholeText(prompt string, configDir string) {
 
 	defer resp.Body.Close()
 
-	// code := resp.StatusCode
+	code := resp.StatusCode
+
+	if code >= 400 {
+		bold.Println("\rSome error has occurred.")
+
+		os.Exit(0)
+	}
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
 	fullText := ""
-
 	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
 		var mainText string
-		d := scanner.Text()
+		line := scanner.Text()
+		var obj = "{}"
+		if len(line) > 1 {
+			obj = strings.Split(line, "data: ")[1]
+		}
 
-		if len(d) > 0 {
-			mainText = d
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
+		}
+
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
 			fullText += mainText
 		}
 	}
 	fmt.Println(fullText)
 }
 
-func getSilentText(prompt string, configDir string) {
-	checkInputLength(prompt)
+func getSilentText(input string, configDir string) {
+	checkInputLength(input)
 
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	safeInput, _ := json.Marshal(prompt)
+	message := fmt.Sprintf(`{"history":[{"speaker":"human","text":"%v"}]}`, input)
+	safeInput, _ := json.Marshal(message)
 
-	data := strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}`, string(safeInput)))
-	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
+	var data = strings.NewReader(fmt.Sprintf(`{"conversation":%v,"temperature":"0.7"}`, string(safeInput)))
+
+	req, err := http.NewRequest("POST", "https://app.vitalentum.io/api/converse-edge", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -620,9 +731,7 @@ func getSilentText(prompt string, configDir string) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:110.0) Gecko/20100101 Firefox/110.0")
+
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -634,20 +743,44 @@ func getSilentText(prompt string, configDir string) {
 
 	defer resp.Body.Close()
 
-	// code := resp.StatusCode
+	code := resp.StatusCode
+
+	if code >= 400 {
+		bold.Println("\rSome error has occurred.")
+
+		os.Exit(0)
+	}
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Handling each part
+	type Response struct {
+		ID      string `json:"id"`
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+	}
 	for scanner.Scan() {
 		var mainText string
-		d := scanner.Text()
+		line := scanner.Text()
+		var obj = "{}"
+		if len(line) > 1 {
+			obj = strings.Split(line, "data: ")[1]
+		}
 
-		if len(d) > 0 {
-			mainText = d
+		var d Response
+		if err := json.Unmarshal([]byte(obj), &d); err != nil {
+			continue
+		}
+
+		if d.Choices != nil {
+			mainText = d.Choices[0].Delta.Content
 			fmt.Print(mainText)
 		}
 	}
+
 }
 
 func checkInputLength(input string) {
