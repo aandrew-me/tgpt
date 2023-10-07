@@ -1,4 +1,4 @@
-module github.com/aandrew-me/tgpt
+module github.com/aandrew-me/tgpt/v2
 
 go 1.20
 
