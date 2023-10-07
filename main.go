@@ -60,9 +60,9 @@ func main() {
 				}
 				getWholeText(trimmedPrompt, configDir+"/tgpt")
 			} else {
-				fmt.Println("You need to provide some text")
-				fmt.Println(`Example: tgpt -w "What is encryption?"`)
-				os.Exit(0)
+				formattedInput := getFormattedInputStdin()
+				fmt.Println()
+				getWholeText(formattedInput, configDir + "/tgpt")
 			}
 		} else if input == "-q" || input == "--quiet" {
 			if len(args) > 2 && len(args[2]) > 1 {
@@ -75,9 +75,9 @@ func main() {
 				}
 				getSilentText(trimmedPrompt, configDir+"/tgpt")
 			} else {
-				fmt.Println("You need to provide some text")
-				fmt.Println(`Example: tgpt -q "What is encryption?"`)
-				os.Exit(0)
+				formattedInput := getFormattedInputStdin()
+				fmt.Println()
+				getSilentText(formattedInput, configDir+"/tgpt")
 			}
 		} else if input == "-s" || input == "--shell" {
 			if len(args) > 2 && len(args[2]) > 1 {
@@ -280,4 +280,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	return m.textarea.View()
+}
+
+func getFormattedInputStdin() (formattedInput string){
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	input := scanner.Text()
+	return strings.TrimSpace(input)
 }
