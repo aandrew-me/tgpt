@@ -12,6 +12,7 @@ import (
 	"time"
 
 	http "github.com/bogdanfinn/fhttp"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/olekukonko/ts"
 
 	tls_client "github.com/bogdanfinn/tls-client"
@@ -35,7 +36,7 @@ func newClient() (tls_client.HttpClient, error) {
 	jar := tls_client.NewCookieJar()
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(120),
-		tls_client.WithClientProfile(tls_client.Firefox_110),
+		tls_client.WithClientProfile(profiles.Firefox_110),
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(jar),
 		// tls_client.WithInsecureSkipVerify(),
@@ -111,7 +112,7 @@ func loading(stop *bool) {
 }
 
 func update() {
-	if (runtime.GOOS == "windows" || runtime.GOOS == "android") {
+	if runtime.GOOS == "windows" || runtime.GOOS == "android" {
 		fmt.Println("This feature is not supported on your Operating System")
 	} else {
 		client, err := newClient()
