@@ -6,7 +6,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)](https://github.com/aandrew-me/tgpt/releases/latest)
 [![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)](https://aur.archlinux.org/packages/tgpt-bin)
 
-tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys.
+tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. Thanks to [Vitalentum](https://vitalentum.io/) for API.
 
 ## Usage 💬
 
@@ -64,7 +64,7 @@ yay -S tgpt-bin
 ### Install with Go
 
 ```bash
-go install github.com/aandrew-me/tgpt@latest
+go install github.com/aandrew-me/tgpt/v2@latest
 ```
 
 ### Windows 🪟
