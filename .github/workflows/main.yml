@@ -36,7 +36,6 @@ jobs:
                   GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-mac-amd64
                   GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-mac-arm64
 
-                  echo "```" >> ${{ github.workspace }}-CHANGELOG.txt
                   echo "SHA256 hashes of the built binaries:"
                   echo "SHA256 hashes of the built binaries:" >> ${{ github.workspace }}-CHANGELOG.txt
 
@@ -60,7 +59,6 @@ jobs:
                   
                   sha256sum tgpt-mac-arm64
                   sha256sum tgpt-mac-arm64 >> ${{ github.workspace }}-CHANGELOG.txt
-                  echo "```" >> ${{ github.workspace }}-CHANGELOG.txt
 
             - name: Upload Artifacts
               id: upload-artifacts
