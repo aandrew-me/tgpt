@@ -75,8 +75,7 @@ func getData(input string, configDir string, isInteractive bool) {
 	if code >= 400 {
 		stopSpin = true
 		fmt.Print("\r")
-		bold.Println("\rSome error has occurred.")
-		os.Exit(0)
+		handleStatus400(resp)
 	}
 
 	defer resp.Body.Close()
@@ -187,8 +186,7 @@ func codeGenerate(input string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred.")
-		os.Exit(0)
+		handleStatus400(resp)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -264,9 +262,7 @@ func getCommand(shellPrompt string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred.")
-
-		os.Exit(0)
+		handleStatus400(resp)
 	}
 
 	fmt.Print("\r          \r")
@@ -384,9 +380,7 @@ func getWholeText(input string, configDir string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred.")
-
-		os.Exit(0)
+		handleStatus400(resp)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -416,9 +410,7 @@ func getSilentText(input string, configDir string) {
 	code := resp.StatusCode
 
 	if code >= 400 {
-		bold.Println("\rSome error has occurred.")
-
-		os.Exit(0)
+		handleStatus400(resp)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -446,12 +438,12 @@ func newRequest(input string) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	message := fmt.Sprintf(`{"history":[{"speaker":"human","text":"%v"}]}`, input)
-	safeInput, _ := json.Marshal(message)
+	safeInput, _ := json.Marshal(input)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"conversation":%v,"temperature":"0.7"}`, string(safeInput)))
+	var data = strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}
+	`, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://app.vitalentum.io/api/converse-edge", data)
+	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -465,20 +457,10 @@ func newRequest(input string) (*http.Response, error) {
 }
 
 func getMainText(line string) (mainText string) {
-	var obj = "{}"
 	if len(line) > 1 {
-		obj = strings.Split(line, "data: ")[1]
+		return line
 	}
 
-	var d Response
-	if err := json.Unmarshal([]byte(obj), &d); err != nil {
-		return ""
-	}
-
-	if d.Choices != nil {
-		mainText = d.Choices[0].Delta.Content
-		return mainText
-	}
 	return ""
 }
 
@@ -504,25 +486,7 @@ func handleEachPart(resp *http.Response) {
 	}
 
 	for scanner.Scan() {
-		var mainText string
-		line := scanner.Text()
-		var obj = "{}"
-		if len(line) > 1 {
-			splitLine := strings.Split(line, "data: ")
-			if len(splitLine) > 1 {
-				obj = splitLine[1]
-			}
-
-		}
-
-		var d Response
-		if err := json.Unmarshal([]byte(obj), &d); err != nil {
-			continue
-		}
-
-		if d.Choices != nil {
-			mainText = d.Choices[0].Delta.Content
-		}
+		mainText := getMainText(scanner.Text())
 
 		if count <= 0 {
 			wordLength := len([]rune(mainText))
@@ -644,5 +608,12 @@ func handleEachPart(resp *http.Response) {
 func printConnectionErrorMsg(err error) {
 	bold.Println("\rSome error has occurred. Check your internet connection.")
 	fmt.Println("\nError:", err)
+	os.Exit(0)
+}
+
+func handleStatus400(resp *http.Response){
+	bold.Println("\rSome error has occurred. Statuscode:", resp.StatusCode)
+	respBody, _ := io.ReadAll(resp.Body)
+	fmt.Println(string(respBody))
 	os.Exit(0)
 }
