@@ -440,10 +440,11 @@ func newRequest(input string) (*http.Response, error) {
 
 	safeInput, _ := json.Marshal(input)
 
-	var data = strings.NewReader(fmt.Sprintf(`{"key":"","model":"gpt-3.5-turbo-0613","messages":[{"role":"user","content":%v}],"temperature":1,"password":""}
-	`, string(safeInput)))
+	timeNow := time.Now().UnixMilli()
+	var data = strings.NewReader(fmt.Sprintf(`{"question":%v,"chat_id":"652c1109a2f1ba5abe7601b6","timestamp":%v}
+	`, string(safeInput), timeNow))
 
-	req, err := http.NewRequest("POST", "https://chat.acytoo.com/api/completions", data)
+	req, err := http.NewRequest("POST", "https://chatgptlogin.ai//chat/chat_api_stream", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -457,10 +458,20 @@ func newRequest(input string) (*http.Response, error) {
 }
 
 func getMainText(line string) (mainText string) {
+	var obj = "{}"
 	if len(line) > 1 {
-		return line
+		obj = strings.Split(line, "data: ")[1]
 	}
 
+	var d Response
+	if err := json.Unmarshal([]byte(obj), &d); err != nil {
+		return ""
+	}
+
+	if d.Choices != nil {
+		mainText = d.Choices[0].Delta.Content
+		return mainText
+	}
 	return ""
 }
 
