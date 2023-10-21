@@ -440,11 +440,23 @@ func newRequest(input string) (*http.Response, error) {
 
 	safeInput, _ := json.Marshal(input)
 
-	timeNow := time.Now().UnixMilli()
-	var data = strings.NewReader(fmt.Sprintf(`{"question":%v,"chat_id":"652c1109a2f1ba5abe7601b6","timestamp":%v}
-	`, string(safeInput), timeNow))
+	var data = strings.NewReader(fmt.Sprintf(`{
+		"frequency_penalty": 0,
+		"messages": [
+			{
+				"content": %v,
+				"role": "user"
+			}
+		],
+		"model": "gpt-3.5-turbo",
+		"presence_penalty": 0,
+		"stream": true,
+		"temperature": 1,
+		"top_p": 1
+	}
+	`, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://chatgptlogin.ai//chat/chat_api_stream", data)
+	req, err := http.NewRequest("POST", "https://ai.fakeopen.com/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -452,6 +464,7 @@ func newRequest(input string) (*http.Response, error) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer pk-this-is-a-real-free-pool-token-for-everyone")
 
 	// Return response
 	return (client.Do(req))
