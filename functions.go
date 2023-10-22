@@ -7,7 +7,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +32,10 @@ type Response struct {
 			Content string `json:"content"`
 		} `json:"delta"`
 	} `json:"choices"`
+}
+
+type ImgResponse struct {
+	Images []string `json:"images"`
 }
 
 func newClient() (tls_client.HttpClient, error) {
@@ -133,6 +139,7 @@ func update() {
 
 		if err != nil {
 			fmt.Println(err)
+			os.Exit(0)
 		}
 
 		defer res.Body.Close()
@@ -635,9 +642,94 @@ func printConnectionErrorMsg(err error) {
 	os.Exit(0)
 }
 
-func handleStatus400(resp *http.Response){
+func handleStatus400(resp *http.Response) {
 	bold.Println("\rSome error has occurred. Statuscode:", resp.StatusCode)
 	respBody, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(respBody))
 	os.Exit(0)
+}
+
+func generateImage(prompt string) {
+	bold.Println("Generating images...")
+	client, err := newClient()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	url := "https://api.craiyon.com/v3"
+
+	safeInput, _ := json.Marshal(prompt)
+
+	payload := strings.NewReader(fmt.Sprintf(`{
+		"prompt": %v,
+		"token": null,
+		"model": "photo",
+		"negative_prompt": "",
+		"version": "c4ue22fb7kb6wlac"
+	}`, string(safeInput)))
+
+	req, _ := http.NewRequest("POST", url, payload)
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/110.0")
+
+	res, err := client.Do(req)
+
+	if err != nil {
+		fmt.Print("Check your internet connection\n\n")
+		fmt.Println("Error:", err)
+		os.Exit(0)
+	}
+
+	defer res.Body.Close()
+
+	var responseObj ImgResponse
+
+	err = json.NewDecoder(res.Body).Decode(&responseObj)
+	if err != nil {
+		// Handle error
+		fmt.Println("Error:", err)
+		return
+	}
+
+	imgList := responseObj.Images
+
+	fmt.Println("Saving images in current directory in folder:", prompt)
+	if _, err := os.Stat(prompt); os.IsNotExist(err) {
+        err := os.Mkdir(prompt, 0755)
+        if err != nil {
+            fmt.Println(err)
+			os.Exit(0)
+        }
+    }
+
+	for i := 0; i < len(imgList); i++ {
+		downloadUrl := "https://img.craiyon.com/" + imgList[i]
+		downloadImage(downloadUrl, prompt, strconv.Itoa(i + 1))
+
+	}
+}
+
+func downloadImage(url string, destDir string, filename string) error {
+    response, err := http.Get(url)
+    if err != nil {
+        return err
+    }
+    defer response.Body.Close()
+
+    fileName := filepath.Join(destDir, filepath.Base(url))
+    file, err := os.Create(fileName)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    _, err = io.Copy(file, response.Body)
+    if err != nil {
+        return err
+    }
+	fmt.Println("Saved image", filename)
+
+    return nil
 }

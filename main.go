@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.0.5"
+const localVersion = "2.1.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -165,6 +165,21 @@ func main() {
 
 			}
 
+		} else if input == "-img" || input == "--image" {
+			if len(args) > 2 && len(args[2]) > 1 {
+				prompt := args[2]
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					fmt.Println("You need to provide some text")
+					fmt.Println(`Example: tgpt -img "cat"`)
+					os.Exit(0)
+				}
+				generateImage(trimmedPrompt)
+			} else {
+				formattedInput := getFormattedInputStdin()
+				fmt.Println()
+				generateImage(formattedInput)
+			}
 		} else if strings.HasPrefix(input, "-") {
 			boldBlue.Println(`Usage: tgpt [Flag] [Prompt]`)
 
@@ -173,9 +188,9 @@ func main() {
 			fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
 			fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
 			fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
+			fmt.Printf("%-50v Generate images from text\n", "-img, --image")
 
 			boldBlue.Println("\nOptions:")
-			fmt.Printf("%-50v Remove key file \n", "-f, --forget")
 			fmt.Printf("%-50v Print version \n", "-v, --version")
 			fmt.Printf("%-50v Print help message \n", "-h, --help")
 			fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
