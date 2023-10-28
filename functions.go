@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -447,23 +449,14 @@ func newRequest(input string) (*http.Response, error) {
 
 	safeInput, _ := json.Marshal(input)
 
-	var data = strings.NewReader(fmt.Sprintf(`{
-		"frequency_penalty": 0,
-		"messages": [
-			{
-				"content": %v,
-				"role": "user"
-			}
-		],
-		"model": "gpt-3.5-turbo",
-		"presence_penalty": 0,
-		"stream": true,
-		"temperature": 1,
-		"top_p": 1
-	}
-	`, string(safeInput)))
+	str := fmt.Sprintf("1698497695113:%v:", input)
+	hash := sha256.Sum256([]byte(str))
+	sign := hex.EncodeToString(hash[:])
 
-	req, err := http.NewRequest("POST", "https://ai.fakeopen.com/v1/chat/completions", data)
+	var data = strings.NewReader(fmt.Sprintf(`{"messages":[{"role":"user","content":%v}],"time":1698497695113,"pass":null,"sign":"%v"}
+	`, string(safeInput), sign))
+
+	req, err := http.NewRequest("POST", "https://s.aifree.site/api/generate", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -471,26 +464,14 @@ func newRequest(input string) (*http.Response, error) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("authorization", "Bearer pk-this-is-a-real-free-pool-token-for-everyone")
 
 	// Return response
 	return (client.Do(req))
 }
 
 func getMainText(line string) (mainText string) {
-	var obj = "{}"
-	if len(line) > 1 {
-		obj = strings.Split(line, "data: ")[1]
-	}
-
-	var d Response
-	if err := json.Unmarshal([]byte(obj), &d); err != nil {
-		return ""
-	}
-
-	if d.Choices != nil {
-		mainText = d.Choices[0].Delta.Content
-		return mainText
+	if (len(line) > 1){
+		return line
 	}
 	return ""
 }
@@ -697,39 +678,39 @@ func generateImage(prompt string) {
 
 	fmt.Println("Saving images in current directory in folder:", prompt)
 	if _, err := os.Stat(prompt); os.IsNotExist(err) {
-        err := os.Mkdir(prompt, 0755)
-        if err != nil {
-            fmt.Println(err)
+		err := os.Mkdir(prompt, 0755)
+		if err != nil {
+			fmt.Println(err)
 			os.Exit(0)
-        }
-    }
+		}
+	}
 
 	for i := 0; i < len(imgList); i++ {
 		downloadUrl := "https://img.craiyon.com/" + imgList[i]
-		downloadImage(downloadUrl, prompt, strconv.Itoa(i + 1))
+		downloadImage(downloadUrl, prompt, strconv.Itoa(i+1))
 
 	}
 }
 
 func downloadImage(url string, destDir string, filename string) error {
-    response, err := http.Get(url)
-    if err != nil {
-        return err
-    }
-    defer response.Body.Close()
+	response, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
 
-    fileName := filepath.Join(destDir, filepath.Base(url))
-    file, err := os.Create(fileName)
-    if err != nil {
-        return err
-    }
-    defer file.Close()
+	fileName := filepath.Join(destDir, filepath.Base(url))
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
 
-    _, err = io.Copy(file, response.Body)
-    if err != nil {
-        return err
-    }
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		return err
+	}
 	fmt.Println("Saved image", filename)
 
-    return nil
+	return nil
 }
