@@ -6,7 +6,9 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)](https://github.com/aandrew-me/tgpt/releases/latest)
 [![AUR version](https://img.shields.io/aur/version/tgpt-bin?label=AUR%3A%20tgpt-bin)](https://aur.archlinux.org/packages/tgpt-bin)
 
-tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. Thanks to [Fakeopen](https://ai.fakeopen.com/) for API.
+tgpt is a cross-platform command-line interface (CLI) tool that allows you to use ChatGPT 3.5 in your Terminal without requiring API keys. 
+
+API: [aifree](https://s.aifree.site/)
 
 ## Usage 💬
 
@@ -18,6 +20,7 @@ Flags:
 -c, --code                                         Generate Code. (Experimental)
 -q, --quiet                                        Gives response back without loading animation
 -w, --whole                                        Gives response back as a whole text
+-img, --image                                      Generate images from text
 
 Options:
 -f, --forget                                       Forget Chat ID 
