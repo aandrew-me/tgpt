@@ -2,8 +2,6 @@ package main
 
 import (
 	"bufio"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -449,14 +447,23 @@ func newRequest(input string) (*http.Response, error) {
 
 	safeInput, _ := json.Marshal(input)
 
-	str := fmt.Sprintf("1698497695113:%v:", input)
-	hash := sha256.Sum256([]byte(str))
-	sign := hex.EncodeToString(hash[:])
+	var data = strings.NewReader(fmt.Sprintf(`{
+		"frequency_penalty": 0,
+		"messages": [
+			{
+				"content": %v,
+				"role": "user"
+			}
+		],
+		"model": "gpt-3.5-turbo",
+		"presence_penalty": 0,
+		"stream": true,
+		"temperature": 1,
+		"top_p": 1
+	}
+	`, string(safeInput)))
 
-	var data = strings.NewReader(fmt.Sprintf(`{"messages":[{"role":"user","content":%v}],"time":1698497695113,"pass":null,"sign":"%v"}
-	`, string(safeInput), sign))
-
-	req, err := http.NewRequest("POST", "https://s.aifree.site/api/generate", data)
+	req, err := http.NewRequest("POST", "https://ai.fakeopen.com/v1/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -464,14 +471,26 @@ func newRequest(input string) (*http.Response, error) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", "Bearer pk-this-is-a-real-free-pool-token-for-everyone")
 
 	// Return response
 	return (client.Do(req))
 }
 
 func getMainText(line string) (mainText string) {
-	if (len(line) > 1){
-		return line
+	var obj = "{}"
+	if len(line) > 1 {
+		obj = strings.Split(line, "data: ")[1]
+	}
+
+	var d Response
+	if err := json.Unmarshal([]byte(obj), &d); err != nil {
+		return ""
+	}
+
+	if d.Choices != nil {
+		mainText = d.Choices[0].Delta.Content
+		return mainText
 	}
 	return ""
 }
