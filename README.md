@@ -107,3 +107,11 @@ http://127.0.0.1:8080
 ### From Release
 
 You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
+
+
+## Uninstalling
+If you installed with the install script, you can execute the following command to remove the tgpt executable
+```
+sudo rm $(which tgpt)
+```
+Configuration file is usually located in `~/.config/tgpt` on GNU/Linux Systems and in `"Library/Application Support/tgpt"` on MacOS
