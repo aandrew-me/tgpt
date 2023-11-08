@@ -8,11 +8,10 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-
 	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
 	"github.com/olekukonko/ts"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 const localVersion = "2.1.1"
@@ -22,7 +21,6 @@ var boldBlue = color.New(color.Bold, color.FgBlue)
 var boldViolet = color.New(color.Bold, color.FgMagenta)
 var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
-
 var programLoop = true
 var configDir = ""
 var userInput = ""
@@ -139,9 +137,7 @@ func main() {
 						}
 						getData(input, configDir+"/tgpt", true)
 					}
-
 				}
-
 			}
 
 		} else if input == "-m" || input == "--multiline" {
@@ -223,7 +219,6 @@ func main() {
 }
 
 // Multiline input
-
 type errMsg error
 
 type model struct {
