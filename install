@@ -6,6 +6,12 @@
 set -e
 path=/usr/local/bin
 
+# >> Check curl is installed or no
+if ! command -V curl > /dev/null 2>&1; then
+    echo "curl not installed, please install it and try again"
+    exit
+fi
+
 if ! [ -z "$1" ]; then
     path=$1
 fi
