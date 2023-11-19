@@ -68,9 +68,9 @@ func newClient() (tls_client.HttpClient, error) {
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
 
-func getData(input string, configDir string, isInteractive bool) {
+func getData(input string, configDir string, isInteractive bool, prevMessages string) string {
 	// Receiving response
-	resp, err := newRequest(input)
+	resp, err := newRequest(input, prevMessages)
 
 	if err != nil {
 		stopSpin = true
@@ -99,8 +99,20 @@ func getData(input string, configDir string, isInteractive bool) {
 	}
 
 	// Handling each part
-	handleEachPart(resp)
+	responseTxt := handleEachPart(resp)
 	fmt.Print("\n\n")
+	safeInput, _ := json.Marshal(input)
+	msgObject := fmt.Sprintf(`{
+		"content": %v,
+		"role": "user"
+	},{
+		"content": "%v",
+		"role": "system"
+	},
+	`, string(safeInput), responseTxt)
+
+	return msgObject
+
 }
 
 func loading(stop *bool) {
@@ -181,7 +193,7 @@ func codeGenerate(input string) {
 
 	codePrompt := fmt.Sprintf(`Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:`, input)
 
-	resp, err := newRequest(codePrompt)
+	resp, err := newRequest(codePrompt, "")
 
 	if err != nil {
 		stopSpin = true
@@ -255,7 +267,7 @@ func shellCommand(input string) {
 func getCommand(shellPrompt string) {
 	checkInputLength(shellPrompt)
 
-	resp, err := newRequest(shellPrompt)
+	resp, err := newRequest(shellPrompt, "")
 
 	if err != nil {
 		stopSpin = true
@@ -375,7 +387,7 @@ func getVersionHistory() {
 func getWholeText(input string, configDir string) {
 	checkInputLength(input)
 
-	resp, err := newRequest(input)
+	resp, err := newRequest(input, "")
 
 	if err != nil {
 		stopSpin = true
@@ -405,7 +417,7 @@ func getWholeText(input string, configDir string) {
 func getSilentText(input string, configDir string) {
 	checkInputLength(input)
 
-	resp, err := newRequest(input)
+	resp, err := newRequest(input, "")
 
 	if err != nil {
 		stopSpin = true
@@ -438,7 +450,7 @@ func checkInputLength(input string) {
 	}
 }
 
-func newRequest(input string) (*http.Response, error) {
+func newRequest(input string, prevMessages string) (*http.Response, error) {
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
@@ -450,6 +462,7 @@ func newRequest(input string) (*http.Response, error) {
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"frequency_penalty": 0,
 		"messages": [
+			%v
 			{
 				"content": %v,
 				"role": "user"
@@ -461,7 +474,7 @@ func newRequest(input string) (*http.Response, error) {
 		"temperature": 1,
 		"top_p": 1
 	}
-	`, string(safeInput)))
+	`, prevMessages, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://ai.fakeopen.com/v1/chat/completions", data)
 	if err != nil {
@@ -495,7 +508,7 @@ func getMainText(line string) (mainText string) {
 	return ""
 }
 
-func handleEachPart(resp *http.Response) {
+func handleEachPart(resp *http.Response) string {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
@@ -516,8 +529,11 @@ func handleEachPart(resp *http.Response) {
 		os.Exit(0)
 	}
 
+	fullText := ""
+
 	for scanner.Scan() {
 		mainText := getMainText(scanner.Text())
+		fullText += mainText
 
 		if count <= 0 {
 			wordLength := len([]rune(mainText))
@@ -633,6 +649,8 @@ func handleEachPart(resp *http.Response) {
 		fmt.Println("Some error has occurred. Error:", err)
 		os.Exit(0)
 	}
+
+	return fullText
 
 }
 
