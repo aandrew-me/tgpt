@@ -82,6 +82,10 @@ func getData(input string, configDir string, isInteractive bool, prevMessages st
 		stopSpin = true
 		fmt.Print("\r")
 		handleStatus400(resp)
+
+		if !isInteractive{
+			os.Exit(0)
+		}
 	}
 
 	defer resp.Body.Close()
@@ -102,14 +106,16 @@ func getData(input string, configDir string, isInteractive bool, prevMessages st
 	responseTxt := handleEachPart(resp)
 	fmt.Print("\n\n")
 	safeInput, _ := json.Marshal(input)
+	safeReply, _ := json.Marshal(responseTxt)
+
 	msgObject := fmt.Sprintf(`{
 		"content": %v,
 		"role": "user"
 	},{
-		"content": "%v",
+		"content": %v,
 		"role": "system"
 	},
-	`, string(safeInput), responseTxt)
+	`, string(safeInput), string(safeReply))
 
 	return msgObject
 
@@ -206,6 +212,7 @@ func codeGenerate(input string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
+		os.Exit(0)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -282,6 +289,7 @@ func getCommand(shellPrompt string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
+		os.Exit(0)
 	}
 
 	fmt.Print("\r          \r")
@@ -400,6 +408,7 @@ func getWholeText(input string, configDir string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
+		os.Exit(0)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -430,6 +439,7 @@ func getSilentText(input string, configDir string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
+		os.Exit(0)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -664,7 +674,6 @@ func handleStatus400(resp *http.Response) {
 	bold.Println("\rSome error has occurred. Statuscode:", resp.StatusCode)
 	respBody, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(respBody))
-	os.Exit(0)
 }
 
 func generateImage(prompt string) {
