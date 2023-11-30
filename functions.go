@@ -495,6 +495,9 @@ func newRequest(input string, prevMessages string) (*http.Response, error) {
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("authorization", "Bearer pk-this-is-a-real-free-pool-token-for-everyone")
+	req.Header.Set("Origin", "https://chat.geekgpt.org")
+	req.Header.Set("Referrer", "https://chat.geekgpt.org/")
+
 
 	// Return response
 	return (client.Do(req))

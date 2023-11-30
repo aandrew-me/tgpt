@@ -14,7 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const localVersion = "2.2.0"
+const localVersion = "2.2.1"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -205,7 +205,6 @@ func main() {
 
 			boldBlue.Println("\nExamples:")
 			fmt.Println(`tgpt "What is internet?"`)
-			fmt.Println("tgpt -f")
 			fmt.Println(`tgpt -m`)
 			fmt.Println(`tgpt -s "How to update my system?"`)
 		} else {
