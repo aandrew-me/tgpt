@@ -6,7 +6,7 @@
 set -e
 path=/usr/local/bin
 
-# >> Check curl is installed or no
+# >> Check if curl is installed or nor
 if ! command -V curl > /dev/null 2>&1; then
     echo "curl not installed, please install it and try again"
     exit
@@ -38,6 +38,8 @@ if [[ $(uname -s) == "Darwin" ]]; then
 else
     OS="linux"
 fi
+
+[ -e /tmp/tgpt ] && rm /tmp/tgpt
 
 echo "Operating System: ${OS}"
 echo -e "Processor Architecture: ${ARCH}\n"
