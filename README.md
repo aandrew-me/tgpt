@@ -21,7 +21,6 @@ Flags:
 -img, --image                                      Generate images from text
 
 Options:
--f, --forget                                       Forget Chat ID 
 -v, --version                                      Print version 
 -h, --help                                         Print help message 
 -i, --interactive                                  Start normal interactive mode 
@@ -31,7 +30,6 @@ Options:
 
 Examples:
 tgpt "What is internet?"
-tgpt -f
 tgpt -m
 tgpt -s "How to update my system?"
 ```
