@@ -470,7 +470,13 @@ func newRequest(input string, prevMessages string) (*http.Response, error) {
 	safeInput, _ := json.Marshal(input)
 
 	var data = strings.NewReader(fmt.Sprintf(`{
-		"frequency_penalty": 0,
+		"model": {
+			"id": "gpt-3.5-turbo",
+			"name": "GPT-3.5-Turbo",
+			"maxLength": 48000,
+			"tokenLimit": 14000,
+			"context": "16K"
+		},
 		"messages": [
 			%v
 			{
@@ -478,15 +484,11 @@ func newRequest(input string, prevMessages string) (*http.Response, error) {
 				"role": "user"
 			}
 		],
-		"model": "gpt-3.5-turbo",
-		"presence_penalty": 0,
-		"stream": true,
-		"temperature": 1,
-		"top_p": 1
+		"prompt":"Respond only in the language you're asked with."
 	}
 	`, prevMessages, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://ai.fakeopen.com/v1/chat/completions", data)
+	req, err := http.NewRequest("POST", "https://liaobots.com/api/chat", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -494,31 +496,17 @@ func newRequest(input string, prevMessages string) (*http.Response, error) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("authorization", "Bearer pk-this-is-a-real-free-pool-token-for-everyone")
-	req.Header.Set("Origin", "https://chat.geekgpt.org")
-	req.Header.Set("Referrer", "https://chat.geekgpt.org/")
-
+	req.Header.Add("Origin", "https://liaobots.com")
+	req.Header.Add("Referrer", "https://liaobots.com/")
+	req.Header.Add("X-Auth-Code", "06WzPabfgVLKh")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/110.0")
 
 	// Return response
 	return (client.Do(req))
 }
 
 func getMainText(line string) (mainText string) {
-	var obj = "{}"
-	if len(line) > 1 {
-		obj = strings.Split(line, "data: ")[1]
-	}
-
-	var d Response
-	if err := json.Unmarshal([]byte(obj), &d); err != nil {
-		return ""
-	}
-
-	if d.Choices != nil {
-		mainText = d.Choices[0].Delta.Content
-		return mainText
-	}
-	return ""
+	return line
 }
 
 func handleEachPart(resp *http.Response) string {
