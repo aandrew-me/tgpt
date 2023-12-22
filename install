@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-
 ## Install script for GNU/Linux & MacOS
-
 set -e
 path=/usr/local/bin
 
@@ -53,9 +51,9 @@ curl -SL --progress-bar "$URL" -o /tmp/tgpt
 $SUDO mv /tmp/tgpt $path
 
 if [ -d "$path" ]; then
-    $SUDO chmod +x $path/tgpt
+    $SUDO chmod 755 $path/tgpt
 elif [ -f "$path" ]; then
-    $SUDO chmod +x $path
+    $SUDO chmod 755 $path
 fi
 
 echo -e "Installed Successfully \n"
