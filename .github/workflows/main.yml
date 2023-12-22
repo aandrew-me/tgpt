@@ -85,10 +85,26 @@ jobs:
                       tgpt-linux-amd64
                       tgpt-linux-i386
                       tgpt-linux-arm64
+                      tgpt-linux-arm
                       tgpt-amd64.exe
                       tgpt-i386.exe
+                      tgpt-arm.exe
+                      tgpt-arm64.exe
                       tgpt-mac-amd64
                       tgpt-mac-arm64
+                      tgpt-netbsd-amd64
+                      tgpt-netbsd-arm64
+                      tgpt-netbsd-arm
+                      tgpt-netbsd-i386
+                      tgpt-freebsd-amd64
+                      tgpt-freebsd-arm64
+                      tgpt-freebsd-arm
+                      tgpt-freebsd-i386  
+                      tgpt-openbsd-amd64
+                      tgpt-openbsd-arm64
+                      tgpt-openbsd-arm
+                      tgpt-openbsd-i386
+                      
                   token: ${{ secrets.GITHUB_TOKEN }}
                   draft: true
                   tag_name: v
