@@ -25,13 +25,17 @@ type Data struct {
 	Version string `json:"version"`
 }
 
+// type Response struct {
+// 	ID      string `json:"id"`
+// 	Choices []struct {
+// 		Delta struct {
+// 			Content string `json:"content"`
+// 		} `json:"delta"`
+// 	} `json:"choices"`
+// }
+
 type Response struct {
-	ID      string `json:"id"`
-	Choices []struct {
-		Delta struct {
-			Content string `json:"content"`
-		} `json:"delta"`
-	} `json:"choices"`
+	Completion string `json:"completion"`
 }
 
 type ImgResponse struct {
@@ -68,9 +72,9 @@ func newClient() (tls_client.HttpClient, error) {
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
 
-func getData(input string, configDir string, isInteractive bool, prevMessages string) string {
+func getData(input string, configDir string, isInteractive bool) {
 	// Receiving response
-	resp, err := newRequest(input, prevMessages)
+	resp, err := newRequest(input)
 
 	if err != nil {
 		stopSpin = true
@@ -82,10 +86,6 @@ func getData(input string, configDir string, isInteractive bool, prevMessages st
 		stopSpin = true
 		fmt.Print("\r")
 		handleStatus400(resp)
-
-		if !isInteractive{
-			os.Exit(0)
-		}
 	}
 
 	defer resp.Body.Close()
@@ -103,22 +103,8 @@ func getData(input string, configDir string, isInteractive bool, prevMessages st
 	}
 
 	// Handling each part
-	responseTxt := handleEachPart(resp)
+	handleEachPart(resp)
 	fmt.Print("\n\n")
-	safeInput, _ := json.Marshal(input)
-	safeReply, _ := json.Marshal(responseTxt)
-
-	msgObject := fmt.Sprintf(`{
-		"content": %v,
-		"role": "user"
-	},{
-		"content": %v,
-		"role": "system"
-	},
-	`, string(safeInput), string(safeReply))
-
-	return msgObject
-
 }
 
 func loading(stop *bool) {
@@ -199,7 +185,7 @@ func codeGenerate(input string) {
 
 	codePrompt := fmt.Sprintf(`Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:`, input)
 
-	resp, err := newRequest(codePrompt, "")
+	resp, err := newRequest(codePrompt)
 
 	if err != nil {
 		stopSpin = true
@@ -212,14 +198,19 @@ func codeGenerate(input string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
-		os.Exit(0)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Handling each part
+	previousText := ""
 	for scanner.Scan() {
-		mainText := getMainText(scanner.Text())
+		newText := getMainText(scanner.Text())
+		if (len(newText) < 1){
+			continue
+		}
+		mainText := strings.Replace(newText, previousText, "", -1)
+		previousText = newText
 		bold.Print(mainText)
 	}
 	if err := scanner.Err(); err != nil {
@@ -265,7 +256,7 @@ func shellCommand(input string) {
 	}
 
 	shellPrompt := fmt.Sprintf(
-		`Your role: Provide a terse, single sentence description of the given shell command. Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. If you need to store any data, assume it will be stored in the chat. Provide only %s commands for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:`, shellName, operatingSystem, input)
+		`Your role: Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. Do not provide any description. If you need to store any data, assume it will be stored in the chat. Provide only %s command for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:`, shellName, operatingSystem, input)
 
 	getCommand(shellPrompt)
 }
@@ -274,7 +265,7 @@ func shellCommand(input string) {
 func getCommand(shellPrompt string) {
 	checkInputLength(shellPrompt)
 
-	resp, err := newRequest(shellPrompt, "")
+	resp, err := newRequest(shellPrompt)
 
 	if err != nil {
 		stopSpin = true
@@ -289,7 +280,6 @@ func getCommand(shellPrompt string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
-		os.Exit(0)
 	}
 
 	fmt.Print("\r          \r")
@@ -298,11 +288,18 @@ func getCommand(shellPrompt string) {
 
 	// Variables
 	fullLine := ""
+	previousText := ""
 
 	// Handling each part
 	for scanner.Scan() {
-		mainText := getMainText(scanner.Text())
+		newText := getMainText(scanner.Text())
+		if (len(newText) < 1){
+			continue
+		}
+		mainText := strings.Replace(newText, previousText, "", -1)
+		previousText = newText
 		fullLine += mainText
+
 		bold.Print(mainText)
 	}
 	lineCount := strings.Count(fullLine, "\n") + 1
@@ -395,7 +392,7 @@ func getVersionHistory() {
 func getWholeText(input string, configDir string) {
 	checkInputLength(input)
 
-	resp, err := newRequest(input, "")
+	resp, err := newRequest(input)
 
 	if err != nil {
 		stopSpin = true
@@ -408,16 +405,22 @@ func getWholeText(input string, configDir string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
-		os.Exit(0)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
 	fullText := ""
+	previousText := ""
+
 	// Handling each part
 	for scanner.Scan() {
-		mainText := getMainText(scanner.Text())
+		newText := getMainText(scanner.Text())
+		if (len(newText) < 1){
+			continue
+		}
+		mainText := strings.Replace(newText, previousText, "", -1)
+		previousText = newText
 		fullText += mainText
 	}
 	fmt.Println(fullText)
@@ -426,7 +429,7 @@ func getWholeText(input string, configDir string) {
 func getSilentText(input string, configDir string) {
 	checkInputLength(input)
 
-	resp, err := newRequest(input, "")
+	resp, err := newRequest(input)
 
 	if err != nil {
 		stopSpin = true
@@ -439,16 +442,21 @@ func getSilentText(input string, configDir string) {
 
 	if code >= 400 {
 		handleStatus400(resp)
-		os.Exit(0)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Handling each part
+	previousText := ""
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		mainText := getMainText(line)
+		newText := getMainText(scanner.Text())
+		if (len(newText) < 1){
+			continue
+		}
+		mainText := strings.Replace(newText, previousText, "", -1)
+		previousText = newText
+
 		fmt.Print(mainText)
 	}
 }
@@ -460,35 +468,31 @@ func checkInputLength(input string) {
 	}
 }
 
-func newRequest(input string, prevMessages string) (*http.Response, error) {
+func newRequest(input string) (*http.Response, error) {
 	client, err := newClient()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
 
-	safeInput, _ := json.Marshal(input)
+	safeInput, _ := json.Marshal("[INST] " + input + " [/INST]  ")
 
 	var data = strings.NewReader(fmt.Sprintf(`{
-		"model": {
-			"id": "gpt-3.5-turbo",
-			"name": "GPT-3.5-Turbo",
-			"maxLength": 48000,
-			"tokenLimit": 14000,
-			"context": "16K"
-		},
-		"messages": [
-			%v
-			{
-				"content": %v,
-				"role": "user"
-			}
+		"max_tokens_to_sample": 600,
+		"model": "llama-2-13b-chat",
+		"prompt": %v,
+		"stop_sequences": [
+			"</response>",
+			"</s>"
 		],
-		"prompt":"Respond only in the language you're asked with."
+		"stream": true,
+		"temperature": 0.2,
+		"top_k": -1,
+		"top_p": 0.999
 	}
-	`, prevMessages, string(safeInput)))
+	`, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://liaobots.com/api/chat", data)
+	req, err := http.NewRequest("POST", "https://ai-chat.bsg.brave.com/v1/complete", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -496,9 +500,7 @@ func newRequest(input string, prevMessages string) (*http.Response, error) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Origin", "https://liaobots.com")
-	req.Header.Add("Referrer", "https://liaobots.com/")
-	req.Header.Add("X-Auth-Code", "06WzPabfgVLKh")
+	req.Header.Set("x-brave-key", "qztbjzBqJueQZLFkwTTJrieu8Vw3789u")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/110.0")
 
 	// Return response
@@ -506,10 +508,24 @@ func newRequest(input string, prevMessages string) (*http.Response, error) {
 }
 
 func getMainText(line string) (mainText string) {
-	return line
+	var obj = "{}"
+	if len(line) > 1 {
+		obj = strings.Split(line, "data: ")[1]
+	}
+
+	var d Response
+	if err := json.Unmarshal([]byte(obj), &d); err != nil {
+		return ""
+	}
+
+	if d.Completion != "" {
+		mainText = d.Completion
+		return mainText
+	}
+	return ""
 }
 
-func handleEachPart(resp *http.Response) string {
+func handleEachPart(resp *http.Response) {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
@@ -530,11 +546,15 @@ func handleEachPart(resp *http.Response) string {
 		os.Exit(0)
 	}
 
-	fullText := ""
+	previousText := ""
 
 	for scanner.Scan() {
-		mainText := getMainText(scanner.Text())
-		fullText += mainText
+		newText := getMainText(scanner.Text())
+		if (len(newText) < 1){
+			continue
+		}
+		mainText := strings.Replace(newText, previousText, "", -1)
+		previousText = newText
 
 		if count <= 0 {
 			wordLength := len([]rune(mainText))
@@ -651,8 +671,6 @@ func handleEachPart(resp *http.Response) string {
 		os.Exit(0)
 	}
 
-	return fullText
-
 }
 
 func printConnectionErrorMsg(err error) {
@@ -665,6 +683,7 @@ func handleStatus400(resp *http.Response) {
 	bold.Println("\rSome error has occurred. Statuscode:", resp.StatusCode)
 	respBody, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(respBody))
+	os.Exit(0)
 }
 
 func generateImage(prompt string) {

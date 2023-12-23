@@ -9,7 +9,7 @@ import (
 )
 
 func TestRequest(t *testing.T) {
-	resp, err := newRequest("What is 1+1", "")
+	resp, err := newRequest("What is 1+1")
 	body, _ := io.ReadAll(resp.Body)
 
 	assert := assert.New(t)

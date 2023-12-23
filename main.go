@@ -14,7 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const localVersion = "2.2.2"
+const localVersion = "2.2.3"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -118,8 +118,6 @@ func main() {
 
 			reader := bufio.NewReader(os.Stdin)
 			bold.Print("Interactive mode started. Press Ctrl + C or type exit to quit.\n\n")
-
-			previousMessages := ""
 			for {
 				boldBlue.Println("╭─ You")
 				boldBlue.Print("╰─> ")
@@ -137,8 +135,7 @@ func main() {
 							bold.Println("Exiting...")
 							return
 						}
-						responseTxt := getData(input, configDir+"/tgpt", true, previousMessages)
-						previousMessages += responseTxt
+						getData(input, configDir+"/tgpt", true)
 					}
 				}
 			}
@@ -148,8 +145,6 @@ func main() {
 			// Multiline interactive
 			/////////////////////
 			fmt.Print("\nPress Tab to submit and Ctrl + C to exit.\n")
-
-			previousMessages := ""
 
 			for programLoop {
 				fmt.Print("\n")
@@ -161,8 +156,7 @@ func main() {
 					os.Exit(0)
 				}
 				if len(userInput) > 0 {
-					responseTxt := getData(userInput, configDir+"/tgpt", true, previousMessages)
-					previousMessages += responseTxt
+					getData(userInput, configDir+"/tgpt", true)
 				}
 
 			}
@@ -210,7 +204,7 @@ func main() {
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.TrimSpace(input)
-			getData(formattedInput, configDir+"/tgpt", false, "")
+			getData(formattedInput, configDir+"/tgpt", false)
 		}
 
 	} else {
@@ -219,7 +213,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(formattedInput, configDir+"/tgpt", false, "")
+		getData(formattedInput, configDir+"/tgpt", false)
 	}
 }
 
