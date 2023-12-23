@@ -8,10 +8,11 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+
 	"github.com/charmbracelet/bubbles/textarea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
 	"github.com/olekukonko/ts"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 const localVersion = "2.2.3"
@@ -52,24 +53,24 @@ func main() {
 				prompt := args[2]
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Println("You need to provide some text")
-					fmt.Println(`Example: tgpt -w "What is encryption?"`)
-					os.Exit(0)
+					fmt.Fprintln(os.Stderr, "You need to provide some text")
+					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
+					os.Exit(1)
 				}
 				getWholeText(trimmedPrompt, configDir+"/tgpt")
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getWholeText(formattedInput, configDir + "/tgpt")
+				getWholeText(formattedInput, configDir+"/tgpt")
 			}
 		} else if input == "-q" || input == "--quiet" {
 			if len(args) > 2 && len(args[2]) > 1 {
 				prompt := args[2]
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Println("You need to provide some text")
-					fmt.Println(`Example: tgpt -q "What is encryption?"`)
-					os.Exit(0)
+					fmt.Fprintln(os.Stderr, "You need to provide some text")
+					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
+					os.Exit(1)
 				}
 				getSilentText(trimmedPrompt, configDir+"/tgpt")
 			} else {
@@ -83,15 +84,15 @@ func main() {
 				go loading(&stopSpin)
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Println("You need to provide some text")
-					fmt.Println(`Example: tgpt -s "How to update system"`)
-					os.Exit(0)
+					fmt.Fprintln(os.Stderr, "You need to provide some text")
+					fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
+					os.Exit(1)
 				}
 				shellCommand(trimmedPrompt)
 			} else {
-				fmt.Println("You need to provide some text")
-				fmt.Println(`Example: tgpt -s "How to update system"`)
-				os.Exit(0)
+				fmt.Fprintln(os.Stderr, "You need to provide some text")
+				fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
+				os.Exit(1)
 			}
 
 		} else if input == "-c" || input == "--code" {
@@ -99,15 +100,15 @@ func main() {
 				prompt := args[2]
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Println("You need to provide some text")
-					fmt.Println(`Example: tgpt -c "Hello world in Python"`)
-					os.Exit(0)
+					fmt.Fprintln(os.Stderr, "You need to provide some text")
+					fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
+					os.Exit(1)
 				}
 				codeGenerate(trimmedPrompt)
 			} else {
-				fmt.Println("You need to provide some text")
-				fmt.Println(`Example: tgpt -c "Hello world in Python"`)
-				os.Exit(0)
+				fmt.Fprintln(os.Stderr, "You need to provide some text")
+				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
+				os.Exit(1)
 			}
 		} else if input == "-u" || input == "--update" {
 			update()
@@ -124,7 +125,7 @@ func main() {
 
 				input, err := reader.ReadString('\n')
 				if err != nil {
-					fmt.Println("Error reading input:", err)
+					fmt.Fprintln(os.Stderr, "Error reading input:", err)
 					break
 				}
 
@@ -152,8 +153,8 @@ func main() {
 				_, err := p.Run()
 
 				if err != nil {
-					fmt.Println(err)
-					os.Exit(0)
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
 				}
 				if len(userInput) > 0 {
 					getData(userInput, configDir+"/tgpt", true)
@@ -166,9 +167,9 @@ func main() {
 				prompt := args[2]
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Println("You need to provide some text")
-					fmt.Println(`Example: tgpt -img "cat"`)
-					os.Exit(0)
+					fmt.Fprintln(os.Stderr, "You need to provide some text")
+					fmt.Fprintln(os.Stderr, `Example: tgpt -img "cat"`)
+					os.Exit(1)
 				}
 				generateImage(trimmedPrompt)
 			} else {
@@ -291,7 +292,7 @@ func (m model) View() string {
 	return m.textarea.View()
 }
 
-func getFormattedInputStdin() (formattedInput string){
+func getFormattedInputStdin() (formattedInput string) {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	input := scanner.Text()
