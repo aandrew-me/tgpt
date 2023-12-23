@@ -56,7 +56,7 @@ func newClient() (tls_client.HttpClient, error) {
 	if err == nil {
 		proxyConfig, readErr := os.ReadFile("proxy.txt")
 		if readErr != nil {
-			fmt.Println("Error reading file proxy.txt:", readErr)
+			fmt.Fprintln(os.Stderr, "Error reading file proxy.txt:", readErr)
 			return nil, readErr
 		}
 
@@ -126,7 +126,7 @@ func update() {
 	} else {
 		client, err := newClient()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 
@@ -135,15 +135,15 @@ func update() {
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			// Handle error
-			fmt.Println("Error:", err)
+			fmt.Fprintln(os.Stderr, "Error:", err)
 			return
 		}
 
 		res, err := client.Do(req)
 
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 
 		defer res.Body.Close()
@@ -152,7 +152,7 @@ func update() {
 		err = json.NewDecoder(res.Body).Decode(&data)
 		if err != nil {
 			// Handle error
-			fmt.Println("Error:", err)
+			fmt.Fprintln(os.Stderr, "Error:", err)
 			return
 		}
 
@@ -206,7 +206,7 @@ func codeGenerate(input string) {
 	previousText := ""
 	for scanner.Scan() {
 		newText := getMainText(scanner.Text())
-		if (len(newText) < 1){
+		if len(newText) < 1 {
 			continue
 		}
 		mainText := strings.Replace(newText, previousText, "", -1)
@@ -214,8 +214,8 @@ func codeGenerate(input string) {
 		bold.Print(mainText)
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Some error has occurred. Error:", err)
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+		os.Exit(1)
 	}
 
 }
@@ -293,7 +293,7 @@ func getCommand(shellPrompt string) {
 	// Handling each part
 	for scanner.Scan() {
 		newText := getMainText(scanner.Text())
-		if (len(newText) < 1){
+		if len(newText) < 1 {
 			continue
 		}
 		mainText := strings.Replace(newText, previousText, "", -1)
@@ -334,12 +334,12 @@ func getCommand(shellPrompt string) {
 			err = cmd.Run()
 
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			fmt.Println("Some error has occurred. Error:", err)
-			os.Exit(0)
+			fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+			os.Exit(1)
 		}
 	}
 
@@ -354,9 +354,9 @@ func getVersionHistory() {
 	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases", nil)
 
 	if err != nil {
-		fmt.Print("Some error has occurred\n\n")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		fmt.Fprint(os.Stderr, "Some error has occurred\n\n")
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
 	}
 
 	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger())
@@ -364,16 +364,16 @@ func getVersionHistory() {
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Print("Check your internet connection\n\n")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		fmt.Fprint(os.Stderr, "Check your internet connection\n\n")
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
 	}
 
 	resBody, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	defer res.Body.Close()
@@ -416,7 +416,7 @@ func getWholeText(input string, configDir string) {
 	// Handling each part
 	for scanner.Scan() {
 		newText := getMainText(scanner.Text())
-		if (len(newText) < 1){
+		if len(newText) < 1 {
 			continue
 		}
 		mainText := strings.Replace(newText, previousText, "", -1)
@@ -451,7 +451,7 @@ func getSilentText(input string, configDir string) {
 
 	for scanner.Scan() {
 		newText := getMainText(scanner.Text())
-		if (len(newText) < 1){
+		if len(newText) < 1 {
 			continue
 		}
 		mainText := strings.Replace(newText, previousText, "", -1)
@@ -463,16 +463,16 @@ func getSilentText(input string, configDir string) {
 
 func checkInputLength(input string) {
 	if len(input) > 4000 {
-		fmt.Println("Input exceeds the input limit of 4000 characters")
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, "Input exceeds the input limit of 4000 characters")
+		os.Exit(1)
 	}
 }
 
 func newRequest(input string) (*http.Response, error) {
 	client, err := newClient()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	safeInput, _ := json.Marshal("[INST] " + input + " [/INST]  ")
@@ -494,9 +494,9 @@ func newRequest(input string) (*http.Response, error) {
 
 	req, err := http.NewRequest("POST", "https://ai-chat.bsg.brave.com/v1/complete", data)
 	if err != nil {
-		fmt.Println("\nSome error has occurred.")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, "\nSome error has occurred.")
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
@@ -550,7 +550,7 @@ func handleEachPart(resp *http.Response) {
 
 	for scanner.Scan() {
 		newText := getMainText(scanner.Text())
-		if (len(newText) < 1){
+		if len(newText) < 1 {
 			continue
 		}
 		mainText := strings.Replace(newText, previousText, "", -1)
@@ -667,31 +667,31 @@ func handleEachPart(resp *http.Response) {
 		count++
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Some error has occurred. Error:", err)
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+		os.Exit(1)
 	}
 
 }
 
 func printConnectionErrorMsg(err error) {
-	bold.Println("\rSome error has occurred. Check your internet connection.")
-	fmt.Println("\nError:", err)
-	os.Exit(0)
+	bold.Fprintln(os.Stderr, "\rSome error has occurred. Check your internet connection.")
+	fmt.Fprintln(os.Stderr, "\nError:", err)
+	os.Exit(1)
 }
 
 func handleStatus400(resp *http.Response) {
-	bold.Println("\rSome error has occurred. Statuscode:", resp.StatusCode)
+	bold.Fprintln(os.Stderr, "\rSome error has occurred. Statuscode:", resp.StatusCode)
 	respBody, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(respBody))
-	os.Exit(0)
+	os.Exit(1)
 }
 
 func generateImage(prompt string) {
 	bold.Println("Generating images...")
 	client, err := newClient()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	url := "https://api.craiyon.com/v3"
@@ -714,8 +714,8 @@ func generateImage(prompt string) {
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Print("Check your internet connection\n\n")
-		fmt.Println("Error:", err)
+		fmt.Fprint(os.Stderr, "Check your internet connection\n\n")
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(0)
 	}
 
@@ -726,7 +726,7 @@ func generateImage(prompt string) {
 	err = json.NewDecoder(res.Body).Decode(&responseObj)
 	if err != nil {
 		// Handle error
-		fmt.Println("Error:", err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
 
@@ -736,8 +736,8 @@ func generateImage(prompt string) {
 	if _, err := os.Stat(prompt); os.IsNotExist(err) {
 		err := os.Mkdir(prompt, 0755)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 	}
 
