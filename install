@@ -52,9 +52,9 @@ curl -SL --progress-bar "$URL" -o /tmp/tgpt
 $SUDO mv /tmp/tgpt $path
 
 if [ -d "$path" ]; then
-    $SUDO chmod 700 $path/tgpt
+    $SUDO chmod 750 $path/tgpt
 elif [ -f "$path" ]; then
-    $SUDO chmod 700 $path
+    $SUDO chmod 750 $path
 fi
 
 echo -e "Installed Successfully \n"
