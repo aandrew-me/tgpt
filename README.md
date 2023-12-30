@@ -8,6 +8,8 @@
 
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
+Current model: llama-2-13b-chat
+
 ## Usage 💬
 
 ```bash
