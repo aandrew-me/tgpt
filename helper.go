@@ -13,8 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aandrew-me/tgpt/v2/client"
+	"github.com/aandrew-me/tgpt/v2/providers"
+	"github.com/aandrew-me/tgpt/v2/structs"
 	http "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/olekukonko/ts"
 
 	tls_client "github.com/bogdanfinn/tls-client"
@@ -24,16 +26,6 @@ import (
 type Data struct {
 	Version string `json:"version"`
 }
-
-// type Response struct {
-// 	ID      string `json:"id"`
-// 	Choices []struct {
-// 		Delta struct {
-// 			Content string `json:"content"`
-// 		} `json:"delta"`
-// 	} `json:"choices"`
-// }
-
 type Response struct {
 	Completion string `json:"completion"`
 }
@@ -42,39 +34,9 @@ type ImgResponse struct {
 	Images []string `json:"images"`
 }
 
-func newClient() (tls_client.HttpClient, error) {
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(120),
-		tls_client.WithClientProfile(profiles.Firefox_110),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
-		// tls_client.WithInsecureSkipVerify(),
-	}
-
-	_, err := os.Stat("proxy.txt")
-	if err == nil {
-		proxyConfig, readErr := os.ReadFile("proxy.txt")
-		if readErr != nil {
-			fmt.Fprintln(os.Stderr, "Error reading file proxy.txt:", readErr)
-			return nil, readErr
-		}
-
-		proxyAddress := strings.TrimSpace(string(proxyConfig))
-		if proxyAddress != "" {
-			if strings.HasPrefix(proxyAddress, "http://") || strings.HasPrefix(proxyAddress, "socks5://") {
-				proxyOption := tls_client.WithProxyUrl(proxyAddress)
-				options = append(options, proxyOption)
-			}
-		}
-	}
-
-	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
-}
-
-func getData(input string, configDir string, isInteractive bool) {
+func getData(input string, isInteractive bool, prevMessages string) string {
 	// Receiving response
-	resp, err := newRequest(input)
+	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider}, prevMessages)
 
 	if err != nil {
 		stopSpin = true
@@ -103,8 +65,20 @@ func getData(input string, configDir string, isInteractive bool) {
 	}
 
 	// Handling each part
-	handleEachPart(resp)
+	responseTxt := handleEachPart(resp)
 	fmt.Print("\n\n")
+
+	safeInput, _ := json.Marshal(input)
+	msgObject := fmt.Sprintf(`{
+		"content": %v,
+		"role": "user"
+	},{
+		"content": "%v",
+		"role": "system"
+	},
+	`, string(safeInput), responseTxt)
+
+	return msgObject
 }
 
 func loading(stop *bool) {
@@ -124,7 +98,7 @@ func update() {
 	if runtime.GOOS == "windows" || runtime.GOOS == "android" {
 		fmt.Println("This feature is not supported on your Operating System")
 	} else {
-		client, err := newClient()
+		client, err := client.NewClient()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return
@@ -185,7 +159,7 @@ func codeGenerate(input string) {
 
 	codePrompt := fmt.Sprintf(`Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:`, input)
 
-	resp, err := newRequest(codePrompt)
+	resp, err := providers.NewRequest(codePrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider}, "")
 
 	if err != nil {
 		stopSpin = true
@@ -205,7 +179,7 @@ func codeGenerate(input string) {
 	// Handling each part
 	previousText := ""
 	for scanner.Scan() {
-		newText := getMainText(scanner.Text())
+		newText := providers.GetMainText(scanner.Text(), *provider)
 		if len(newText) < 1 {
 			continue
 		}
@@ -265,7 +239,7 @@ func shellCommand(input string) {
 func getCommand(shellPrompt string) {
 	checkInputLength(shellPrompt)
 
-	resp, err := newRequest(shellPrompt)
+	resp, err := providers.NewRequest(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider}, "")
 
 	if err != nil {
 		stopSpin = true
@@ -292,7 +266,7 @@ func getCommand(shellPrompt string) {
 
 	// Handling each part
 	for scanner.Scan() {
-		newText := getMainText(scanner.Text())
+		newText := providers.GetMainText(scanner.Text(), *provider)
 		if len(newText) < 1 {
 			continue
 		}
@@ -389,10 +363,10 @@ func getVersionHistory() {
 	}
 }
 
-func getWholeText(input string, configDir string) {
+func getWholeText(input string) {
 	checkInputLength(input)
 
-	resp, err := newRequest(input)
+	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider}, "")
 
 	if err != nil {
 		stopSpin = true
@@ -415,7 +389,7 @@ func getWholeText(input string, configDir string) {
 
 	// Handling each part
 	for scanner.Scan() {
-		newText := getMainText(scanner.Text())
+		newText := providers.GetMainText(scanner.Text(), *provider)
 		if len(newText) < 1 {
 			continue
 		}
@@ -426,10 +400,10 @@ func getWholeText(input string, configDir string) {
 	fmt.Println(fullText)
 }
 
-func getSilentText(input string, configDir string) {
+func getSilentText(input string) {
 	checkInputLength(input)
 
-	resp, err := newRequest(input)
+	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider}, "")
 
 	if err != nil {
 		stopSpin = true
@@ -450,7 +424,7 @@ func getSilentText(input string, configDir string) {
 	previousText := ""
 
 	for scanner.Scan() {
-		newText := getMainText(scanner.Text())
+		newText := providers.GetMainText(scanner.Text(), *provider)
 		if len(newText) < 1 {
 			continue
 		}
@@ -468,64 +442,7 @@ func checkInputLength(input string) {
 	}
 }
 
-func newRequest(input string) (*http.Response, error) {
-	client, err := newClient()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	safeInput, _ := json.Marshal("[INST] " + input + " [/INST]  ")
-
-	var data = strings.NewReader(fmt.Sprintf(`{
-		"max_tokens_to_sample": 600,
-		"model": "llama-2-13b-chat",
-		"prompt": %v,
-		"stop_sequences": [
-			"</response>",
-			"</s>"
-		],
-		"stream": true,
-		"temperature": 0.2,
-		"top_k": -1,
-		"top_p": 0.999
-	}
-	`, string(safeInput)))
-
-	req, err := http.NewRequest("POST", "https://ai-chat.bsg.brave.com/v1/complete", data)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "\nSome error has occurred.")
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(1)
-	}
-	// Setting all the required headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-brave-key", "qztbjzBqJueQZLFkwTTJrieu8Vw3789u")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/110.0")
-
-	// Return response
-	return (client.Do(req))
-}
-
-func getMainText(line string) (mainText string) {
-	var obj = "{}"
-	if len(line) > 1 {
-		obj = strings.Split(line, "data: ")[1]
-	}
-
-	var d Response
-	if err := json.Unmarshal([]byte(obj), &d); err != nil {
-		return ""
-	}
-
-	if d.Completion != "" {
-		mainText = d.Completion
-		return mainText
-	}
-	return ""
-}
-
-func handleEachPart(resp *http.Response) {
+func handleEachPart(resp *http.Response) string {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
@@ -547,14 +464,16 @@ func handleEachPart(resp *http.Response) {
 	}
 
 	previousText := ""
+	fullText := ""
 
 	for scanner.Scan() {
-		newText := getMainText(scanner.Text())
+		newText := providers.GetMainText(scanner.Text(), *provider)
 		if len(newText) < 1 {
 			continue
 		}
 		mainText := strings.Replace(newText, previousText, "", -1)
 		previousText = newText
+		fullText += mainText
 
 		if count <= 0 {
 			wordLength := len([]rune(mainText))
@@ -671,6 +590,8 @@ func handleEachPart(resp *http.Response) {
 		os.Exit(1)
 	}
 
+	return fullText
+
 }
 
 func printConnectionErrorMsg(err error) {
@@ -688,7 +609,7 @@ func handleStatus400(resp *http.Response) {
 
 func generateImage(prompt string) {
 	bold.Println("Generating images...")
-	client, err := newClient()
+	client, err := client.NewClient()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

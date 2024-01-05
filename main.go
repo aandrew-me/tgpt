@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,7 +16,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.2.3"
+const localVersion = "3.0.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -23,9 +24,11 @@ var boldViolet = color.New(color.Bold, color.FgMagenta)
 var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
 var programLoop = true
-var configDir = ""
 var userInput = ""
 var executablePath = ""
+var provider *string
+var apiModel *string
+var apiKey *string
 
 func main() {
 	execPath, err := os.Executable()
@@ -41,46 +44,82 @@ func main() {
 
 	args := os.Args
 
-	if len(args) > 1 && len(args[1]) > 1 {
-		input := args[1]
+	apiModel = flag.String("model", "", "Choose which provider to use")
+	provider = flag.String("provider", "", "Choose which provider to use")
+	apiKey = flag.String("key", "", "Use personal API Key")
 
-		if input == "-v" || input == "--version" {
+	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
+	flag.BoolVar(isQuiet, "quite", false, "Gives response back without loading animation")
+
+	isWhole := flag.Bool("w", false, "Gives response back as a whole text")
+	flag.BoolVar(isWhole, "whole", false, "Gives response back as a whole text")
+
+	isCode := flag.Bool("c", false, "Generate Code. (Experimental)")
+	flag.BoolVar(isCode, "code", false, "Generate Code. (Experimental)")
+
+	isShell := flag.Bool("s", false, "Generate and Execute shell commands.")
+	flag.BoolVar(isShell, "shell", false, "Generate and Execute shell commands.")
+
+	isImage := flag.Bool("img", false, "Generate images from text")
+	flag.BoolVar(isImage, "image", false, "Generate images from text")
+
+	isInteractive := flag.Bool("i", false, "Start normal interactive mode")
+	flag.BoolVar(isInteractive, "interactive", false, "Start normal interactive mode")
+
+	isMultiline := flag.Bool("m", false, "Start multi-line interactive mode")
+	flag.BoolVar(isMultiline, "multiline", false, "Start multi-line interactive mode")
+
+	isVersion := flag.Bool("v", false, "Gives response back as a whole text")
+	flag.BoolVar(isVersion, "version", false, "Gives response back as a whole text")
+
+	isHelp := flag.Bool("h", false, "Gives response back as a whole text")
+	flag.BoolVar(isHelp, "help", false, "Gives response back as a whole text")
+
+	isUpdate := flag.Bool("u", false, "Update program")
+	flag.BoolVar(isUpdate, "update", false, "Update program")
+
+	isChangelog := flag.Bool("cl", false, "See changelog of versions")
+	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
+
+	flag.Parse()
+
+	prompt := flag.Arg(0)
+
+	if len(args) >= 1 {
+		if *isVersion {
 			fmt.Println("tgpt", localVersion)
-		} else if input == "-cl" || input == "--changelog" {
+		} else if *isChangelog {
 			getVersionHistory()
-		} else if input == "-w" || input == "--whole" {
-			if len(args) > 2 && len(args[2]) > 1 {
-				prompt := args[2]
+		} else if *isWhole {
+			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
 					fmt.Fprintln(os.Stderr, "You need to provide some text")
 					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
 					os.Exit(1)
 				}
-				getWholeText(trimmedPrompt, configDir+"/tgpt")
+				getWholeText(trimmedPrompt)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getWholeText(formattedInput, configDir+"/tgpt")
+				getWholeText(formattedInput)
 			}
-		} else if input == "-q" || input == "--quiet" {
-			if len(args) > 2 && len(args[2]) > 1 {
-				prompt := args[2]
+		} else if *isQuiet {
+			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
 					fmt.Fprintln(os.Stderr, "You need to provide some text")
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(trimmedPrompt, configDir+"/tgpt")
+				getSilentText(trimmedPrompt)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getSilentText(formattedInput, configDir+"/tgpt")
+				getSilentText(formattedInput)
 			}
-		} else if input == "-s" || input == "--shell" {
-			if len(args) > 2 && len(args[2]) > 1 {
-				prompt := args[2]
+		} else if *isShell {
+			if len(prompt) > 1 {
 				go loading(&stopSpin)
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
@@ -95,9 +134,8 @@ func main() {
 				os.Exit(1)
 			}
 
-		} else if input == "-c" || input == "--code" {
-			if len(args) > 2 && len(args[2]) > 1 {
-				prompt := args[2]
+		} else if *isCode {
+			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
 					fmt.Fprintln(os.Stderr, "You need to provide some text")
@@ -110,15 +148,18 @@ func main() {
 				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
 				os.Exit(1)
 			}
-		} else if input == "-u" || input == "--update" {
+		} else if *isUpdate {
 			update()
-		} else if input == "-i" || input == "--interactive" {
+		} else if *isInteractive {
 			/////////////////////
 			// Normal interactive
 			/////////////////////
 
 			reader := bufio.NewReader(os.Stdin)
 			bold.Print("Interactive mode started. Press Ctrl + C or type exit to quit.\n\n")
+
+			previousMessages := ""
+
 			for {
 				boldBlue.Println("╭─ You")
 				boldBlue.Print("╰─> ")
@@ -136,16 +177,18 @@ func main() {
 							bold.Println("Exiting...")
 							return
 						}
-						getData(input, configDir+"/tgpt", true)
+						previousMessages += getData(input, true, previousMessages)
 					}
 				}
 			}
 
-		} else if input == "-m" || input == "--multiline" {
+		} else if *isMultiline {
 			/////////////////////
 			// Multiline interactive
 			/////////////////////
 			fmt.Print("\nPress Tab to submit and Ctrl + C to exit.\n")
+
+			previousMessages := ""
 
 			for programLoop {
 				fmt.Print("\n")
@@ -157,14 +200,13 @@ func main() {
 					os.Exit(1)
 				}
 				if len(userInput) > 0 {
-					getData(userInput, configDir+"/tgpt", true)
+					previousMessages += getData(userInput, true, previousMessages)
 				}
 
 			}
 
-		} else if input == "-img" || input == "--image" {
-			if len(args) > 2 && len(args[2]) > 1 {
-				prompt := args[2]
+		} else if *isImage {
+			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
 					fmt.Fprintln(os.Stderr, "You need to provide some text")
@@ -177,35 +219,12 @@ func main() {
 				fmt.Println()
 				generateImage(formattedInput)
 			}
-		} else if strings.HasPrefix(input, "-") {
-			boldBlue.Println(`Usage: tgpt [Flag] [Prompt]`)
-
-			boldBlue.Println("\nFlags:")
-			fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
-			fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
-			fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
-			fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
-			fmt.Printf("%-50v Generate images from text\n", "-img, --image")
-
-			boldBlue.Println("\nOptions:")
-			fmt.Printf("%-50v Print version \n", "-v, --version")
-			fmt.Printf("%-50v Print help message \n", "-h, --help")
-			fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
-			fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
-			fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
-
-			if runtime.GOOS != "windows" {
-				fmt.Printf("%-50v Update program \n", "-u, --update")
-			}
-
-			boldBlue.Println("\nExamples:")
-			fmt.Println(`tgpt "What is internet?"`)
-			fmt.Println(`tgpt -m`)
-			fmt.Println(`tgpt -s "How to update my system?"`)
+		} else if *isHelp {
+			showHelpMessage()
 		} else {
 			go loading(&stopSpin)
-			formattedInput := strings.TrimSpace(input)
-			getData(formattedInput, configDir+"/tgpt", false)
+			formattedInput := strings.TrimSpace(prompt)
+			getData(formattedInput, false, "")
 		}
 
 	} else {
@@ -214,7 +233,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(formattedInput, configDir+"/tgpt", false)
+		getData(formattedInput, false, "")
 	}
 }
 
@@ -297,4 +316,49 @@ func getFormattedInputStdin() (formattedInput string) {
 	scanner.Scan()
 	input := scanner.Text()
 	return strings.TrimSpace(input)
+}
+
+func showHelpMessage() {
+	boldBlue.Println(`Usage: tgpt [Flags] [Prompt]`)
+
+	boldBlue.Println("\nFlags:")
+	fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
+	fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
+	fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
+	fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
+	fmt.Printf("%-50v Generate images from text\n", "-img, --image")
+	fmt.Printf("%-50v Set Provider. Detailed information has been provided below\n", "--provider")
+	fmt.Printf("%-50v Set Model\n", "--model")
+	fmt.Printf("%-50v Set API Key\n", "--key")
+
+	boldBlue.Println("\nOptions:")
+	fmt.Printf("%-50v Print version \n", "-v, --version")
+	fmt.Printf("%-50v Print help message \n", "-h, --help")
+	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
+	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
+	fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
+
+	if runtime.GOOS != "windows" {
+		fmt.Printf("%-50v Update program \n", "-u, --update")
+	}
+
+	boldBlue.Println("\nProviders:")
+	fmt.Println("The default provider is Brave Leo which uses 'llama-2-13b-chat' model.")
+	fmt.Println("Available providers to use: leo, fakeopen, openai")
+
+	bold.Println("\nProvider: leo")
+	fmt.Println("Supports personal API Key and custom models")
+
+	bold.Println("\nProvider: fakeopen")
+	fmt.Println("No support for API Key, but supports models")
+
+	bold.Println("\nProvider: openai")
+	fmt.Println("Needs API key to work and supports various models")
+
+	boldBlue.Println("\nExamples:")
+	fmt.Println(`tgpt "What is internet?"`)
+	fmt.Println(`tgpt -m`)
+	fmt.Println(`tgpt -s "How to update my system?"`)
+	fmt.Println(`tgpt --provider fakeopen "What is 1+1"`)
+	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
 }

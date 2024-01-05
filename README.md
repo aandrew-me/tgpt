@@ -25,12 +25,12 @@ Flags:
 -img, --image                                      Generate images from text
 
 Options:
--v, --version                                      Print version 
--h, --help                                         Print help message 
--i, --interactive                                  Start normal interactive mode 
--m, --multiline                                    Start multi-line interactive mode 
--cl, --changelog                                   See changelog of versions 
--u, --update                                       Update program 
+-v, --version                                      Print version
+-h, --help                                         Print help message
+-i, --interactive                                  Start normal interactive mode
+-m, --multiline                                    Start multi-line interactive mode
+-cl, --changelog                                   See changelog of versions
+-u, --update                                       Update program
 
 Examples:
 tgpt "What is internet?"

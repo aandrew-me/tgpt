@@ -1,20 +1,21 @@
-package main
+package leo
 
 import (
 	"fmt"
 	"io"
 	"testing"
 
+	"github.com/aandrew-me/tgpt/v2/structs"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRequest(t *testing.T) {
-	resp, err := newRequest("What is 1+1")
+	resp, err := NewRequest("What is 1+1", structs.Params{})
 	body, _ := io.ReadAll(resp.Body)
 
 	assert := assert.New(t)
 
-	fmt.Println("Statuscode:", resp.StatusCode);
+	fmt.Println("Statuscode:", resp.StatusCode)
 	fmt.Println("Response:", string(body))
 
 	assert.Nil(err, "Error should be Nil")
