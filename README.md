@@ -8,14 +8,14 @@
 
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
-Current chat model: llama-2-13b-chat (Brave Leo)
+**Currently available providers**: Brave Leo (llama-2-13b-chat), FakeOpen (GPT-3.5, GPT-4) and OpenAI (Requires API Key)
 
-Image Generation Model: Craiyon V3
+**Image Generation Model**: Craiyon V3
 
 ## Usage 💬
 
-```bash
-Usage: tgpt [Flag] [Prompt]
+```
+Usage: tgpt [Flags] [Prompt]
 
 Flags:
 -s, --shell                                        Generate and Execute shell commands. (Experimental) 
@@ -23,19 +23,37 @@ Flags:
 -q, --quiet                                        Gives response back without loading animation
 -w, --whole                                        Gives response back as a whole text
 -img, --image                                      Generate images from text
+--provider                                         Set Provider. Detailed information has been provided below
+--model                                            Set Model
+--key                                              Set API Key
 
 Options:
--v, --version                                      Print version
--h, --help                                         Print help message
--i, --interactive                                  Start normal interactive mode
--m, --multiline                                    Start multi-line interactive mode
--cl, --changelog                                   See changelog of versions
--u, --update                                       Update program
+-v, --version                                      Print version 
+-h, --help                                         Print help message 
+-i, --interactive                                  Start normal interactive mode 
+-m, --multiline                                    Start multi-line interactive mode 
+-cl, --changelog                                   See changelog of versions 
+-u, --update                                       Update program 
+
+Providers:
+The default provider is Brave Leo which uses 'llama-2-13b-chat' model.
+Available providers to use: leo, fakeopen, openai
+
+Provider: leo
+Supports personal API Key and custom models
+
+Provider: fakeopen
+No support for API Key, but supports models
+
+Provider: openai
+Needs API key to work and supports various models
 
 Examples:
 tgpt "What is internet?"
 tgpt -m
 tgpt -s "How to update my system?"
+tgpt --provider fakeopen "What is 1+1"
+tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"
 ```
 
 ![demo](https://user-images.githubusercontent.com/66430340/233759296-c4cf8cf2-0cab-48aa-9e84-40765b823282.gif)
