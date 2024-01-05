@@ -50,7 +50,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		key = params.ApiKey
 	}
 
-	safeInput, _ := json.Marshal("[INST] " + input + " [/INST]  ")
+	safeTxt, _ := json.Marshal(input)
+	safeInput := fmt.Sprintf(`"<s>[INST] <<SYS>>\n\nYour name is Leo, a helpful, respectful and honest AI assistant created by the company Brave. You will be replying to a user of the Brave browser. Always respond in a neutral tone. Be polite and courteous. Answer concisely in no more than 50-80 words.\n\nPlease ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\n<</SYS>>\n\n%v [/INST] Here is your response:"`, string(safeTxt)[1:len(safeTxt)-1])
 
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"max_tokens_to_sample": 600,
@@ -76,7 +77,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-brave-key", key)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/110.0")
+	req.Header.Set("accept", "text/event-stream")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	// Return response
 	return (client.Do(req))

@@ -60,7 +60,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("authorization", "Bearer " + params.ApiKey)
+	req.Header.Set("Authorization", "Bearer " + params.ApiKey)
 
 	// Return response
 	return (client.Do(req))
