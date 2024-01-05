@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/fatih/color v1.15.0
 	github.com/olekukonko/ts v0.0.0-20171002115256-78ecb04241c0
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/mod v0.13.0
 )
 
@@ -32,8 +33,6 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/tam7t/hpkp v0.0.0-20160821193359-2b70b4024ed5 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.16.0 // indirect

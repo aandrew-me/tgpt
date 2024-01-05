@@ -16,7 +16,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "3.0.0"
+const localVersion = "2.3.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
