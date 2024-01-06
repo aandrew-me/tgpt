@@ -40,7 +40,7 @@ Options:
 -u, --update                                       Update program 
 
 Providers:
-The default provider is Brave Leo which uses 'llama-2-13b-chat' model.
+The default provider is fakeopen which uses 'GPT-3.5-turbo' model.
 Available providers to use: leo, fakeopen, openai, opengpts
 
 Provider: leo
