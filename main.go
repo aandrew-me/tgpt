@@ -343,7 +343,7 @@ func showHelpMessage() {
 	}
 
 	boldBlue.Println("\nProviders:")
-	fmt.Println("The default provider is Brave Leo which uses 'llama-2-13b-chat' model.")
+	fmt.Println("The default provider is fakeopen which uses 'GPT-3.5-turbo' model.")
 	fmt.Println("Available providers to use: leo, fakeopen, openai, opengpts")
 
 	bold.Println("\nProvider: leo")
