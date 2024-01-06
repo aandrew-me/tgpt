@@ -78,6 +78,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-brave-key", key)
 	req.Header.Set("accept", "text/event-stream")
+	req.Header.Set("accept-language", "en-US,en;q=0.9")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	// Return response
