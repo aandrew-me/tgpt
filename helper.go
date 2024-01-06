@@ -433,6 +433,7 @@ func getSilentText(input string) {
 
 		fmt.Print(mainText)
 	}
+	fmt.Println()
 }
 
 func checkInputLength(input string) {
