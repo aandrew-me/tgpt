@@ -16,7 +16,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.3.3"
+const localVersion = "2.4.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -344,16 +344,19 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is Brave Leo which uses 'llama-2-13b-chat' model.")
-	fmt.Println("Available providers to use: leo, fakeopen, openai")
+	fmt.Println("Available providers to use: leo, fakeopen, openai, opengpts")
 
 	bold.Println("\nProvider: leo")
-	fmt.Println("Supports personal API Key and custom models")
+	fmt.Println("Supports personal API Key and custom models.")
 
 	bold.Println("\nProvider: fakeopen")
-	fmt.Println("No support for API Key, but supports models")
+	fmt.Println("No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models")
+
+	bold.Println("\nProvider: opengpts")
+	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)

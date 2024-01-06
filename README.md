@@ -8,7 +8,7 @@
 
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
-**Currently available providers**: Brave Leo (llama-2-13b-chat), FakeOpen (GPT-3.5, GPT-4) and OpenAI (Requires API Key)
+**Currently available providers**: Brave Leo (llama-2-13b-chat), FakeOpen (GPT-3.5, GPT-4), OpenGPTs (GPT-3.5) and OpenAI (Requires API Key)
 
 **Image Generation Model**: Craiyon V3
 
@@ -37,7 +37,7 @@ Options:
 
 Providers:
 The default provider is Brave Leo which uses 'llama-2-13b-chat' model.
-Available providers to use: leo, fakeopen, openai
+Available providers to use: leo, fakeopen, openai, opengpts
 
 Provider: leo
 Supports personal API Key and custom models
@@ -47,6 +47,9 @@ No support for API Key, but supports models
 
 Provider: openai
 Needs API key to work and supports various models
+
+Provider: opengpts
+Uses gpt-3.5-turbo only. Do not use with sensitive data
 
 Examples:
 tgpt "What is internet?"
