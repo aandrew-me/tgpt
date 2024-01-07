@@ -21,6 +21,7 @@ const localVersion = "2.4.1"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
+var blue = color.New(color.FgBlue)
 var boldViolet = color.New(color.Bold, color.FgMagenta)
 var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
@@ -162,7 +163,7 @@ func main() {
 			history := []string{}
 
 			for {
-				boldBlue.Println("╭─ You")
+				blue.Println("╭─ You")
 
 				input := Prompt.Input("╰─> ", historyCompleter,
 					Prompt.OptionHistory(history),
