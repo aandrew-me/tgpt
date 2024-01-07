@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	Prompt "github.com/c-bata/go-prompt"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
@@ -155,29 +156,32 @@ func main() {
 			// Normal interactive
 			/////////////////////
 
-			reader := bufio.NewReader(os.Stdin)
 			bold.Print("Interactive mode started. Press Ctrl + C or type exit to quit.\n\n")
 
 			previousMessages := ""
+			history := []string{}
 
 			for {
 				boldBlue.Println("╭─ You")
-				boldBlue.Print("╰─> ")
 
-				input, err := reader.ReadString('\n')
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "Error reading input:", err)
-					break
-				}
+				input := Prompt.Input("╰─> ", historyCompleter,
+					Prompt.OptionHistory(history),
+					Prompt.OptionPrefixTextColor(Prompt.Blue),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlC,
+						Fn:  exit,
+					}),
+				)
 
 				if len(input) > 1 {
 					input = strings.TrimSpace(input)
 					if len(input) > 1 {
 						if input == "exit" {
 							bold.Println("Exiting...")
-							return
+							os.Exit(0)
 						}
 						previousMessages += getData(input, true, previousMessages)
+						history = append(history, input)
 					}
 				}
 			}
@@ -364,4 +368,14 @@ func showHelpMessage() {
 	fmt.Println(`tgpt -s "How to update my system?"`)
 	fmt.Println(`tgpt --provider fakeopen "What is 1+1"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
+}
+
+func historyCompleter(d Prompt.Document) []Prompt.Suggest {
+	s := []Prompt.Suggest{}
+	return Prompt.FilterHasPrefix(s, d.GetWordAfterCursor(), true)
+}
+
+func exit(_ *Prompt.Buffer) {
+	bold.Println("Exiting...")
+	os.Exit(0)
 }
