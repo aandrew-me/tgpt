@@ -53,10 +53,6 @@ jobs:
                   GOOS=openbsd GOARCH=arm go build -ldflags="-s -w" -o tgpt-openbsd-arm
                   GOOS=openbsd GOARCH=386 go build -ldflags="-s -w" -o tgpt-openbsd-i386 
 
-                  echo "## Changelog:" >> ${{ github.workspace }}-CHANGELOG.txt    
-
-                  echo "<details><summary>SHA256 Hashes</summary><code>" >> ${{ github.workspace }}-CHANGELOG.txt      
-
                   echo "SHA256 hashes of the built binaries:"
                   echo "SHA256 hashes of the built binaries:" >> ${{ github.workspace }}-CHANGELOG.txt
 
@@ -80,8 +76,6 @@ jobs:
                   
                   sha256sum tgpt-mac-arm64
                   sha256sum tgpt-mac-arm64 >> ${{ github.workspace }}-CHANGELOG.txt
-
-                  echo "</code></details>" >> ${{ github.workspace }}-CHANGELOG.txt
 
             - name: Upload Artifacts
               id: upload-artifacts
