@@ -349,7 +349,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is fakeopen which uses 'GPT-3.5-turbo' model.")
-	fmt.Println("Available providers to use: leo, fakeopen, openai, opengpts")
+	fmt.Println("Available providers to use: leo, fakeopen, openai, opengpts, koboldai")
 
 	bold.Println("\nProvider: leo")
 	fmt.Println("Supports personal API Key and custom models.")
@@ -362,6 +362,9 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: opengpts")
 	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
+	
+	bold.Println("\nProvider: koboldai")
+	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)

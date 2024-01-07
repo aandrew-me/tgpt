@@ -684,6 +684,7 @@ func downloadImage(url string, destDir string, filename string) error {
 	}
 	defer file.Close()
 
+
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
 		return err
