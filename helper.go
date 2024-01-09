@@ -66,6 +66,8 @@ func getData(input string, isInteractive bool, prevMessages string) string {
 
 	// Handling each part
 	responseTxt := handleEachPart(resp)
+	safeResponse, _ := json.Marshal(responseTxt);
+
 	fmt.Print("\n\n")
 
 	safeInput, _ := json.Marshal(input)
@@ -73,10 +75,10 @@ func getData(input string, isInteractive bool, prevMessages string) string {
 		"content": %v,
 		"role": "user"
 	},{
-		"content": "%v",
+		"content": %v,
 		"role": "system"
 	},
-	`, string(safeInput), responseTxt)
+	`, string(safeInput), string(safeResponse))
 
 	return msgObject
 }
