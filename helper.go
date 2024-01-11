@@ -47,7 +47,13 @@ func getData(input string, isInteractive bool, prevMessages string) string {
 	if code >= 400 {
 		stopSpin = true
 		fmt.Print("\r")
-		handleStatus400(resp)
+		if !isInteractive {
+			handleStatus400(resp)
+		}
+		respBody, _ := io.ReadAll(resp.Body)
+		fmt.Println("Some error has occurred, try again")
+		fmt.Println(string(respBody))
+		return ""
 	}
 
 	defer resp.Body.Close()
