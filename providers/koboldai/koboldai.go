@@ -25,12 +25,23 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 
 	safeInput, _ := json.Marshal(input)
 
+	temperature := "0.5"
+	if params.Temperature != ""{
+		temperature = params.Temperature
+	}
+
+	top_p := "0.5"
+	if params.Top_p != ""{
+		top_p = params.Top_p
+	}
+
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"prompt": %v,
-		"temperature": 1,
-		"top_p": 1
+		"temperature": %v,
+		"top_p": %v,
+		"max_length": 300
 	  }
-	`, string(safeInput)))
+	`, string(safeInput), temperature, top_p))
 
 	req, err := http.NewRequest("POST", "https://koboldai-koboldcpp-tiefighter.hf.space/api/extra/generate/stream", data)
 	if err != nil {

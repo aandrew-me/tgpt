@@ -50,6 +50,16 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		key = params.ApiKey
 	}
 
+	temperature := "0.5"
+	if params.Temperature != ""{
+		temperature = params.Temperature
+	}
+
+	top_p := "0.5"
+	if params.Top_p != ""{
+		top_p = params.Top_p
+	}
+
 	safeTxt, _ := json.Marshal(input)
 	safeInput := fmt.Sprintf(`"<s>[INST] <<SYS>>\n\nYour name is Leo, a helpful, respectful and honest AI assistant created by the company Brave. You will be replying to a user of the Brave browser. Always respond in a neutral tone. Be polite and courteous. Answer concisely in no more than 50-80 words.\n\nPlease ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\n<</SYS>>\n\n%v [/INST] Here is your response:"`, string(safeTxt)[1:len(safeTxt)-1])
 
@@ -62,11 +72,11 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 			"</s>"
 		],
 		"stream": true,
-		"temperature": 0.2,
+		"temperature": %v,
 		"top_k": -1,
-		"top_p": 0.999
+		"top_p": %v
 	}
-	`, model, string(safeInput)))
+	`, model, string(safeInput), temperature, top_p))
 
 	req, err := http.NewRequest("POST", "https://ai-chat.bsg.brave.com/v1/complete", data)
 	if err != nil {

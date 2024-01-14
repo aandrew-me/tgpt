@@ -33,6 +33,16 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		model = params.ApiModel
 	}
 
+	temperature := "0.5"
+	if params.Temperature != ""{
+		temperature = params.Temperature
+	}
+
+	top_p := "0.5"
+	if params.Top_p != ""{
+		top_p = params.Top_p
+	}
+
 	safeInput, _ := json.Marshal(input)
 
 	var data = strings.NewReader(fmt.Sprintf(`{
@@ -47,10 +57,10 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"model": "%v",
 		"presence_penalty": 0,
 		"stream": true,
-		"temperature": 1,
-		"top_p": 1
+		"temperature": %v,
+		"top_p": %v
 	}
-	`, prevMessages, string(safeInput), model))
+	`, prevMessages, string(safeInput), model, temperature, top_p))
 
 	req, err := http.NewRequest("POST", "https://ai.fakeopen.com/v1/chat/completions", data)
 	if err != nil {

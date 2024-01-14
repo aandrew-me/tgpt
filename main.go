@@ -31,6 +31,9 @@ var executablePath = ""
 var provider *string
 var apiModel *string
 var apiKey *string
+var temperature *string
+var top_p *string
+var max_length *string
 
 func main() {
 	execPath, err := os.Executable()
@@ -49,6 +52,9 @@ func main() {
 	apiModel = flag.String("model", "", "Choose which provider to use")
 	provider = flag.String("provider", "", "Choose which provider to use")
 	apiKey = flag.String("key", "", "Use personal API Key")
+	temperature = flag.String("temperature", "", "Set temperature")
+	top_p = flag.String("top_p", "", "Set top_p")
+	max_length = flag.String("max_length", "", "Set max length of response")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
 	flag.BoolVar(isQuiet, "quite", false, "Gives response back without loading animation")
@@ -362,7 +368,7 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: opengpts")
 	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
-	
+
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
