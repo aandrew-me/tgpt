@@ -13,7 +13,7 @@ import (
 )
 
 type Response struct {
-	Token      string `json:"token"`
+	Token string `json:"token"`
 }
 
 func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
@@ -26,22 +26,27 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	safeInput, _ := json.Marshal(input)
 
 	temperature := "0.5"
-	if params.Temperature != ""{
+	if params.Temperature != "" {
 		temperature = params.Temperature
 	}
 
 	top_p := "0.5"
-	if params.Top_p != ""{
+	if params.Top_p != "" {
 		top_p = params.Top_p
+	}
+
+	max_length := "300"
+	if params.Max_length != "" {
+		max_length = params.Max_length
 	}
 
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"prompt": %v,
 		"temperature": %v,
 		"top_p": %v,
-		"max_length": 300
+		"max_length": %v
 	  }
-	`, string(safeInput), temperature, top_p))
+	`, string(safeInput), temperature, top_p, max_length))
 
 	req, err := http.NewRequest("POST", "https://koboldai-koboldcpp-tiefighter.hf.space/api/extra/generate/stream", data)
 	if err != nil {

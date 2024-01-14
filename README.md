@@ -28,8 +28,13 @@ Flags:
 -w, --whole                                        Gives response back as a whole text
 -img, --image                                      Generate images from text
 --provider                                         Set Provider. Detailed information has been provided below
+
+Some additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.
 --model                                            Set Model
 --key                                              Set API Key
+--temperature                                      Set temperature
+--top_p                                            Set top_p
+--max_length                                       Set max response length
 
 Options:
 -v, --version                                      Print version 
@@ -41,19 +46,22 @@ Options:
 
 Providers:
 The default provider is fakeopen which uses 'GPT-3.5-turbo' model.
-Available providers to use: leo, fakeopen, openai, opengpts
+Available providers to use: leo, fakeopen, openai, opengpts, koboldai
 
 Provider: leo
-Supports personal API Key and custom models
+Supports personal API Key and custom models.
 
 Provider: fakeopen
-No support for API Key, but supports models
+No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4
 
 Provider: openai
 Needs API key to work and supports various models
 
 Provider: opengpts
 Uses gpt-3.5-turbo only. Do not use with sensitive data
+
+Provider: koboldai
+Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels
 
 Examples:
 tgpt "What is internet?"
