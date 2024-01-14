@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"runtime"
 	"strings"
@@ -17,7 +18,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.4.3"
+const localVersion = "2.4.4"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -170,7 +171,6 @@ func main() {
 
 			for {
 				blue.Println("╭─ You")
-
 				input := Prompt.Input("╰─> ", historyCompleter,
 					Prompt.OptionHistory(history),
 					Prompt.OptionPrefixTextColor(Prompt.Blue),
@@ -185,6 +185,12 @@ func main() {
 					if len(input) > 1 {
 						if input == "exit" {
 							bold.Println("Exiting...")
+							if runtime.GOOS != "windows" {
+								rawModeOff := exec.Command("stty", "-raw", "echo")
+								rawModeOff.Stdin = os.Stdin
+								_ = rawModeOff.Run()
+								rawModeOff.Wait()
+							}
 							os.Exit(0)
 						}
 						previousMessages += getData(input, true, previousMessages)
@@ -387,5 +393,13 @@ func historyCompleter(d Prompt.Document) []Prompt.Suggest {
 
 func exit(_ *Prompt.Buffer) {
 	bold.Println("Exiting...")
+
+	if runtime.GOOS != "windows" {
+		rawModeOff := exec.Command("stty", "-raw", "echo")
+		rawModeOff.Stdin = os.Stdin
+		_ = rawModeOff.Run()
+		rawModeOff.Wait()
+	}
+
 	os.Exit(0)
 }
