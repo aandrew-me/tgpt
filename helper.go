@@ -290,7 +290,6 @@ func getCommand(shellPrompt string) {
 		var userInput string
 		fmt.Scan(&userInput)
 		if userInput == "y" {
-			cmdArray := strings.Split(strings.TrimSpace(fullLine), " ")
 			var cmd *exec.Cmd
 			if runtime.GOOS == "windows" {
 				shellName := "cmd"
@@ -306,7 +305,7 @@ func getCommand(shellPrompt string) {
 				}
 
 			} else {
-				cmd = exec.Command(cmdArray[0], cmdArray[1:]...)
+				cmd = exec.Command("bash","-c",fullLine)
 
 			}
 
