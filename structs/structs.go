@@ -7,5 +7,5 @@ type Params struct {
 	Temperature string
 	Top_p string
 	Max_length string
-
+	Preprompt string
 }

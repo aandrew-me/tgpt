@@ -43,11 +43,25 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		top_p = params.Top_p
 	}
 
+	preprompt := "You are a helpful assistant"
+
+	if params.Preprompt != "" {
+		preprompt = params.Preprompt
+	}
+
+	finalPreprompt := fmt.Sprintf(`
+	{
+		"content": "%v",
+		"role": "system"
+	},
+	`, preprompt)
+
 	safeInput, _ := json.Marshal(input)
 
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"frequency_penalty": 0,
 		"messages": [
+			%v
 			%v
 			{
 				"content": %v,
@@ -60,7 +74,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"temperature": %v,
 		"top_p": %v
 	}
-	`, prevMessages, string(safeInput), model, temperature, top_p))
+	`, finalPreprompt, prevMessages, string(safeInput), model, temperature, top_p))
 
 	req, err := http.NewRequest("POST", "https://ai.fakeopen.com/v1/chat/completions", data)
 	if err != nil {

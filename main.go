@@ -35,6 +35,7 @@ var apiKey *string
 var temperature *string
 var top_p *string
 var max_length *string
+var preprompt *string
 
 func main() {
 	execPath, err := os.Executable()
@@ -56,6 +57,7 @@ func main() {
 	temperature = flag.String("temperature", "", "Set temperature")
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
+	preprompt = flag.String("preprompt", "", "Set preprompt")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
 	flag.BoolVar(isQuiet, "quite", false, "Gives response back without loading animation")
