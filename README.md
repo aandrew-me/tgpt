@@ -10,8 +10,8 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 
 ### Currently available providers: 
 - [FakeOpen](https://chat.geekgpt.org/) (GPT-3.5-turbo, GPT-4)
-- [Brave Leo](https://brave.com/leo/) (llama-2-13b-chat)
 - [OpenGPTs](https://opengpts-example-vz4y4ooboq-uc.a.run.app/) (GPT-3.5-turbo)
+- [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (Requires API Key)
 
 **Image Generation Model**: Craiyon V3
@@ -46,10 +46,7 @@ Options:
 
 Providers:
 The default provider is fakeopen which uses 'GPT-3.5-turbo' model.
-Available providers to use: leo, fakeopen, openai, opengpts, koboldai
-
-Provider: leo
-Supports personal API Key and custom models.
+Available providers to use: fakeopen, openai, opengpts, koboldai
 
 Provider: fakeopen
 No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4

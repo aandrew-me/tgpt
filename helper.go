@@ -72,7 +72,7 @@ func getData(input string, isInteractive bool, prevMessages string) string {
 
 	// Handling each part
 	responseTxt := handleEachPart(resp)
-	safeResponse, _ := json.Marshal(responseTxt);
+	safeResponse, _ := json.Marshal(responseTxt)
 
 	fmt.Print("\n\n")
 
@@ -305,7 +305,7 @@ func getCommand(shellPrompt string) {
 				}
 
 			} else {
-				cmd = exec.Command("bash","-c",fullLine)
+				cmd = exec.Command("bash", "-c", fullLine)
 
 			}
 
@@ -690,6 +690,7 @@ func downloadImage(url string, destDir string, filename string) error {
 		return err
 	}
 	defer file.Close()
+
 
 
 	_, err = io.Copy(file, response.Body)

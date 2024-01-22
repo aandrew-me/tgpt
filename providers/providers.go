@@ -3,7 +3,6 @@ package providers
 import (
 	"github.com/aandrew-me/tgpt/v2/providers/fakeopen"
 	"github.com/aandrew-me/tgpt/v2/providers/koboldai"
-	"github.com/aandrew-me/tgpt/v2/providers/leo"
 	"github.com/aandrew-me/tgpt/v2/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/providers/opengpts"
 	"github.com/aandrew-me/tgpt/v2/structs"
@@ -17,9 +16,7 @@ func GetMainText(line string, provider string) string {
 		return openai.GetMainText(line)
 	} else if provider == "opengpts" {
 		return opengpts.GetMainText(line)
-	} else if provider == "leo" {
-		return leo.GetMainText(line)
-	}else if provider == "koboldai" {
+	} else if provider == "koboldai" {
 		return koboldai.GetMainText(line)
 	}
 
@@ -33,8 +30,6 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		return openai.NewRequest(input, params, prevMessages)
 	} else if params.Provider == "opengpts" {
 		return opengpts.NewRequest(input, params, prevMessages)
-	} else if params.Provider == "leo" {
-		return leo.NewRequest(input, params)
 	} else if params.Provider == "koboldai" {
 		return koboldai.NewRequest(input, params, "")
 	}
