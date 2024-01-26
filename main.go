@@ -18,7 +18,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.4.4"
+const localVersion = "2.5.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -368,7 +368,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is fakeopen which uses 'GPT-3.5-turbo' model.")
-	fmt.Println("Available providers to use:, fakeopen, openai, opengpts, koboldai")
+	fmt.Println("Available providers to use:, fakeopen, openai, opengpts, koboldai, phind")
 
 	bold.Println("\nProvider: fakeopen")
 	fmt.Println("No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4")
@@ -381,6 +381,10 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
+
+	bold.Println("\nProvider: phind")
+	fmt.Println("Uses Phind Model. Great for developers")
+
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)

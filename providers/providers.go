@@ -5,6 +5,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/providers/opengpts"
+	"github.com/aandrew-me/tgpt/v2/providers/phind"
 	"github.com/aandrew-me/tgpt/v2/structs"
 	http "github.com/bogdanfinn/fhttp"
 )
@@ -18,9 +19,11 @@ func GetMainText(line string, provider string) string {
 		return opengpts.GetMainText(line)
 	} else if provider == "koboldai" {
 		return koboldai.GetMainText(line)
+	} else if provider == "phind" {
+		return phind.GetMainText(line)
 	}
 
-	return fakeopen.GetMainText(line)
+	return opengpts.GetMainText(line)
 }
 
 func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
@@ -32,6 +35,9 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		return opengpts.NewRequest(input, params, prevMessages)
 	} else if params.Provider == "koboldai" {
 		return koboldai.NewRequest(input, params, "")
+	} else if params.Provider == "phind" {
+		return phind.NewRequest(input, params, "")
 	}
-	return fakeopen.NewRequest(input, params, prevMessages)
+
+	return opengpts.NewRequest(input, params, prevMessages)
 }

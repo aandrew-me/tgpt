@@ -1,0 +1,100 @@
+package phind
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
+	http "github.com/bogdanfinn/fhttp"
+
+	"github.com/aandrew-me/tgpt/v2/client"
+	"github.com/aandrew-me/tgpt/v2/structs"
+)
+
+type Response struct {
+	ID      string `json:"id"`
+	Choices []struct {
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
+	} `json:"choices"`
+}
+
+func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
+	client, err := client.NewClient()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	// model := "gpt-3.5-turbo"
+	// if params.ApiModel != "" {
+	// 	model = params.ApiModel
+	// }
+
+	// preprompt := "You are a helpful assistant"
+
+	// if params.Preprompt != "" {
+	// 	preprompt = params.Preprompt
+	// }
+
+	// finalPreprompt := fmt.Sprintf(`
+	// {
+	// 	"content": "%v",
+	// 	"role": "system"
+	// },
+	// `, preprompt)
+
+	safeInput, _ := json.Marshal(input)
+
+	var data = strings.NewReader(fmt.Sprintf(`{
+		"additional_extension_context": "",
+		"allow_magic_buttons": true,
+		"is_vscode_extension": true,
+		"message_history": [
+			{
+				"content": %v,
+				"metadata": {},
+				"role": "user"
+			}
+		],
+		"requested_model": "Phind Model",
+		"user_input": %v
+	}
+	`, string(safeInput), string(safeInput)))
+
+	req, err := http.NewRequest("POST", "https://https.extension.phind.com/agent/", data)
+	if err != nil {
+		fmt.Println("\nSome error has occurred.")
+		fmt.Println("Error:", err)
+		os.Exit(0)
+	}
+	// Setting all the required headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "")
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Encoding", "Identity")
+
+
+	// Return response
+	return (client.Do(req))
+}
+
+func GetMainText(line string) (mainText string) {
+	var obj = "{}"
+	if len(line) > 1 {
+		obj = strings.Split(line, "data: ")[1]
+	}
+
+	var d Response
+	if err := json.Unmarshal([]byte(obj), &d); err != nil {
+		return ""
+	}
+
+	if d.Choices != nil {
+		mainText = d.Choices[0].Delta.Content
+		return mainText
+	}
+	return ""
+}
