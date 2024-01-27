@@ -46,11 +46,8 @@ Options:
 -u, --update                                       Update program 
 
 Providers:
-The default provider is fakeopen which uses 'GPT-3.5-turbo' model.
-Available providers to use: leo, fakeopen, openai, opengpts, koboldai
-
-Provider: leo
-Supports personal API Key and custom models.
+The default provider is opengpts which uses 'GPT-3.5-turbo' model.
+Available providers to use: fakeopen, openai, opengpts, koboldai, phind
 
 Provider: fakeopen
 No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4
@@ -63,6 +60,9 @@ Uses gpt-3.5-turbo only. Do not use with sensitive data
 
 Provider: koboldai
 Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels
+
+Provider: phind
+Uses Phind Model. Great for developers
 
 Examples:
 tgpt "What is internet?"

@@ -367,8 +367,8 @@ func showHelpMessage() {
 	}
 
 	boldBlue.Println("\nProviders:")
-	fmt.Println("The default provider is fakeopen which uses 'GPT-3.5-turbo' model.")
-	fmt.Println("Available providers to use:, fakeopen, openai, opengpts, koboldai, phind")
+	fmt.Println("The default provider is opengpts which uses 'GPT-3.5-turbo' model.")
+	fmt.Println("Available providers to use: fakeopen, openai, opengpts, koboldai, phind")
 
 	bold.Println("\nProvider: fakeopen")
 	fmt.Println("No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4")
