@@ -34,7 +34,7 @@ type ImgResponse struct {
 	Images []string `json:"images"`
 }
 
-func getData(input string, isInteractive bool, prevMessages string) string {
+func getDataResponseTxt(input string, isInteractive bool, prevMessages string) string {
 	// Receiving response
 	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, prevMessages)
 
@@ -71,7 +71,11 @@ func getData(input string, isInteractive bool, prevMessages string) string {
 	}
 
 	// Handling each part
-	responseTxt := handleEachPart(resp)
+	return handleEachPart(resp)
+}
+
+func getData(input string, isInteractive bool, prevMessages string) (string, string) {
+	responseTxt := getDataResponseTxt(input, isInteractive, prevMessages)
 	safeResponse, _ := json.Marshal(responseTxt)
 
 	fmt.Print("\n\n")
@@ -86,7 +90,7 @@ func getData(input string, isInteractive bool, prevMessages string) string {
 	},
 	`, string(safeInput), string(safeResponse))
 
-	return msgObject
+	return msgObject, responseTxt
 }
 
 func loading(stop *bool) {
@@ -690,8 +694,6 @@ func downloadImage(url string, destDir string, filename string) error {
 		return err
 	}
 	defer file.Close()
-
-
 
 	_, err = io.Copy(file, response.Body)
 	if err != nil {

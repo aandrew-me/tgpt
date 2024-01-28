@@ -3,6 +3,7 @@ module github.com/aandrew-me/tgpt/v2
 go 1.20
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/bogdanfinn/fhttp v0.5.24
 	github.com/bogdanfinn/tls-client v1.6.1
 	github.com/c-bata/go-prompt v0.2.6
@@ -16,7 +17,6 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bogdanfinn/utls v1.5.16 // indirect
 	github.com/charmbracelet/lipgloss v0.8.0 // indirect
