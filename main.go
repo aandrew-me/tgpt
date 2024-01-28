@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/atotto/clipboard"
 	Prompt "github.com/c-bata/go-prompt"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,6 +29,7 @@ var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
 var stopSpin = false
 var programLoop = true
 var userInput = ""
+var lastResponse = ""
 var executablePath = ""
 var provider *string
 var apiModel *string
@@ -195,8 +197,10 @@ func main() {
 							}
 							os.Exit(0)
 						}
-						previousMessages += getData(input, true, previousMessages)
+						responseJson, responseTxt := getData(input, true, previousMessages)
+						previousMessages += responseJson
 						history = append(history, input)
+						lastResponse = responseTxt
 					}
 				}
 			}
@@ -205,9 +209,11 @@ func main() {
 			/////////////////////
 			// Multiline interactive
 			/////////////////////
+
 			fmt.Print("\nPress Tab to submit and Ctrl + C to exit.\n")
 
 			previousMessages := ""
+			history := []string{}
 
 			for programLoop {
 				fmt.Print("\n")
@@ -219,7 +225,10 @@ func main() {
 					os.Exit(1)
 				}
 				if len(userInput) > 0 {
-					previousMessages += getData(userInput, true, previousMessages)
+					responseJson, responseTxt := getData(userInput, true, previousMessages)
+					previousMessages += responseJson
+					history = append(history, userInput)
+					lastResponse = responseTxt
 				}
 
 			}
@@ -307,10 +316,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textarea.Blur()
 				return m, tea.Quit
 			}
-
 		default:
-			if !m.textarea.Focused() {
-				cmd = m.textarea.Focus()
+			if m.textarea.Focused() {
+				m.textarea, cmd = m.textarea.Update(msg)
+				cmds = append(cmds, cmd)
+			}
+		}
+
+		// Command mode
+		if !m.textarea.Focused() {
+			switch msg.String() {
+			case "i":
+				m.textarea.Focus()
+			case "y":
+				if len(lastResponse) == 0 {
+					break
+				}
+				err := clipboard.WriteAll(lastResponse)
+				if err != nil {
+					fmt.Println("Could not write to clipboard")
+				}
+			case "p":
+				m.textarea.Focus()
+				clip, err := clipboard.ReadAll()
+				msg.Runes = []rune(clip)
+				if err != nil {
+					fmt.Println("Could not read from clipboard")
+				}
+				userInput = clip
+				m.textarea, cmd = m.textarea.Update(msg)
 				cmds = append(cmds, cmd)
 			}
 		}
@@ -321,8 +355,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.textarea, cmd = m.textarea.Update(msg)
-	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
@@ -384,7 +416,6 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: phind")
 	fmt.Println("Uses Phind Model. Great for developers")
-
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
