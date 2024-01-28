@@ -28,10 +28,10 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		os.Exit(0)
 	}
 
-	// model := "gpt-3.5-turbo"
-	// if params.ApiModel != "" {
-	// 	model = params.ApiModel
-	// }
+	model := "Phind Model"
+	if params.ApiModel != "" {
+		model = params.ApiModel
+	}
 
 	// preprompt := "You are a helpful assistant"
 
@@ -59,10 +59,10 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 				"role": "user"
 			}
 		],
-		"requested_model": "Phind Model",
+		"requested_model": "%v",
 		"user_input": %v
 	}
-	`, string(safeInput), string(safeInput)))
+	`, string(safeInput), model, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://https.extension.phind.com/agent/", data)
 	if err != nil {
