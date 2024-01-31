@@ -17,10 +17,6 @@ type Message struct {
 	Content string `json:"content"`
 }
 
-type Response struct {
-	Messages []Message `json:"messages"`
-}
-
 func RandomString(length int) string {
 	characters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
 	result := make([]byte, length)
@@ -42,21 +38,18 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	uuid := RandomString(36)
 
 	var data = strings.NewReader(fmt.Sprintf(`{
-	"input": {
-		"messages": [
-			%v
-			{
-				"content": %v,
-				"additional_kwargs": {},
-				"type": "human",
-				"example": false
-			}
-		]
-	},
-	"assistant_id": "d50a5d6c-2598-437b-940e-e6918d19810c",
+	"input": [
+		{
+			"content": %v,
+			"additional_kwargs": {},
+			"type": "human",
+			"example": false
+		}
+	],
+	"assistant_id": "daede84b-79b7-4166-a277-7ac162c74c11",
 	"thread_id": ""
 }
-	`, prevMessages, string(safeInput)))
+	`, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://opengpts-example-vz4y4ooboq-uc.a.run.app/runs/stream", data)
 	if err != nil {
@@ -83,18 +76,19 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 }
 
 func GetMainText(line string) (mainText string) {
+	var Messages []Message
 	var obj = "{}"
 	if len(line) > 1 && strings.Contains(line, "data:") {
 		obj = strings.Split(line, "data: ")[1]
 	}
 
-	var d Response
-	if err := json.Unmarshal([]byte(obj), &d); err != nil {
+	// var d Response
+	if err := json.Unmarshal([]byte(obj), &Messages); err != nil {
 		return ""
 	}
 
-	if d.Messages != nil {
-		mainText = d.Messages[len(d.Messages)-1].Content
+	if len(Messages) > 1 {
+		mainText = Messages[len(Messages)-1].Content
 		return mainText
 	}
 	return ""
