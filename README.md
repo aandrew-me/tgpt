@@ -13,7 +13,6 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (Requires API Key)
 - [Phind](https://www.phind.com/agent) (Phind Model)
-- [FakeOpen](https://chat.geekgpt.org/) (GPT-3.5-turbo, GPT-4)
 
 **Image Generation Model**: Craiyon V3
 
@@ -47,10 +46,7 @@ Options:
 
 Providers:
 The default provider is opengpts which uses 'GPT-3.5-turbo' model.
-Available providers to use: fakeopen, openai, opengpts, koboldai, phind
-
-Provider: fakeopen
-No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4
+Available providers to use: openai, opengpts, koboldai, phind
 
 Provider: openai
 Needs API key to work and supports various models
@@ -68,7 +64,7 @@ Examples:
 tgpt "What is internet?"
 tgpt -m
 tgpt -s "How to update my system?"
-tgpt --provider fakeopen "What is 1+1"
+tgpt --provider opengpts "What is 1+1"
 tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"
 ```
 
