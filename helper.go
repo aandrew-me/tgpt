@@ -34,9 +34,17 @@ type ImgResponse struct {
 	Images []string `json:"images"`
 }
 
-func getDataResponseTxt(input string, isInteractive bool, prevMessages string) string {
+func getDataResponseTxt(input string, isInteractive bool, extraOptions structs.ExtraOptions) string {
 	// Receiving response
-	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, prevMessages)
+	resp, err := providers.NewRequest(input, structs.Params{
+		ApiKey:      *apiKey,
+		ApiModel:    *apiModel,
+		Provider:    *provider,
+		Max_length:  *max_length,
+		Temperature: *temperature,
+		Top_p:       *top_p,
+		Preprompt:   *preprompt,
+	}, extraOptions)
 
 	if err != nil {
 		stopSpin = true
@@ -64,18 +72,19 @@ func getDataResponseTxt(input string, isInteractive bool, prevMessages string) s
 	// Print the Question
 	if !isInteractive {
 		fmt.Print("\r          \r")
-		bold.Printf("\r%v\n\n", input)
+		// bold.Printf("\r%v\n\n", input)
+		bold.Println()
 	} else {
 		fmt.Println()
 		boldViolet.Println("╭─ Bot")
 	}
 
 	// Handling each part
-	return handleEachPart(resp)
+	return handleEachPart(resp, input)
 }
 
-func getData(input string, isInteractive bool, prevMessages string) (string, string) {
-	responseTxt := getDataResponseTxt(input, isInteractive, prevMessages)
+func getData(input string, isInteractive bool, extraOptions structs.ExtraOptions) (string, string) {
+	responseTxt := getDataResponseTxt(input, isInteractive, extraOptions)
 	safeResponse, _ := json.Marshal(responseTxt)
 
 	fmt.Print("\n\n")
@@ -89,6 +98,28 @@ func getData(input string, isInteractive bool, prevMessages string) (string, str
 		"role": "system"
 	},
 	`, string(safeInput), string(safeResponse))
+
+	if extraOptions.Provider == "phind" {
+		safeInput, _ := json.Marshal(input)
+		msgObject = fmt.Sprintf(`{
+		"content": %v,
+		"metadata": {},
+		"role": "user"
+	},{
+		"content": %v,
+		"metadata": {},
+		"role": "assistant",
+		"name": "base"
+	},
+	`, string(safeInput), string(safeResponse))
+	}
+
+	if extraOptions.Provider == "llama2" {
+		input := string(safeInput)[1 : len(string(safeInput))-1]
+		response := string(safeResponse)[1 : len(string(safeResponse))-1]
+
+		msgObject = fmt.Sprintf(`<s>[INST] %v [/INST] %v </s>`, input, response)
+	}
 
 	return msgObject, responseTxt
 }
@@ -171,7 +202,7 @@ func codeGenerate(input string) {
 
 	codePrompt := fmt.Sprintf("Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:", input)
 
-	resp, err := providers.NewRequest(codePrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, "")
+	resp, err := providers.NewRequest(codePrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true
@@ -191,7 +222,7 @@ func codeGenerate(input string) {
 	// Handling each part
 	previousText := ""
 	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider)
+		newText := providers.GetMainText(scanner.Text(), *provider, input)
 		if len(newText) < 1 {
 			continue
 		}
@@ -251,7 +282,7 @@ func shellCommand(input string) {
 func getCommand(shellPrompt string) {
 	checkInputLength(shellPrompt)
 
-	resp, err := providers.NewRequest(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, "")
+	resp, err := providers.NewRequest(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true
@@ -278,7 +309,7 @@ func getCommand(shellPrompt string) {
 
 	// Handling each part
 	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider)
+		newText := providers.GetMainText(scanner.Text(), *provider, shellPrompt)
 		if len(newText) < 1 {
 			continue
 		}
@@ -377,7 +408,7 @@ func getVersionHistory() {
 func getWholeText(input string) {
 	checkInputLength(input)
 
-	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, "")
+	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true
@@ -400,7 +431,7 @@ func getWholeText(input string) {
 
 	// Handling each part
 	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider)
+		newText := providers.GetMainText(scanner.Text(), *provider, input)
 		if len(newText) < 1 {
 			continue
 		}
@@ -414,7 +445,7 @@ func getWholeText(input string) {
 func getSilentText(input string) {
 	checkInputLength(input)
 
-	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, "")
+	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true
@@ -435,7 +466,7 @@ func getSilentText(input string) {
 	previousText := ""
 
 	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider)
+		newText := providers.GetMainText(scanner.Text(), *provider, input)
 		if len(newText) < 1 {
 			continue
 		}
@@ -454,7 +485,7 @@ func checkInputLength(input string) {
 	}
 }
 
-func handleEachPart(resp *http.Response) string {
+func handleEachPart(resp *http.Response, input string) string {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
@@ -479,7 +510,7 @@ func handleEachPart(resp *http.Response) string {
 	fullText := ""
 
 	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider)
+		newText := providers.GetMainText(scanner.Text(), *provider, input)
 		if len(newText) < 1 {
 			continue
 		}

@@ -53,16 +53,16 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"allow_magic_buttons": true,
 		"is_vscode_extension": true,
 		"message_history": [
+			%v
 			{
 				"content": %v,
-				"metadata": {},
 				"role": "user"
 			}
 		],
 		"requested_model": "%v",
 		"user_input": %v
 	}
-	`, string(safeInput), model, string(safeInput)))
+	`, prevMessages, string(safeInput), model, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://https.extension.phind.com/agent/", data)
 	if err != nil {

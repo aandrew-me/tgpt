@@ -27,15 +27,13 @@ func RandomString(length int) string {
 	return string(result)
 }
 
-func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
+func NewRequest(input string, params structs.Params, extraOptions structs.ExtraOptions) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
 	safeInput, _ := json.Marshal(input)
-
-	uuid := RandomString(36)
 
 	var data = strings.NewReader(fmt.Sprintf(`{
 	"input": [
@@ -63,7 +61,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	req.Header.Add("accept-language", "en-US,en;q=0.7")
 	req.Header.Add("cache-control", "no-cache")
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add("cookie", "opengpts_user_id="+uuid)
+	req.Header.Add("cookie", "opengpts_user_id="+extraOptions.ThreadID)
 	req.Header.Add("origin", "https://opengpts-example-vz4y4ooboq-uc.a.run.app")
 	req.Header.Add("pragma", "no-cache")
 	req.Header.Add("referer", "https://opengpts-example-vz4y4ooboq-uc.a.run.app/")
@@ -75,7 +73,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	return (client.Do(req))
 }
 
-func GetMainText(line string) (mainText string) {
+func GetMainText(line string, input string) string {
 	var Messages []Message
 	var obj = "{}"
 	if len(line) > 1 && strings.Contains(line, "data:") {
@@ -88,7 +86,12 @@ func GetMainText(line string) (mainText string) {
 	}
 
 	if len(Messages) > 1 {
-		mainText = Messages[len(Messages)-1].Content
+		mainText := Messages[len(Messages)-1].Content
+
+		if mainText == input {
+			return ""
+		}
+
 		return mainText
 	}
 	return ""

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aandrew-me/tgpt/v2/structs"
+	"github.com/aandrew-me/tgpt/v2/utils"
 	"github.com/atotto/clipboard"
 	Prompt "github.com/c-bata/go-prompt"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -19,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.5.1"
+const localVersion = "2.6.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -98,7 +101,34 @@ func main() {
 
 	prompt := flag.Arg(0)
 
-	if len(args) >= 1 {
+	pipedInput := ""
+	cleanPipedInput := ""
+
+	if len(args) > 1 {
+		stat, _ := os.Stdin.Stat()
+
+		// Checking for piped text
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				pipedInput += scanner.Text()
+			}
+
+			if err := scanner.Err(); err != nil {
+				fmt.Fprintln(os.Stderr, "reading standard input:", err)
+			}
+		}
+
+		if len(pipedInput) > 0 {
+			cleanPipedInputByte, _ := json.Marshal(pipedInput)
+			cleanPipedInput = string(cleanPipedInputByte)
+			cleanPipedInput = cleanPipedInput[1 : len(cleanPipedInput)-1]
+
+			safePipedBytes, _ := json.Marshal("\n\nHere is some text for the context:\n" + pipedInput + "\n")
+			pipedInput = string(safePipedBytes)
+			pipedInput = pipedInput[1 : len(pipedInput)-1]
+		}
+
 		if *isVersion {
 			fmt.Println("tgpt", localVersion)
 		} else if *isChangelog {
@@ -111,11 +141,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
 					os.Exit(1)
 				}
-				getWholeText(trimmedPrompt)
+				getWholeText(trimmedPrompt + pipedInput)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getWholeText(formattedInput)
+				getWholeText(formattedInput + cleanPipedInput)
 			}
 		} else if *isQuiet {
 			if len(prompt) > 1 {
@@ -125,11 +155,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(trimmedPrompt)
+				getSilentText(trimmedPrompt + pipedInput)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getSilentText(formattedInput)
+				getSilentText(formattedInput + cleanPipedInput)
 			}
 		} else if *isShell {
 			if len(prompt) > 1 {
@@ -140,7 +170,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
 					os.Exit(1)
 				}
-				shellCommand(trimmedPrompt)
+				shellCommand(trimmedPrompt + pipedInput)
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
@@ -155,7 +185,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
 					os.Exit(1)
 				}
-				codeGenerate(trimmedPrompt)
+				codeGenerate(trimmedPrompt + pipedInput)
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
@@ -171,6 +201,7 @@ func main() {
 			bold.Print("Interactive mode started. Press Ctrl + C or type exit to quit.\n\n")
 
 			previousMessages := ""
+			threadID := utils.RandomString(36)
 			history := []string{}
 
 			for {
@@ -197,7 +228,11 @@ func main() {
 							}
 							os.Exit(0)
 						}
-						responseJson, responseTxt := getData(input, true, previousMessages)
+						responseJson, responseTxt := getData(input, true, structs.ExtraOptions{
+							PrevMessages: previousMessages,
+							ThreadID:     threadID,
+							Provider:     *provider,
+						})
 						previousMessages += responseJson
 						history = append(history, input)
 						lastResponse = responseTxt
@@ -213,7 +248,6 @@ func main() {
 			fmt.Print("\nPress Tab to submit and Ctrl + C to exit.\n")
 
 			previousMessages := ""
-			history := []string{}
 
 			for programLoop {
 				fmt.Print("\n")
@@ -225,9 +259,11 @@ func main() {
 					os.Exit(1)
 				}
 				if len(userInput) > 0 {
-					responseJson, responseTxt := getData(userInput, true, previousMessages)
+					responseJson, responseTxt := getData(userInput, true, structs.ExtraOptions{
+						PrevMessages: previousMessages,
+						Provider:     *provider,
+					})
 					previousMessages += responseJson
-					history = append(history, userInput)
 					lastResponse = responseTxt
 				}
 
@@ -252,7 +288,13 @@ func main() {
 		} else {
 			go loading(&stopSpin)
 			formattedInput := strings.TrimSpace(prompt)
-			getData(formattedInput, false, "")
+
+			if len(formattedInput) < 1 {
+				fmt.Fprintln(os.Stderr, "You need to write something")
+				os.Exit(1)
+			}
+
+			getData(formattedInput+pipedInput, false, structs.ExtraOptions{})
 		}
 
 	} else {
@@ -261,7 +303,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(formattedInput, false, "")
+		getData(formattedInput, false, structs.ExtraOptions{})
 	}
 }
 
@@ -400,7 +442,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opengpts which uses 'GPT-3.5-turbo' model.")
-	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind")
+	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models")
@@ -414,12 +456,16 @@ func showHelpMessage() {
 	bold.Println("\nProvider: phind")
 	fmt.Println("Uses Phind Model. Great for developers")
 
+	bold.Println("\nProvider: llama2")
+	fmt.Println("Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses llama2-70b by default. Supports other models.")
+
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
 	fmt.Println(`tgpt -m`)
 	fmt.Println(`tgpt -s "How to update my system?"`)
 	fmt.Println(`tgpt --provider opengpts "What is 1+1"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
+	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
 }
 
 func historyCompleter(d Prompt.Document) []Prompt.Suggest {
