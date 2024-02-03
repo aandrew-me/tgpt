@@ -73,9 +73,5 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 }
 
 func GetMainText(line string) (mainText string) {
-	if (len(line) == 0){
-		return "\n"
-	}
-
 	return line + "\n"
 }

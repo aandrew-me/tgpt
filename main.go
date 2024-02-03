@@ -245,7 +245,8 @@ func main() {
 			// Multiline interactive
 			/////////////////////
 
-			fmt.Print("\nPress Tab to submit and Ctrl + C to exit.\n")
+			fmt.Print("\nPress Tab to submit, Ctrl + C to exit, Esc to unfocus, i to focus. When unfocused, press p to paste and c to copy response\n")
+
 
 			previousMessages := ""
 
@@ -370,7 +371,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "i":
 				m.textarea.Focus()
-			case "y":
+			case "c":
 				if len(lastResponse) == 0 {
 					break
 				}
