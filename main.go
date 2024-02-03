@@ -400,10 +400,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opengpts which uses 'GPT-3.5-turbo' model.")
-	fmt.Println("Available providers to use: fakeopen, openai, opengpts, koboldai, phind")
-
-	bold.Println("\nProvider: fakeopen")
-	fmt.Println("No support for API Key, but supports models. Default model is gpt-3.5-turbo. Supports gpt-4")
+	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models")
@@ -421,7 +418,7 @@ func showHelpMessage() {
 	fmt.Println(`tgpt "What is internet?"`)
 	fmt.Println(`tgpt -m`)
 	fmt.Println(`tgpt -s "How to update my system?"`)
-	fmt.Println(`tgpt --provider fakeopen "What is 1+1"`)
+	fmt.Println(`tgpt --provider opengpts "What is 1+1"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
 }
 
