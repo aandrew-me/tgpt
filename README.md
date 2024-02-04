@@ -128,8 +128,9 @@ go install github.com/aandrew-me/tgpt/v2@latest
 ## Updating ⬆️
 If you installed the program with the installation script, you may update it with
 ```bash
-sudo tgpt -u
+tgpt -u
 ```
+**It may require admin privilages.**
 ### Proxy
 
 Support:
