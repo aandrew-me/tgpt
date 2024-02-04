@@ -245,8 +245,7 @@ func main() {
 			// Multiline interactive
 			/////////////////////
 
-			fmt.Print("\nPress Tab to submit, Ctrl + C to exit, Esc to unfocus, i to focus. When unfocused, press p to paste and c to copy response\n")
-
+			fmt.Print("\nPress Tab to submit, Ctrl + C to exit, Esc to unfocus, i to focus. When unfocused, press p to paste, c to copy response, bc to copy last code block in response\n")
 
 			previousMessages := ""
 
@@ -376,6 +375,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 				err := clipboard.WriteAll(lastResponse)
+				if err != nil {
+					fmt.Println("Could not write to clipboard")
+				}
+			case "b":
+				if len(lastResponse) == 0 {
+					break
+				}
+				lastCodeBlock := getLastCodeBlock(lastResponse)
+				err := clipboard.WriteAll(lastCodeBlock)
 				if err != nil {
 					fmt.Println("Could not write to clipboard")
 				}

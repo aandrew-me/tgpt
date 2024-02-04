@@ -442,6 +442,34 @@ func getWholeText(input string) {
 	fmt.Println(fullText)
 }
 
+func getLastCodeBlock(markdown string) string {
+	lines := strings.Split(markdown, "\n")
+	var codeBlock []string
+	capturing := false
+
+	for i := len(lines) - 1; i >= 0; i-- {
+		if strings.HasPrefix(lines[i], "```") {
+			if capturing {
+				capturing = false
+				break
+			} else {
+				capturing = true
+				continue
+			}
+		}
+		if capturing {
+			codeBlock = append([]string{lines[i]}, codeBlock...)
+		}
+	}
+
+	// If no code block is found, return an empty string.
+	if capturing || len(codeBlock) == 0 {
+		return ""
+	}
+
+	return strings.Join(codeBlock, "\n")
+}
+
 func getSilentText(input string) {
 	checkInputLength(input)
 
