@@ -11,6 +11,7 @@ import (
 
 	"github.com/aandrew-me/tgpt/v2/client"
 	"github.com/aandrew-me/tgpt/v2/structs"
+	"github.com/aandrew-me/tgpt/v2/utils"
 )
 
 type Message struct {
@@ -34,6 +35,12 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		os.Exit(0)
 	}
 	safeInput, _ := json.Marshal(input)
+
+	randID := utils.RandomString(36)
+
+	if len(extraOptions.ThreadID) > 1 {
+		randID = extraOptions.ThreadID;
+	}
 
 	var data = strings.NewReader(fmt.Sprintf(`{
 	"input": [
@@ -61,7 +68,7 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	req.Header.Add("accept-language", "en-US,en;q=0.7")
 	req.Header.Add("cache-control", "no-cache")
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add("cookie", "opengpts_user_id="+extraOptions.ThreadID)
+	req.Header.Add("cookie", "opengpts_user_id="+randID)
 	req.Header.Add("origin", "https://opengpts-example-vz4y4ooboq-uc.a.run.app")
 	req.Header.Add("pragma", "no-cache")
 	req.Header.Add("referer", "https://opengpts-example-vz4y4ooboq-uc.a.run.app/")
