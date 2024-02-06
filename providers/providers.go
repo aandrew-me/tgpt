@@ -15,7 +15,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "opengpts", "openai", "phind", "llama2", "kodoldai", "blackboxai",
+	"", "opengpts", "openai", "phind", "llama2", "koboldai", "blackboxai",
 }
 
 func GetMainText(line string, provider string, input string) string {
