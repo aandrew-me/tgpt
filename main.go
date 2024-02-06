@@ -141,11 +141,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
 					os.Exit(1)
 				}
-				getWholeText(trimmedPrompt + pipedInput)
+				getWholeText(*preprompt + trimmedPrompt + pipedInput)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getWholeText(formattedInput + cleanPipedInput)
+				getWholeText(*preprompt + formattedInput + cleanPipedInput)
 			}
 		} else if *isQuiet {
 			if len(prompt) > 1 {
@@ -155,11 +155,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(trimmedPrompt + pipedInput)
+				getSilentText(*preprompt + trimmedPrompt + pipedInput)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getSilentText(formattedInput + cleanPipedInput)
+				getSilentText(*preprompt + formattedInput + cleanPipedInput)
 			}
 		} else if *isShell {
 			if len(prompt) > 1 {
@@ -170,7 +170,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
 					os.Exit(1)
 				}
-				shellCommand(trimmedPrompt + pipedInput)
+				shellCommand(*preprompt + trimmedPrompt + pipedInput)
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
@@ -227,6 +227,10 @@ func main() {
 								rawModeOff.Wait()
 							}
 							os.Exit(0)
+						}
+						// Use preprompt for first message
+						if previousMessages == "" {
+							input = *preprompt + input
 						}
 						responseJson, responseTxt := getData(input, true, structs.ExtraOptions{
 							PrevMessages: previousMessages,
@@ -323,6 +327,8 @@ func initialModel() model {
 	ti.CharLimit = 200000
 	ti.ShowLineNumbers = false
 	ti.Placeholder = "Enter your prompt"
+	ti.SetValue(*preprompt)
+	*preprompt = ""
 	ti.Focus()
 
 	return model{
