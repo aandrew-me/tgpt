@@ -252,6 +252,7 @@ func main() {
 			fmt.Print("\nPress Tab to submit, Ctrl + C to exit, Esc to unfocus, i to focus. When unfocused, press p to paste, c to copy response, b to copy last code block in response\n")
 
 			previousMessages := ""
+			threadID := utils.RandomString(36)
 
 			for programLoop {
 				fmt.Print("\n")
@@ -266,6 +267,7 @@ func main() {
 					responseJson, responseTxt := getData(userInput, true, structs.ExtraOptions{
 						PrevMessages: previousMessages,
 						Provider:     *provider,
+						ThreadID: threadID,
 					})
 					previousMessages += responseJson
 					lastResponse = responseTxt
@@ -457,7 +459,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opengpts which uses 'GPT-3.5-turbo' model.")
-	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2")
+	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models")
@@ -473,6 +475,9 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: llama2")
 	fmt.Println("Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses llama2-70b by default. Supports other models.")
+
+	bold.Println("\nProvider: blackboxai")
+	fmt.Println("Uses BlackBox model. Great for developers")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)

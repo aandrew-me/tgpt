@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aandrew-me/tgpt/v2/providers/blackboxai"
 	"github.com/aandrew-me/tgpt/v2/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/providers/llama2"
 	"github.com/aandrew-me/tgpt/v2/providers/openai"
@@ -14,7 +15,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "opengpts", "openai", "phind", "llama2", "kodoldai",
+	"", "opengpts", "openai", "phind", "llama2", "koboldai", "blackboxai",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -28,6 +29,8 @@ func GetMainText(line string, provider string, input string) string {
 		return phind.GetMainText(line)
 	} else if provider == "llama2" {
 		return llama2.GetMainText(line)
+	} else if provider == "blackboxai" {
+		return blackboxai.GetMainText(line)
 	}
 
 	return opengpts.GetMainText(line, input)
@@ -56,6 +59,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return phind.NewRequest(input, params, extraOptions.PrevMessages)
 	} else if params.Provider == "llama2" {
 		return llama2.NewRequest(input, params, extraOptions.PrevMessages)
+	} else if params.Provider == "blackboxai" {
+		return blackboxai.NewRequest(input, params, extraOptions.PrevMessages)
 	}
 
 	return opengpts.NewRequest(input, params, extraOptions)

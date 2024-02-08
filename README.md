@@ -11,9 +11,9 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 ### Currently available providers: 
 - [OpenGPTs](https://opengpts-example-vz4y4ooboq-uc.a.run.app/) (GPT-3.5-turbo)
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
-- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (Requires API Key)
 - [Phind](https://www.phind.com/agent) (Phind Model)
 - [Llama2](https://www.llama2.ai/) (Llama 2 70b)
+- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key)
 
 **Image Generation Model**: Craiyon V3
 
