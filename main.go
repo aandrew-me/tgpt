@@ -185,7 +185,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
 					os.Exit(1)
 				}
-				codeGenerate(trimmedPrompt + pipedInput)
+				codeGenerate(*preprompt + trimmedPrompt + pipedInput)
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
@@ -287,7 +287,7 @@ func main() {
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				generateImage(formattedInput)
+				generateImage(*preprompt + formattedInput)
 			}
 		} else if *isHelp {
 			showHelpMessage()
@@ -300,7 +300,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			getData(formattedInput+pipedInput, false, structs.ExtraOptions{})
+			getData(*preprompt+formattedInput+pipedInput, false, structs.ExtraOptions{})
 		}
 
 	} else {
@@ -309,7 +309,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(formattedInput, false, structs.ExtraOptions{})
+		getData(*preprompt+formattedInput, false, structs.ExtraOptions{})
 	}
 }
 
