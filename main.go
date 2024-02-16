@@ -129,11 +129,13 @@ func main() {
 			pipedInput = pipedInput[1 : len(pipedInput)-1]
 		}
 
-		if *isVersion {
+		switch {
+
+		case *isVersion:
 			fmt.Println("tgpt", localVersion)
-		} else if *isChangelog {
+		case *isChangelog:
 			getVersionHistory()
-		} else if *isWhole {
+		case *isWhole:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
@@ -147,7 +149,7 @@ func main() {
 				fmt.Println()
 				getWholeText(*preprompt + formattedInput + cleanPipedInput)
 			}
-		} else if *isQuiet {
+		case *isQuiet:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
@@ -161,7 +163,7 @@ func main() {
 				fmt.Println()
 				getSilentText(*preprompt + formattedInput + cleanPipedInput)
 			}
-		} else if *isShell {
+		case *isShell:
 			if len(prompt) > 1 {
 				go loading(&stopSpin)
 				trimmedPrompt := strings.TrimSpace(prompt)
@@ -177,7 +179,7 @@ func main() {
 				os.Exit(1)
 			}
 
-		} else if *isCode {
+		case *isCode:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
@@ -191,9 +193,9 @@ func main() {
 				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
 				os.Exit(1)
 			}
-		} else if *isUpdate {
+		case *isUpdate:
 			update()
-		} else if *isInteractive {
+		case *isInteractive:
 			/////////////////////
 			// Normal interactive
 			/////////////////////
@@ -244,7 +246,7 @@ func main() {
 				}
 			}
 
-		} else if *isMultiline {
+		case *isMultiline:
 			/////////////////////
 			// Multiline interactive
 			/////////////////////
@@ -267,7 +269,7 @@ func main() {
 					responseJson, responseTxt := getData(userInput, true, structs.ExtraOptions{
 						PrevMessages: previousMessages,
 						Provider:     *provider,
-						ThreadID: threadID,
+						ThreadID:     threadID,
 					})
 					previousMessages += responseJson
 					lastResponse = responseTxt
@@ -275,7 +277,7 @@ func main() {
 
 			}
 
-		} else if *isImage {
+		case *isImage:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
@@ -289,9 +291,9 @@ func main() {
 				fmt.Println()
 				generateImage(*preprompt + formattedInput)
 			}
-		} else if *isHelp {
+		case *isHelp:
 			showHelpMessage()
-		} else {
+		default:
 			go loading(&stopSpin)
 			formattedInput := strings.TrimSpace(prompt)
 
