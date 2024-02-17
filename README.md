@@ -104,6 +104,7 @@ yay -S tgpt-bin
 ```
 
 ### Install with Go
+You need to [add the Go install directory to your system's shell path](https://go.dev/doc/tutorial/compile-install). 
 
 ```bash
 go install github.com/aandrew-me/tgpt/v2@latest
