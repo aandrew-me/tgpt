@@ -33,7 +33,7 @@ func GetMainText(line string, provider string, input string) string {
 		return blackboxai.GetMainText(line)
 	}
 
-	return opengpts.GetMainText(line, input)
+	return phind.GetMainText(line)
 }
 
 func NewRequest(input string, params structs.Params, extraOptions structs.ExtraOptions) (*http.Response, error) {
@@ -63,5 +63,5 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return blackboxai.NewRequest(input, params, extraOptions.PrevMessages)
 	}
 
-	return opengpts.NewRequest(input, params, extraOptions)
+	return phind.NewRequest(input, params, extraOptions.PrevMessages)
 }
