@@ -144,7 +144,7 @@ Support:
 - Socks5 Proxy [ `socks5://ip:port ]`
 - Socks5 Auth [ `socks5://user:pass@ip:port` ]
 
-If you want to use a proxy, create `proxy.txt` file in the same directory where the program is located and write your proxy configuration there.
+If you want to use a proxy, create `proxy.txt` file in the same directory from where you are executing the file and write your proxy configuration there.
 
 Example:
 
