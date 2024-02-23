@@ -322,9 +322,10 @@ func getCommand(shellPrompt string) {
 	lineCount := strings.Count(fullLine, "\n") + 1
 	if lineCount == 1 {
 		bold.Print("\n\nExecute shell command? [y/n]: ")
-		var userInput string
-		fmt.Scan(&userInput)
-		if userInput == "y" {
+		reader := bufio.NewReader(os.Stdin)
+		userInput, _ := reader.ReadString('\n')
+		userInput = strings.TrimSpace(userInput) 
+		if userInput == "y" || userInput == "" {
 			var cmd *exec.Cmd
 			if runtime.GOOS == "windows" {
 				shellName := "cmd"

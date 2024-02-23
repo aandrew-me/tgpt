@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.7.1"
+const localVersion = "2.7.2"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -460,8 +460,8 @@ func showHelpMessage() {
 	}
 
 	boldBlue.Println("\nProviders:")
-	fmt.Println("The default provider is opengpts which uses 'GPT-3.5-turbo' model.")
-	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai")
+	fmt.Println("The default provider is phind which uses Phind model.")
+	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai, ollama")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models")
@@ -480,6 +480,9 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: blackboxai")
 	fmt.Println("Uses BlackBox model. Great for developers")
+
+	bold.Println("\nProvider: ollama")
+	fmt.Println("Needs to be run locally. Supports many models")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
