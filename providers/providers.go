@@ -10,7 +10,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers/llama2"
 	"github.com/aandrew-me/tgpt/v2/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/providers/openai"
-	"github.com/aandrew-me/tgpt/v2/providers/opengpts"
 	"github.com/aandrew-me/tgpt/v2/providers/phind"
 	"github.com/aandrew-me/tgpt/v2/structs"
 	http "github.com/bogdanfinn/fhttp"
@@ -21,9 +20,7 @@ var availableProviders = []string{
 }
 
 func GetMainText(line string, provider string, input string) string {
-	if provider == "opengpts" {
-		return opengpts.GetMainText(line, input)
-	} else if provider == "openai" {
+	if provider == "openai" {
 		return ollama.GetMainText(line)
 	} else if provider == "ollama" {
 		return openai.GetMainText(line)
@@ -55,9 +52,7 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		os.Exit(1)
 	}
 
-	if params.Provider == "opengpts" {
-		return opengpts.NewRequest(input, params, extraOptions)
-	} else if params.Provider == "openai" {
+	if params.Provider == "openai" {
 		return openai.NewRequest(input, params, extraOptions.PrevMessages)
 	} else if params.Provider == "ollama" {
 		return ollama.NewRequest(input, params, extraOptions.PrevMessages)

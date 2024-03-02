@@ -461,13 +461,10 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is phind which uses Phind model.")
-	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai, ollama")
+	fmt.Println("Available providers to use: openai, koboldai, phind, llama2, blackboxai, ollama, groq")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models")
-
-	bold.Println("\nProvider: opengpts")
-	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
 
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
@@ -483,6 +480,9 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: ollama")
 	fmt.Println("Needs to be run locally. Supports many models")
+
+	bold.Println("\nProvider: groq")
+	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
