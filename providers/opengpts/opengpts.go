@@ -51,7 +51,7 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 			"example": false
 		}
 	],
-	"assistant_id": "daede84b-79b7-4166-a277-7ac162c74c11",
+	"assistant_id": "bca37014-6f97-4f2b-8928-81ea8d478d88",
 	"thread_id": ""
 }
 	`, string(safeInput)))
