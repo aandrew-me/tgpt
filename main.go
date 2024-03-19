@@ -104,31 +104,44 @@ func main() {
 	pipedInput := ""
 	cleanPipedInput := ""
 
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "accessing standard input:", err)
+		os.Exit(1)
+	}
+
+	// Checking for piped text
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			pipedInput += scanner.Text()
+		}
+
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "reading standard input:", err)
+			os.Exit(1)
+		}
+	}
+
+	if len(pipedInput) > 0 {
+		cleanPipedInputByte, err := json.Marshal(pipedInput)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "marshaling piped input to JSON:", err)
+			os.Exit(1)
+		}
+		cleanPipedInput = string(cleanPipedInputByte)
+		cleanPipedInput = cleanPipedInput[1 : len(cleanPipedInput)-1]
+
+		safePipedBytes, err := json.Marshal("\n\nHere is some text for the context:\n" + pipedInput + "\n")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "marshaling piped input to JSON:", err)
+			os.Exit(1)
+		}
+		pipedInput = string(safePipedBytes)
+		pipedInput = pipedInput[1 : len(pipedInput)-1]
+	}
+
 	if len(args) > 1 {
-		stat, _ := os.Stdin.Stat()
-
-		// Checking for piped text
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			scanner := bufio.NewScanner(os.Stdin)
-			for scanner.Scan() {
-				pipedInput += scanner.Text()
-			}
-
-			if err := scanner.Err(); err != nil {
-				fmt.Fprintln(os.Stderr, "reading standard input:", err)
-			}
-		}
-
-		if len(pipedInput) > 0 {
-			cleanPipedInputByte, _ := json.Marshal(pipedInput)
-			cleanPipedInput = string(cleanPipedInputByte)
-			cleanPipedInput = cleanPipedInput[1 : len(cleanPipedInput)-1]
-
-			safePipedBytes, _ := json.Marshal("\n\nHere is some text for the context:\n" + pipedInput + "\n")
-			pipedInput = string(safePipedBytes)
-			pipedInput = pipedInput[1 : len(pipedInput)-1]
-		}
-
 		switch {
 
 		case *isVersion:
@@ -311,7 +324,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(*preprompt+formattedInput, false, structs.ExtraOptions{})
+		getData(*preprompt+formattedInput+pipedInput, false, structs.ExtraOptions{})
 	}
 }
 
