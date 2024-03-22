@@ -65,7 +65,7 @@ func main() {
 	preprompt = flag.String("preprompt", "", "Set preprompt")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
-	flag.BoolVar(isQuiet, "quite", false, "Gives response back without loading animation")
+	flag.BoolVar(isQuiet, "quiet", false, "Gives response back without loading animation")
 
 	isWhole := flag.Bool("w", false, "Gives response back as a whole text")
 	flag.BoolVar(isWhole, "whole", false, "Gives response back as a whole text")
