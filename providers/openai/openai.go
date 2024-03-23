@@ -31,6 +31,13 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	model := "gpt-3.5-turbo"
 	if params.ApiModel != "" {
 		model = params.ApiModel
+	} else if envModel := os.Getenv("OPENAI_MODEL"); envModel != "" {
+		model = envModel
+	}
+
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if params.ApiKey != "" {
+		apiKey = params.ApiKey
 	}
 
 	temperature := "0.5"
@@ -70,7 +77,8 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+params.ApiKey)
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
 	// Return response
 	return (client.Do(req))
 }

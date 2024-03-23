@@ -57,8 +57,8 @@ func main() {
 
 	args := os.Args
 
-	apiModel = flag.String("model", "", "Choose which provider to use")
-	provider = flag.String("provider", "", "Choose which provider to use")
+	apiModel = flag.String("model", "", "Choose which model to use")
+	provider = flag.String("provider", os.Getenv("AI_PROVIDER"), "Choose which provider to use")
 	apiKey = flag.String("key", "", "Use personal API Key")
 	temperature = flag.String("temperature", "", "Set temperature")
 	top_p = flag.String("top_p", "", "Set top_p")
@@ -457,7 +457,7 @@ func showHelpMessage() {
 	fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
 	fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
 	fmt.Printf("%-50v Generate images from text\n", "-img, --image")
-	fmt.Printf("%-50v Set Provider. Detailed information has been provided below\n", "--provider")
+	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER)\n", "--provider")
 
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
@@ -478,11 +478,11 @@ func showHelpMessage() {
 	}
 
 	boldBlue.Println("\nProviders:")
-	fmt.Println("The default provider is phind which uses Phind model.")
+	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
 	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai, ollama and groq")
 
 	bold.Println("\nProvider: openai")
-	fmt.Println("Needs API key to work and supports various models")
+	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables.")
 
 	bold.Println("\nProvider: opengpts")
 	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
