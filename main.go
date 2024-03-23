@@ -132,7 +132,7 @@ func main() {
 		cleanPipedInput = string(cleanPipedInputByte)
 		cleanPipedInput = cleanPipedInput[1 : len(cleanPipedInput)-1]
 
-		safePipedBytes, err := json.Marshal("\n\nHere is some text for the context:\n" + pipedInput + "\n")
+		safePipedBytes, err := json.Marshal(pipedInput + "\n")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "marshaling piped input to JSON:", err)
 			os.Exit(1)
@@ -140,6 +140,9 @@ func main() {
 		pipedInput = string(safePipedBytes)
 		pipedInput = pipedInput[1 : len(pipedInput)-1]
 	}
+
+	contextTextByte, _ := json.Marshal("\n\nHere is text for the context:\n")
+	contextText := string(contextTextByte)
 
 	if len(args) > 1 {
 		switch {
@@ -156,7 +159,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
 					os.Exit(1)
 				}
-				getWholeText(*preprompt + trimmedPrompt + pipedInput)
+				getWholeText(*preprompt + trimmedPrompt + contextText + pipedInput)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
@@ -170,7 +173,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(*preprompt + trimmedPrompt + pipedInput)
+				getSilentText(*preprompt + trimmedPrompt + contextText + pipedInput)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
@@ -185,7 +188,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
 					os.Exit(1)
 				}
-				shellCommand(*preprompt + trimmedPrompt + pipedInput)
+				shellCommand(*preprompt + trimmedPrompt + contextText + pipedInput)
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
@@ -200,7 +203,7 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
 					os.Exit(1)
 				}
-				codeGenerate(*preprompt + trimmedPrompt + pipedInput)
+				codeGenerate(*preprompt + trimmedPrompt + contextText + pipedInput)
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
@@ -315,7 +318,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			getData(*preprompt+formattedInput+pipedInput, false, structs.ExtraOptions{})
+			getData(*preprompt+formattedInput+contextText+pipedInput, false, structs.ExtraOptions{})
 		}
 
 	} else {
