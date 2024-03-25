@@ -44,6 +44,7 @@ func getDataResponseTxt(input string, isInteractive bool, extraOptions structs.E
 		Temperature: *temperature,
 		Top_p:       *top_p,
 		Preprompt:   *preprompt,
+		Url:         *url,
 	}, extraOptions)
 
 	if err != nil {
@@ -202,7 +203,7 @@ func codeGenerate(input string) {
 
 	codePrompt := fmt.Sprintf("Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:", input)
 
-	resp, err := providers.NewRequest(codePrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
+	resp, err := providers.NewRequest(codePrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true
@@ -282,7 +283,7 @@ func shellCommand(input string) {
 func getCommand(shellPrompt string) {
 	checkInputLength(shellPrompt)
 
-	resp, err := providers.NewRequest(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
+	resp, err := providers.NewRequest(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true
@@ -324,7 +325,7 @@ func getCommand(shellPrompt string) {
 		bold.Print("\n\nExecute shell command? [y/n]: ")
 		reader := bufio.NewReader(os.Stdin)
 		userInput, _ := reader.ReadString('\n')
-		userInput = strings.TrimSpace(userInput) 
+		userInput = strings.TrimSpace(userInput)
 		if userInput == "y" || userInput == "" {
 			var cmd *exec.Cmd
 			if runtime.GOOS == "windows" {
@@ -409,7 +410,7 @@ func getVersionHistory() {
 func getWholeText(input string) {
 	checkInputLength(input)
 
-	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
+	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true
@@ -474,7 +475,7 @@ func getLastCodeBlock(markdown string) string {
 func getSilentText(input string) {
 	checkInputLength(input)
 
-	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt}, structs.ExtraOptions{})
+	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
 
 	if err != nil {
 		stopSpin = true

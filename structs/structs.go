@@ -9,6 +9,7 @@ type Params struct {
 	Max_length  string
 	Preprompt   string
 	ThreadID    string
+	Url         string
 }
 
 type ExtraOptions struct {

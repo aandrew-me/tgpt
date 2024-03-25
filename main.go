@@ -41,6 +41,7 @@ var temperature *string
 var top_p *string
 var max_length *string
 var preprompt *string
+var url *string
 
 func main() {
 	execPath, err := os.Executable()
@@ -63,6 +64,7 @@ func main() {
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
+	url = flag.String("url", "https://api.openai.com/v1/chat/completions", "url for openai providers")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
 	flag.BoolVar(isQuiet, "quiet", false, "Gives response back without loading animation")
