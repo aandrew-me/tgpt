@@ -389,6 +389,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			if m.textarea.Focused() {
 				m.textarea, cmd = m.textarea.Update(msg)
+				m.textarea.SetHeight(min(20, max(6, m.textarea.LineCount()+1)))
 				cmds = append(cmds, cmd)
 			}
 		}
@@ -424,6 +425,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				userInput = clip
 				m.textarea, cmd = m.textarea.Update(msg)
+				m.textarea.SetHeight(min(20, max(6, m.textarea.LineCount()+1)))
 				cmds = append(cmds, cmd)
 			}
 		}

@@ -20,7 +20,7 @@ jobs:
             - name: Set up Go
               uses: actions/setup-go@v2
               with:
-                  go-version: "1.20.x"
+                  go-version: "^1.22.1"
 
             - name: Linux
               if: matrix.os == 'ubuntu-20.04'

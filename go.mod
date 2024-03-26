@@ -1,6 +1,6 @@
 module github.com/aandrew-me/tgpt/v2
 
-go 1.20
+go 1.22.1
 
 require (
 	github.com/atotto/clipboard v0.1.4
