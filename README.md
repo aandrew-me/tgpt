@@ -47,8 +47,8 @@ Options:
 -u, --update                                       Update program 
 
 Providers:
-The default provider is phind which uses 'GPT-3.5-turbo' model.
-Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai
+The default provider is phind which uses Phind model.
+Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai, ollama and groq
 
 Provider: openai
 Needs API key to work and supports various models
@@ -67,6 +67,12 @@ Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses 
 
 Provider: blackboxai
 Uses BlackBox model. Great for developers
+
+Provider: ollama
+Needs to be run locally. Supports many models
+
+Provider: groq
+Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b
 
 Examples:
 tgpt "What is internet?"
