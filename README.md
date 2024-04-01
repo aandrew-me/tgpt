@@ -141,7 +141,7 @@ If you installed the program with the installation script, you may update it wit
 ```bash
 tgpt -u
 ```
-**It may require admin privilages.**
+**It may require admin privileges.**
 ### Proxy
 
 Support:
