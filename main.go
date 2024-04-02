@@ -464,6 +464,7 @@ func showHelpMessage() {
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key\n", "--key")
+	fmt.Printf("%-50v Set OpenAI API endpoint url\n", "--url")
 	fmt.Printf("%-50v Set temperature\n", "--temperature")
 	fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set max response length\n", "--max_length")
