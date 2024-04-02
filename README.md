@@ -34,6 +34,7 @@ Flags:
 Some additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.
 --model                                            Set Model
 --key                                              Set API Key
+--url                                              Set OpenAI API endpoint url
 --temperature                                      Set temperature
 --top_p                                            Set top_p
 --max_length                                       Set max response length
