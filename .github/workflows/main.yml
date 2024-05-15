@@ -43,6 +43,11 @@ jobs:
                   GOOS=netbsd GOARCH=arm go build -ldflags="-s -w" -o tgpt-netbsd-arm
                   GOOS=netbsd GOARCH=386 go build -ldflags="-s -w" -o tgpt-netbsd-i386
 
+                  GOOS=freebsd GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-freebsd-amd64
+                  GOOS=freebsd GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-freebsd-arm64
+                  GOOS=freebsd GOARCH=arm go build -ldflags="-s -w" -o tgpt-freebsd-arm
+                  GOOS=freebsd GOARCH=386 go build -ldflags="-s -w" -o tgpt-freebsd-i386   
+
                   echo "## Changelog:" >> ${{ github.workspace }}-CHANGELOG.txt    
 
                   echo "<details><summary>SHA256 Hashes</summary><code>" >> ${{ github.workspace }}-CHANGELOG.txt      
@@ -92,6 +97,10 @@ jobs:
                       tgpt-netbsd-arm64
                       tgpt-netbsd-arm
                       tgpt-netbsd-i386
+                      tgpt-freebsd-amd64
+                      tgpt-freebsd-arm64
+                      tgpt-freebsd-arm
+                      tgpt-freebsd-i386  
                       tgpt-openbsd-amd64
                       tgpt-openbsd-arm64
                       tgpt-openbsd-arm
