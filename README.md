@@ -110,6 +110,20 @@ Or with `yay`:
 yay -S tgpt-bin
 ```
 
+### FreeBSD 😈 
+
+Currently, the port is not yet in the quarterly branch of the FreeBSD ports tree.
+
+To install the [port](https://www.freshports.org/www/tgpt):
+```
+cd /usr/ports/www/tgpt/ && make install clean
+```
+To install the package, run one of these commands:
+```
+pkg install www/tgpt
+pkg install tgpt
+```
+
 ### Install with Go
 You need to [add the Go install directory to your system's shell path](https://go.dev/doc/tutorial/compile-install). 
 
