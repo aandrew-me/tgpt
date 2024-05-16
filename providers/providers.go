@@ -24,9 +24,9 @@ func GetMainText(line string, provider string, input string) string {
 	if provider == "opengpts" {
 		return opengpts.GetMainText(line, input)
 	} else if provider == "openai" {
-		return ollama.GetMainText(line)
-	} else if provider == "ollama" {
 		return openai.GetMainText(line)
+	} else if provider == "ollama" {
+		return ollama.GetMainText(line)
 	} else if provider == "koboldai" {
 		return koboldai.GetMainText(line)
 	} else if provider == "phind" {
