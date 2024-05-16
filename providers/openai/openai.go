@@ -94,7 +94,7 @@ func GetMainText(line string) (mainText string) {
 		return ""
 	}
 
-	if d.Choices != nil {
+	if d.Choices != nil && len(d.Choices) > 0 {
 		mainText = d.Choices[0].Delta.Content
 		return mainText
 	}
