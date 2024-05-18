@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.7.3"
+const localVersion = "2.7.4"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -482,7 +482,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai, ollama and groq")
+	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, blackboxai, ollama and groq")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables.")
@@ -496,8 +496,8 @@ func showHelpMessage() {
 	bold.Println("\nProvider: phind")
 	fmt.Println("Uses Phind Model. Great for developers")
 
-	bold.Println("\nProvider: llama2")
-	fmt.Println("Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses llama2-70b by default. Supports other models.")
+	// bold.Println("\nProvider: llama2")
+	// fmt.Println("Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses llama2-70b by default. Supports other models.")
 
 	bold.Println("\nProvider: blackboxai")
 	fmt.Println("Uses BlackBox model. Great for developers")

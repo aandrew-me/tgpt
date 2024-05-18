@@ -9,10 +9,10 @@
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
 ### Currently available providers: 
-<!-- - [OpenGPTs](https://opengpts-example-vz4y4ooboq-uc.a.run.app/) (GPT-3.5-turbo) -->
+- [OpenGPTs](https://opengpts-example-vz4y4ooboq-uc.a.run.app/) (GPT-3.5-turbo)
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [Phind](https://www.phind.com/agent) (Phind Model)
-- [Llama2](https://www.llama2.ai/) (Llama 2 70b)
+<!-- - [Llama2](https://www.llama2.ai/) (Llama 2 70b) -->
 - [Blackbox AI](https://www.blackbox.ai/) (Blackbox model)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key)
 
@@ -49,7 +49,7 @@ Options:
 
 Providers:
 The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.
-Available providers to use: openai, opengpts, koboldai, phind, llama2, blackboxai, ollama and groq
+Available providers to use: openai, opengpts, koboldai, phind, blackboxai, ollama and groq
 
 Provider: openai
 Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables.
@@ -62,9 +62,6 @@ Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels
 
 Provider: phind
 Uses Phind Model. Great for developers
-
-Provider: llama2
-Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses llama2-70b by default. Supports other models.
 
 Provider: blackboxai
 Uses BlackBox model. Great for developers
