@@ -342,7 +342,7 @@ func getCommand(shellPrompt string) {
 				}
 
 			} else {
-				cmd = exec.Command("bash", "-c", fullLine)
+				cmd = exec.Command("sh", "-c", fullLine)
 
 			}
 
