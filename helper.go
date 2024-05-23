@@ -34,8 +34,11 @@ type ImgResponse struct {
 	Images []string `json:"images"`
 }
 
-var operatingSystem string
-var shellName string
+var (
+	operatingSystem string
+	shellName       string
+	shellOptions    []string
+)
 
 func getDataResponseTxt(input string, isInteractive bool, extraOptions structs.ExtraOptions) string {
 	// Receiving response
@@ -246,12 +249,18 @@ func setShellAndOSVars() {
 	switch runtime.GOOS {
 	case "windows":
 		operatingSystem = "Windows"
-		shellName = "cmd.exe"
 		if len(os.Getenv("PSModulePath")) > 0 {
 			shellName = "powershell.exe"
+			shellOptions = []string{"-Command"}
+		} else {
+			shellName = "cmd.exe"
+			shellOptions = []string{"/C"}
 		}
+		return
 	case "darwin":
 		operatingSystem = "MacOS"
+		shellName = "sh"
+		shellOptions = []string{"-c"}
 	case "linux":
 		result, err := exec.Command("lsb_release", "-si").Output()
 		distro := strings.TrimSpace(string(result))
@@ -259,20 +268,24 @@ func setShellAndOSVars() {
 			distro = ""
 		}
 		operatingSystem = "Linux" + "/" + distro
+		shellName = "sh"
+		shellOptions = []string{"-c"}
 	default:
 		operatingSystem = runtime.GOOS
 	}
 
 	// Identify shell
 	shellEnv := os.Getenv("SHELL")
-	if runtime.GOOS != "windows" && len(shellEnv) > 0 {
+	if shellEnv != "" {
 		shellName = shellEnv
 	} else {
-		// If SHELL is not set or not available in PATH, use sh
 		_, err := exec.LookPath("bash")
 		if err != nil {
 			shellName = "/bin/sh"
+		} else {
+			shellName = "bash"
 		}
+		shellOptions = []string{"-c"}
 	}
 }
 
@@ -331,9 +344,8 @@ func getCommand(shellPrompt string) {
 		userInput, _ := reader.ReadString('\n')
 		userInput = strings.TrimSpace(userInput)
 		if userInput == "y" || userInput == "" {
-			var cmd *exec.Cmd
 			// Directly use the shellName variable set by setShellAndOSVars()
-			cmd = exec.Command(shellName, "-c", fullLine)
+			cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
 
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
