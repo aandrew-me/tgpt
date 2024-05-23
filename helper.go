@@ -259,8 +259,6 @@ func setShellAndOSVars() {
 		return
 	case "darwin":
 		operatingSystem = "MacOS"
-		shellName = "sh"
-		shellOptions = []string{"-c"}
 	case "linux":
 		result, err := exec.Command("lsb_release", "-si").Output()
 		distro := strings.TrimSpace(string(result))
@@ -268,8 +266,6 @@ func setShellAndOSVars() {
 			distro = ""
 		}
 		operatingSystem = "Linux" + "/" + distro
-		shellName = "sh"
-		shellOptions = []string{"-c"}
 	default:
 		operatingSystem = runtime.GOOS
 	}
@@ -285,8 +281,8 @@ func setShellAndOSVars() {
 		} else {
 			shellName = "bash"
 		}
-		shellOptions = []string{"-c"}
 	}
+	shellOptions = []string{"-c"}
 }
 
 // shellCommand first sets the global variables getCommand uses, then it creates a prompt to generate a command and then it passes that to getCommand
