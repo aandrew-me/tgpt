@@ -42,6 +42,7 @@ var top_p *string
 var max_length *string
 var preprompt *string
 var url *string
+var logFile *string
 
 func main() {
 	execPath, err := os.Executable()
@@ -65,6 +66,7 @@ func main() {
 	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
 	url = flag.String("url", "https://api.openai.com/v1/chat/completions", "url for openai providers")
+	logFile = flag.String("log", "", "Filepath to log conversation to.")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
 	flag.BoolVar(isQuiet, "quiet", false, "Gives response back without loading animation")
@@ -248,6 +250,9 @@ func main() {
 							}
 							os.Exit(0)
 						}
+						if len(*logFile) > 0 {
+							utils.LogToFile(input, "User", "log.txt")
+						}
 						// Use preprompt for first message
 						if previousMessages == "" {
 							input = *preprompt + input
@@ -257,6 +262,9 @@ func main() {
 							ThreadID:     threadID,
 							Provider:     *provider,
 						})
+						if len(*logFile) > 0 {
+							utils.LogToFile(responseTxt, "Assistant", "log.txt")
+						}						
 						previousMessages += responseJson
 						history = append(history, input)
 						lastResponse = responseTxt
@@ -468,6 +476,8 @@ func showHelpMessage() {
 	fmt.Printf("%-50v Set temperature\n", "--temperature")
 	fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set max response length\n", "--max_length")
+	fmt.Printf("%-50v Set filepath to log conversation to\n", "--log")
+
 
 	boldBlue.Println("\nOptions:")
 	fmt.Printf("%-50v Print version \n", "-v, --version")
