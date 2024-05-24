@@ -34,6 +34,12 @@ type ImgResponse struct {
 	Images []string `json:"images"`
 }
 
+var (
+	operatingSystem string
+	shellName       string
+	shellOptions    []string
+)
+
 func getDataResponseTxt(input string, isInteractive bool, extraOptions structs.ExtraOptions) string {
 	// Receiving response
 	resp, err := providers.NewRequest(input, structs.Params{
@@ -238,48 +244,55 @@ func codeGenerate(input string) {
 
 }
 
-func shellCommand(input string) {
-	// Get OS
-	operatingSystem := ""
-	if runtime.GOOS == "windows" {
+func setShellAndOSVars() {
+	// Identify OS
+	switch runtime.GOOS {
+	case "windows":
 		operatingSystem = "Windows"
-	} else if runtime.GOOS == "darwin" {
+		if len(os.Getenv("PSModulePath")) > 0 {
+			shellName = "powershell.exe"
+			shellOptions = []string{"-Command"}
+		} else {
+			shellName = "cmd.exe"
+			shellOptions = []string{"/C"}
+		}
+		return
+	case "darwin":
 		operatingSystem = "MacOS"
-	} else if runtime.GOOS == "linux" {
+	case "linux":
 		result, err := exec.Command("lsb_release", "-si").Output()
 		distro := strings.TrimSpace(string(result))
 		if err != nil {
 			distro = ""
 		}
 		operatingSystem = "Linux" + "/" + distro
-	} else {
+	default:
 		operatingSystem = runtime.GOOS
 	}
 
-	// Get Shell
-
-	shellName := "/bin/sh"
-
-	if runtime.GOOS == "windows" {
-		shellName = "cmd.exe"
-
-		if len(os.Getenv("PSModulePath")) > 0 {
-			shellName = "powershell.exe"
-		}
+	// Identify shell
+	shellEnv := os.Getenv("SHELL")
+	if shellEnv != "" {
+		shellName = shellEnv
 	} else {
-		shellEnv := os.Getenv("SHELL")
-		if len(shellEnv) > 0 {
-			shellName = shellEnv
+		_, err := exec.LookPath("bash")
+		if err != nil {
+			shellName = "/bin/sh"
+		} else {
+			shellName = "bash"
 		}
 	}
+	shellOptions = []string{"-c"}
+}
 
-	shellPrompt := fmt.Sprintf(
-		"Your role: Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. Do not provide any description. If you need to store any data, assume it will be stored in the chat. Provide only %s command for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:", shellName, operatingSystem, input)
-
+// shellCommand first sets the global variables getCommand uses, then it creates a prompt to generate a command and then it passes that to getCommand
+func shellCommand(input string) {
+	setShellAndOSVars()
+	shellPrompt := fmt.Sprintf("Your role: Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. Do not provide any description. If you need to store any data, assume it will be stored in the chat. Provide only %s command for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:", shellName, operatingSystem, input)
 	getCommand(shellPrompt)
 }
 
-// Get a command in response
+// getCommand will make a request to an AI model, then it will run the response using an appropiate handler (bash, sh OR powershell, cmd)
 func getCommand(shellPrompt string) {
 	checkInputLength(shellPrompt)
 
@@ -327,24 +340,8 @@ func getCommand(shellPrompt string) {
 		userInput, _ := reader.ReadString('\n')
 		userInput = strings.TrimSpace(userInput)
 		if userInput == "y" || userInput == "" {
-			var cmd *exec.Cmd
-			if runtime.GOOS == "windows" {
-				shellName := "cmd"
-
-				if len(os.Getenv("PSModulePath")) > 0 {
-					shellName = "powershell"
-				}
-				if shellName == "cmd" {
-					cmd = exec.Command("cmd", "/C", fullLine)
-
-				} else {
-					cmd = exec.Command("powershell", fullLine)
-				}
-
-			} else {
-				cmd = exec.Command("bash", "-c", fullLine)
-
-			}
+			// Directly use the shellName variable set by setShellAndOSVars()
+			cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
 
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout
