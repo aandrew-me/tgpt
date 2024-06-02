@@ -43,6 +43,7 @@ var max_length *string
 var preprompt *string
 var url *string
 var logFile *string
+var shouldExecuteCommand *bool
 
 func main() {
 	execPath, err := os.Executable()
@@ -67,6 +68,7 @@ func main() {
 	preprompt = flag.String("preprompt", "", "Set preprompt")
 	url = flag.String("url", "https://api.openai.com/v1/chat/completions", "url for openai providers")
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
+	shouldExecuteCommand = flag.Bool(("y"), false, "Instantly execute the shell command")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
 	flag.BoolVar(isQuiet, "quiet", false, "Gives response back without loading animation")
@@ -477,6 +479,7 @@ func showHelpMessage() {
 	fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set max response length\n", "--max_length")
 	fmt.Printf("%-50v Set filepath to log conversation to\n", "--log")
+	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
 
 	boldBlue.Println("\nOptions:")

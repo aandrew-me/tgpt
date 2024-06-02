@@ -333,28 +333,27 @@ func getCommand(shellPrompt string) {
 
 		bold.Print(mainText)
 	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+		os.Exit(1)
+	}
+
 	lineCount := strings.Count(fullLine, "\n") + 1
+
 	if lineCount == 1 {
-		bold.Print("\n\nExecute shell command? [y/n]: ")
-		reader := bufio.NewReader(os.Stdin)
-		userInput, _ := reader.ReadString('\n')
-		userInput = strings.TrimSpace(userInput)
-		if userInput == "y" || userInput == "" {
-			// Directly use the shellName variable set by setShellAndOSVars()
-			cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
+		if *shouldExecuteCommand {
+			fmt.Println()
+			executeCommand(shellName, shellOptions, fullLine)
+		} else {
+			bold.Print("\n\nExecute shell command? [y/n]: ")
+			reader := bufio.NewReader(os.Stdin)
+			userInput, _ := reader.ReadString('\n')
+			userInput = strings.TrimSpace(userInput)
 
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err = cmd.Run()
-
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
+			if userInput == "y" || userInput == "" {
+				executeCommand(shellName, shellOptions, fullLine)
 			}
-		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-			os.Exit(1)
 		}
 	}
 
@@ -760,4 +759,18 @@ func downloadImage(url string, destDir string, filename string) error {
 	fmt.Println("Saved image", filename)
 
 	return nil
+}
+
+func executeCommand(shellName string, shellOptions []string, fullLine string) {
+	// Directly use the shellName variable set by setShellAndOSVars()
+	cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	var err = cmd.Run()
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
 }
