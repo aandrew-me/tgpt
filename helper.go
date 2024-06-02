@@ -768,9 +768,30 @@ func executeCommand(shellName string, shellOptions []string, fullLine string) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	var err = cmd.Run()
+	err := cmd.Run()
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	addToShellHistory(fullLine)
+}
+
+func addToShellHistory(command string) {
+	shell := os.Getenv("SHELL")
+	homeDir := os.Getenv("HOME")
+
+	if strings.Contains(shell, "/bash")  {
+		historyPath := os.Getenv("HISTFILE")
+
+		if historyPath == "" {
+			historyPath = homeDir + "/.bash_history";
+		}
+
+        file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
+        if err!= nil {}
+        defer file.Close()
+
+        _, err = file.WriteString(command + "\n")
 	}
 }
