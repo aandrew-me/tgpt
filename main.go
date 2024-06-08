@@ -498,7 +498,7 @@ func showHelpMessage() {
 	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, blackboxai, ollama and groq")
 
 	bold.Println("\nProvider: openai")
-	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables.")
+	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url")
 
 	bold.Println("\nProvider: opengpts")
 	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")

@@ -14,7 +14,9 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 - [Phind](https://www.phind.com/agent) (Phind Model)
 <!-- - [Llama2](https://www.llama2.ai/) (Llama 2 70b) -->
 - [Blackbox AI](https://www.blackbox.ai/) (Blackbox model)
-- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key)
+- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
+- [Groq](https://groq.com/) (Requires a free API Key. LLaMA2-70b & Mixtral-8x7b)
+- [Ollama](https://www.ollama.com/) (Supports many models)
 
 **Image Generation Model**: Craiyon V3
 
@@ -52,7 +54,7 @@ The default provider is phind. The AI_PROVIDER environment variable can be used 
 Available providers to use: openai, opengpts, koboldai, phind, blackboxai, ollama and groq
 
 Provider: openai
-Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables.
+Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url
 
 Provider: opengpts
 Uses gpt-3.5-turbo only. Do not use with sensitive data
