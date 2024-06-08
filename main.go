@@ -298,7 +298,7 @@ func main() {
 						utils.LogToFile(userInput, "USER_QUERY", *logFile)
 					}
 
-					responseJson, responseTxt := getData(userInput, true, structs.ExtraOptions{
+					responseJson, responseTxt := getData(userInput, structs.Params{
 						PrevMessages: previousMessages,
 						Provider:     *provider,
 						ThreadID:     threadID,

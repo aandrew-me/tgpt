@@ -63,8 +63,6 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return groq.NewRequest(input, params)
 	case "koboldai":
 		return koboldai.NewRequest(input, params)
-	case "llama2":
-		return llama2.NewRequest(input, params)
 	case "ollama":
 		return ollama.NewRequest(input, params)
 	case "opengpts":
