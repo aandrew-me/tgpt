@@ -12,15 +12,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/structs"
 )
 
-type Response struct {
-	ID      string `json:"id"`
-	Choices []struct {
-		Delta struct {
-			Content string `json:"content"`
-		} `json:"delta"`
-	} `json:"choices"`
-}
-
 func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
@@ -89,7 +80,7 @@ func GetMainText(line string) (mainText string) {
 		obj = strings.Split(line, "data: ")[1]
 	}
 
-	var d Response
+	var d structs.CommonResponse
 	if err := json.Unmarshal([]byte(obj), &d); err != nil {
 		return ""
 	}

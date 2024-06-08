@@ -495,31 +495,31 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: openai, opengpts, koboldai, phind, blackboxai, ollama and groq")
-
-	bold.Println("\nProvider: openai")
-	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url")
-
-	bold.Println("\nProvider: opengpts")
-	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
-
-	bold.Println("\nProvider: koboldai")
-	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
-
-	bold.Println("\nProvider: phind")
-	fmt.Println("Uses Phind Model. Great for developers")
-
-	// bold.Println("\nProvider: llama2")
-	// fmt.Println("Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses llama2-70b by default. Supports other models.")
+	fmt.Println("Available providers to use: blackboxai, groq, koboldai, ollama, opengpts, openai and phind")
 
 	bold.Println("\nProvider: blackboxai")
 	fmt.Println("Uses BlackBox model. Great for developers")
 
+	bold.Println("\nProvider: groq")
+	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
+
+	bold.Println("\nProvider: koboldai")
+	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
+
+	// bold.Println("\nProvider: llama2")
+	// fmt.Println("Llama 2 is an open source large language model (LLM) developed by Meta AI. Uses llama2-70b by default. Supports other models.")
+
 	bold.Println("\nProvider: ollama")
 	fmt.Println("Needs to be run locally. Supports many models")
 
-	bold.Println("\nProvider: groq")
-	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
+	bold.Println("\nProvider: opengpts")
+	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
+	
+	bold.Println("\nProvider: openai")
+	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url")
+
+	bold.Println("\nProvider: phind")
+	fmt.Println("Uses Phind Model. Great for developers")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)

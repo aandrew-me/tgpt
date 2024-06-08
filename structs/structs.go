@@ -17,3 +17,12 @@ type ExtraOptions struct {
 	PrevMessages string
 	Provider     string
 }
+
+type CommonResponse struct {
+	ID      string `json:"id"`
+	Choices []struct {
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
+	} `json:"choices"`
+}

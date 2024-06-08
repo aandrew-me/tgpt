@@ -31,7 +31,7 @@ Flags:
 -q, --quiet                                        Gives response back without loading animation
 -w, --whole                                        Gives response back as a whole text
 -img, --image                                      Generate images from text
---provider                                         Set Provider. Detailed information has been provided below (Env: AI_PROVIDER)
+--provider                                         Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER)
 
 Some additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.
 --model                                            Set Model
@@ -51,28 +51,28 @@ Options:
 
 Providers:
 The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.
-Available providers to use: openai, opengpts, koboldai, phind, blackboxai, ollama and groq
-
-Provider: openai
-Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url
-
-Provider: opengpts
-Uses gpt-3.5-turbo only. Do not use with sensitive data
-
-Provider: koboldai
-Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels
-
-Provider: phind
-Uses Phind Model. Great for developers
+Available providers to use: blackboxai, groq, koboldai, ollama, opengpts, openai and phind
 
 Provider: blackboxai
 Uses BlackBox model. Great for developers
 
+Provider: groq
+Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b
+
+Provider: koboldai
+Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels
+
 Provider: ollama
 Needs to be run locally. Supports many models
 
-Provider: groq
-Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b
+Provider: opengpts
+Uses gpt-3.5-turbo only. Do not use with sensitive data
+
+Provider: openai
+Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url
+
+Provider: phind
+Uses Phind Model. Great for developers
 
 Examples:
 tgpt "What is internet?"
