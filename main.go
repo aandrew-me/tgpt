@@ -266,7 +266,7 @@ func main() {
 						})
 						if len(*logFile) > 0 {
 							utils.LogToFile(responseTxt, "Assistant", "log.txt")
-						}						
+						}
 						previousMessages += responseJson
 						history = append(history, input)
 						lastResponse = responseTxt
@@ -279,7 +279,7 @@ func main() {
 			// Multiline interactive
 			/////////////////////
 
-			fmt.Print("\nPress Tab to submit, Ctrl + C to exit, Esc to unfocus, i to focus. When unfocused, press p to paste, c to copy response, b to copy last code block in response\n")
+			fmt.Print("\nPress Ctrl + D to submit, Ctrl + C to exit, Esc to unfocus, i to focus. When unfocused, press p to paste, c to copy response, b to copy last code block in response\n")
 
 			previousMessages := ""
 			threadID := utils.RandomString(36)
@@ -389,12 +389,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			userInput = ""
 			return m, tea.Quit
 
-		case tea.KeyTab:
+		case tea.KeyCtrlD:
 			userInput = m.textarea.Value()
 
 			if len(userInput) > 1 {
 				m.textarea.Blur()
 				return m, tea.Quit
+			}
+		case tea.KeyTab:
+			if m.textarea.Focused() {
+				m.textarea.InsertString("\t")
 			}
 		default:
 			if m.textarea.Focused() {
@@ -481,7 +485,6 @@ func showHelpMessage() {
 	fmt.Printf("%-50v Set filepath to log conversation to\n", "--log")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
-
 	boldBlue.Println("\nOptions:")
 	fmt.Printf("%-50v Print version \n", "-v, --version")
 	fmt.Printf("%-50v Print help message \n", "-h, --help")
@@ -514,7 +517,7 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: opengpts")
 	fmt.Println("Uses gpt-3.5-turbo only. Do not use with sensitive data")
-	
+
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url")
 
