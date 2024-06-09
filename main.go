@@ -253,7 +253,7 @@ func main() {
 							os.Exit(0)
 						}
 						if len(*logFile) > 0 {
-							utils.LogToFile(input, "User", "log.txt")
+							utils.LogToFile(input, "USER_QUERY", "log.txt")
 						}
 						// Use preprompt for first message
 						if previousMessages == "" {
@@ -265,7 +265,7 @@ func main() {
 							Provider:     *provider,
 						})
 						if len(*logFile) > 0 {
-							utils.LogToFile(responseTxt, "Assistant", "log.txt")
+							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", "log.txt")
 						}
 						previousMessages += responseJson
 						history = append(history, input)
@@ -294,13 +294,22 @@ func main() {
 					os.Exit(1)
 				}
 				if len(userInput) > 0 {
+					if len(*logFile) > 0 {
+						utils.LogToFile(userInput, "USER_QUERY", "log.txt")
+					}
+
 					responseJson, responseTxt := getData(userInput, true, structs.ExtraOptions{
 						PrevMessages: previousMessages,
 						Provider:     *provider,
 						ThreadID:     threadID,
 					})
+
 					previousMessages += responseJson
 					lastResponse = responseTxt
+
+					if len(*logFile) > 0 {
+						utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", "log.txt")
+					}
 				}
 
 			}
@@ -482,7 +491,7 @@ func showHelpMessage() {
 	fmt.Printf("%-50v Set temperature\n", "--temperature")
 	fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set max response length\n", "--max_length")
-	fmt.Printf("%-50v Set filepath to log conversation to\n", "--log")
+	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
 	boldBlue.Println("\nOptions:")
