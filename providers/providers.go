@@ -7,7 +7,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers/blackboxai"
 	"github.com/aandrew-me/tgpt/v2/providers/groq"
 	"github.com/aandrew-me/tgpt/v2/providers/koboldai"
-	"github.com/aandrew-me/tgpt/v2/providers/llama2"
 	"github.com/aandrew-me/tgpt/v2/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/providers/opengpts"
@@ -17,7 +16,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "opengpts", "ollama", "openai", "phind", "llama2", "koboldai", "blackboxai", "groq",
+	"", "opengpts", "ollama", "openai", "phind", "koboldai", "blackboxai", "groq",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -27,8 +26,6 @@ func GetMainText(line string, provider string, input string) string {
 		return groq.GetMainText(line)
 	} else if provider == "koboldai" {
 		return koboldai.GetMainText(line)
-	} else if provider == "llama2" {
-		return llama2.GetMainText(line)
 	} else if provider == "ollama" {
 		return ollama.GetMainText(line)
 	} else if provider == "opengpts" {
@@ -61,8 +58,6 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return groq.NewRequest(input, params, extraOptions.PrevMessages)
 	} else if params.Provider == "koboldai" {
 		return koboldai.NewRequest(input, params, "")
-	} else if params.Provider == "llama2" {
-		return llama2.NewRequest(input, params, extraOptions.PrevMessages)
 	} else if params.Provider == "ollama" {
 		return ollama.NewRequest(input, params, extraOptions.PrevMessages)
 	} else if params.Provider == "opengpts" {
