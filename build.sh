@@ -5,10 +5,10 @@ echo "
 2). Build for Windows
 3). Build for MacOS
 4). Build for Linux, Windows and MacOS
-5). Quit
+0). Quit
 "
 
-read -rp "Please choose One [ 1-5 ]: " -n 1 chs
+read -rp "Please choose One [ 0-4 ]: " -n 1 chs
 if [[ "$chs" == "1" ]]; then
 	# For GNU Linux
 	GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-amd64
@@ -37,7 +37,7 @@ elif [[ "$chs" == "4" ]]; then
 	# For MacOS
 	GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-mac-amd64
 	GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-mac-arm64
-elif [[ "$chs" == "5" ]]; then
+elif [[ "$chs" == "0" ]]; then
 	exit 0
 else
 	echo "Invalid Options !"
