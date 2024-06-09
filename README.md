@@ -20,7 +20,7 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 
 **Image Generation Model**: Craiyon V3
 
-## Usage 💬
+## Usage 
 
 ```
 Usage: tgpt [Flags] [Prompt]
@@ -40,6 +40,8 @@ Some additional options can be set. However not all options are supported by all
 --temperature                                      Set temperature
 --top_p                                            Set top_p
 --max_length                                       Set max response length
+--log                                              Set filepath to log conversation to (For interactive modes)
+-y                                                 Execute shell command without confirmation
 
 Options:
 -v, --version                                      Print version 
@@ -137,18 +139,6 @@ go install github.com/aandrew-me/tgpt/v2@latest
     ```bash
     scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
     ```
-
-<!-- -   **PowerShell:** Open PowerShell as administrator and run the following command:
-    
-    ```bash
-    Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
-    ```
-
-    If you receive an error stating "execution of scripts is disabled on this system," run this command instead (and confirm with a "Y"):
-
-    ```bash
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned; Invoke-WebRequest https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1 -OutFile "$PWD\install-win.ps1";  .\install-win.ps1
-    ``` -->
 
 ## Updating ⬆️
 If you installed the program with the installation script, you may update it with
