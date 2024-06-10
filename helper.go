@@ -195,8 +195,9 @@ func update() {
 
 			if err != nil {
 				fmt.Println("Failed to update. Error:", err)
+			} else {
+				fmt.Println("Successfully updated.")
 			}
-			fmt.Println("Successfully updated.")
 
 		} else {
 			fmt.Println("You are already using the latest version.", remoteVersion)
