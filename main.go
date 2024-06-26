@@ -253,7 +253,7 @@ func main() {
 							os.Exit(0)
 						}
 						if len(*logFile) > 0 {
-							utils.LogToFile(input, "USER_QUERY", "log.txt")
+							utils.LogToFile(input, "USER_QUERY", *logFile)
 						}
 						// Use preprompt for first message
 						if previousMessages == "" {
@@ -265,7 +265,7 @@ func main() {
 							Provider:     *provider,
 						})
 						if len(*logFile) > 0 {
-							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", "log.txt")
+							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 						}
 						previousMessages += responseJson
 						history = append(history, input)
@@ -295,7 +295,7 @@ func main() {
 				}
 				if len(userInput) > 0 {
 					if len(*logFile) > 0 {
-						utils.LogToFile(userInput, "USER_QUERY", "log.txt")
+						utils.LogToFile(userInput, "USER_QUERY", *logFile)
 					}
 
 					responseJson, responseTxt := getData(userInput, true, structs.ExtraOptions{
@@ -308,7 +308,7 @@ func main() {
 					lastResponse = responseTxt
 
 					if len(*logFile) > 0 {
-						utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", "log.txt")
+						utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 					}
 				}
 
