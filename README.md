@@ -113,8 +113,6 @@ yay -S tgpt-bin
 
 ### FreeBSD 😈 
 
-Currently, the port is not yet in the quarterly branch of the FreeBSD ports tree.
-
 To install the [port](https://www.freshports.org/www/tgpt):
 ```
 cd /usr/ports/www/tgpt/ && make install clean
