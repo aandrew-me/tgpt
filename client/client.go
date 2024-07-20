@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	tls_client "github.com/bogdanfinn/tls-client"
@@ -31,20 +32,29 @@ func NewClient() (tls_client.HttpClient, error) {
 			options = append(options, proxyOption)
 		}
 	} else {
-		_, err := os.Stat("proxy.txt")
-		if err == nil {
-			proxyConfig, readErr := os.ReadFile("proxy.txt")
-			if readErr != nil {
-				fmt.Fprintln(os.Stderr, "Error reading file proxy.txt:", readErr)
-				return nil, readErr
-			}
+		proxyConfigLocations := []string{
+			"proxy.txt",
+			filepath.Join(os.Getenv("HOME"), ".config", "tgpt", "proxy.txt"),
+		}
 
-			proxyAddress := strings.TrimSpace(string(proxyConfig))
-			if proxyAddress != "" {
-				if strings.HasPrefix(proxyAddress, "http://") || strings.HasPrefix(proxyAddress, "socks5://") {
-					proxyOption := tls_client.WithProxyUrl(proxyAddress)
-					options = append(options, proxyOption)
+		for _, proxyConfigLocation := range proxyConfigLocations {
+			_, err := os.Stat(proxyConfigLocation)
+			if err == nil {
+				proxyConfig, readErr := os.ReadFile(proxyConfigLocation)
+				if readErr != nil {
+					fmt.Fprintln(os.Stderr, "Error reading file proxy.txt:", readErr)
+					return nil, readErr
 				}
+
+				proxyAddress := strings.TrimSpace(string(proxyConfig))
+				if proxyAddress != "" {
+					if strings.HasPrefix(proxyAddress, "http://") || strings.HasPrefix(proxyAddress, "socks5://") {
+						proxyOption := tls_client.WithProxyUrl(proxyAddress)
+						options = append(options, proxyOption)
+					}
+				}
+
+				break
 			}
 		}
 	}
