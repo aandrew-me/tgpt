@@ -32,9 +32,11 @@ func NewClient() (tls_client.HttpClient, error) {
 			options = append(options, proxyOption)
 		}
 	} else {
+		homeDir, _ := os.UserHomeDir()
+
 		proxyConfigLocations := []string{
 			"proxy.txt",
-			filepath.Join(os.Getenv("HOME"), ".config", "tgpt", "proxy.txt"),
+			filepath.Join(homeDir, ".config", "tgpt", "proxy.txt"),
 		}
 
 		for _, proxyConfigLocation := range proxyConfigLocations {
