@@ -149,13 +149,19 @@ tgpt -u
 Support:
 
 1. environment variable
+
+http_proxy or HTTP_PROXY with following available formats:
+
 - Http Proxy [ `http://ip:port` ]
 - Http Auth [ `http://user:pass@ip:port` ]
 - Socks5 Proxy [ `socks5://ip:port ]`
 - Socks5 Auth [ `socks5://user:pass@ip:port` ]
 
-2. configuration file (following files in the following order)
-- proxy.txt (in the same directory from where you are executing)
+2. configuration file
+
+file location in the following order:
+
+- ./proxy.txt (in the same directory from where you are executing)
 - ~/.config/tgpt/proxy.txt
 
 Example:
