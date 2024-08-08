@@ -700,7 +700,7 @@ func generateImage(prompt string) {
 	req, _ := http.NewRequest("POST", url, payload)
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/110.0")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
 
 	res, err := client.Do(req)
 
@@ -782,17 +782,18 @@ func addToShellHistory(command string) {
 	shell := os.Getenv("SHELL")
 	homeDir := os.Getenv("HOME")
 
-	if strings.Contains(shell, "/bash")  {
+	if strings.Contains(shell, "/bash") {
 		historyPath := os.Getenv("HISTFILE")
 
 		if historyPath == "" {
-			historyPath = homeDir + "/.bash_history";
+			historyPath = homeDir + "/.bash_history"
 		}
 
-        file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
-        if err!= nil {}
-        defer file.Close()
+		file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+		}
+		defer file.Close()
 
-        _, err = file.WriteString(command + "\n")
+		_, err = file.WriteString(command + "\n")
 	}
 }
