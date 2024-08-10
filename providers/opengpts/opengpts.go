@@ -28,7 +28,7 @@ func RandomString(length int) string {
 	return string(result)
 }
 
-func NewRequest(input string, params structs.Params, extraOptions structs.ExtraOptions) (*http.Response, error) {
+func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Println(err)
@@ -38,8 +38,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 
 	randID := utils.RandomString(36)
 
-	if len(extraOptions.ThreadID) > 1 {
-		randID = extraOptions.ThreadID;
+	if len(params.ThreadID) > 1 {
+		randID = params.ThreadID;
 	}
 
 	var data = strings.NewReader(fmt.Sprintf(`{

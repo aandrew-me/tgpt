@@ -20,23 +20,22 @@ var availableProviders = []string{
 }
 
 func GetMainText(line string, provider string, input string) string {
-	if provider == "blackboxai" {
+	switch provider {
+	case "blackboxai":
 		return blackboxai.GetMainText(line)
-	} else if provider == "groq" {
+	case "groq":
 		return groq.GetMainText(line)
-	} else if provider == "koboldai" {
+	case "koboldai":
 		return koboldai.GetMainText(line)
-	} else if provider == "ollama" {
+	case "ollama":
 		return ollama.GetMainText(line)
-	} else if provider == "opengpts" {
+	case "opengpts":
 		return opengpts.GetMainText(line, input)
-	} else if provider == "openai" {
+	case "openai":
 		return openai.GetMainText(line)
-	} else if provider == "phind" {
+	default:
 		return phind.GetMainText(line)
 	}
-
-	return phind.GetMainText(line)
 }
 
 func NewRequest(input string, params structs.Params, extraOptions structs.ExtraOptions) (*http.Response, error) {
@@ -52,21 +51,21 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		os.Exit(1)
 	}
 
-	if params.Provider == "blackboxai" {
-		return blackboxai.NewRequest(input, params, extraOptions.PrevMessages)
-	} else if params.Provider == "groq" {
-		return groq.NewRequest(input, params, extraOptions.PrevMessages)
-	} else if params.Provider == "koboldai" {
-		return koboldai.NewRequest(input, params, "")
-	} else if params.Provider == "ollama" {
-		return ollama.NewRequest(input, params, extraOptions.PrevMessages)
-	} else if params.Provider == "opengpts" {
-		return opengpts.NewRequest(input, params, extraOptions)
-	} else if params.Provider == "openai" {
-		return openai.NewRequest(input, params, extraOptions.PrevMessages)
-	} else if params.Provider == "phind" {
-		return phind.NewRequest(input, params, extraOptions.PrevMessages)
+	switch params.Provider {
+	case "blackboxai":
+		return blackboxai.NewRequest(input, params)
+	case "groq":
+		return groq.NewRequest(input, params)
+	case "koboldai":
+		return koboldai.NewRequest(input, params)
+	case "ollama":
+		return ollama.NewRequest(input, params)
+	case "opengpts":
+		return opengpts.NewRequest(input, params)
+	case "openai":
+		return openai.NewRequest(input, params)
+	default:
+		return phind.NewRequest(input, params)
 	}
 
-	return phind.NewRequest(input, params, extraOptions.PrevMessages)
 }

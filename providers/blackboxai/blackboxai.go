@@ -12,7 +12,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/structs"
 )
 
-func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
+func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Println(err)
@@ -38,7 +38,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"trendingAgentMode": {},
 		"isMicMode": false
 	}
-	`,prevMessages, string(safeInput)))
+	`,params.PrevMessages, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://www.blackbox.ai/api/chat", data)
 	if err != nil {
