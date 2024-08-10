@@ -40,9 +40,8 @@ var (
 	shellOptions    []string
 )
 
-func getDataResponseTxt(input string, isInteractive bool, extraOptions structs.ExtraOptions) string {
-	// Receiving response
-	resp, err := providers.NewRequest(input, structs.Params{
+func getDataResponseTxt(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
+	return makeRequestAndGetData(input, structs.Params{
 		ApiKey:      *apiKey,
 		ApiModel:    *apiModel,
 		Provider:    *provider,
@@ -51,47 +50,13 @@ func getDataResponseTxt(input string, isInteractive bool, extraOptions structs.E
 		Top_p:       *top_p,
 		Preprompt:   *preprompt,
 		Url:         *url,
+		PrevMessages: params.PrevMessages,
+		ThreadID: params.ThreadID,
 	}, extraOptions)
-
-	if err != nil {
-		stopSpin = true
-		printConnectionErrorMsg(err)
-	}
-
-	code := resp.StatusCode
-	if code >= 400 {
-		stopSpin = true
-		fmt.Print("\r")
-		if !isInteractive {
-			handleStatus400(resp)
-		}
-		respBody, _ := io.ReadAll(resp.Body)
-		fmt.Println("Some error has occurred, try again")
-		fmt.Println(string(respBody))
-		return ""
-	}
-
-	defer resp.Body.Close()
-
-	stopSpin = true
-	fmt.Print("\r")
-
-	// Print the Question
-	if !isInteractive {
-		fmt.Print("\r          \r")
-		// bold.Printf("\r%v\n\n", input)
-		bold.Println()
-	} else {
-		fmt.Println()
-		boldViolet.Println("╭─ Bot")
-	}
-
-	// Handling each part
-	return handleEachPart(resp, input)
 }
 
-func getData(input string, isInteractive bool, extraOptions structs.ExtraOptions) (string, string) {
-	responseTxt := getDataResponseTxt(input, isInteractive, extraOptions)
+func getData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, string) {
+	responseTxt := getDataResponseTxt(input, params, structs.ExtraOptions{IsInteractive: extraOptions.IsInteractive, IsNormal: true})
 	safeResponse, _ := json.Marshal(responseTxt)
 
 	fmt.Print("\n\n")
@@ -106,7 +71,7 @@ func getData(input string, isInteractive bool, extraOptions structs.ExtraOptions
 	},
 	`, string(safeInput), string(safeResponse))
 
-	if extraOptions.Provider == "phind" {
+	if params.Provider == "phind" {
 		safeInput, _ := json.Marshal(input)
 		msgObject = fmt.Sprintf(`{
 		"content": %v,
@@ -121,7 +86,7 @@ func getData(input string, isInteractive bool, extraOptions structs.ExtraOptions
 	`, string(safeInput), string(safeResponse))
 	}
 
-	if extraOptions.Provider == "llama2" {
+	if params.Provider == "llama2" {
 		input := string(safeInput)[1 : len(string(safeInput))-1]
 		response := string(safeResponse)[1 : len(string(safeResponse))-1]
 
@@ -206,43 +171,9 @@ func update() {
 }
 
 func codeGenerate(input string) {
-	checkInputLength(input)
-
 	codePrompt := fmt.Sprintf("Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:", input)
 
-	resp, err := providers.NewRequest(codePrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
-
-	if err != nil {
-		stopSpin = true
-		printConnectionErrorMsg(err)
-	}
-
-	defer resp.Body.Close()
-
-	code := resp.StatusCode
-
-	if code >= 400 {
-		handleStatus400(resp)
-	}
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	// Handling each part
-	previousText := ""
-	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider, input)
-		if len(newText) < 1 {
-			continue
-		}
-		mainText := strings.Replace(newText, previousText, "", -1)
-		previousText = newText
-		bold.Print(mainText)
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-		os.Exit(1)
-	}
-
+	makeRequestAndGetData(codePrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetCode: true})
 }
 
 func setShellAndOSVars() {
@@ -295,69 +226,7 @@ func shellCommand(input string) {
 
 // getCommand will make a request to an AI model, then it will run the response using an appropiate handler (bash, sh OR powershell, cmd)
 func getCommand(shellPrompt string) {
-	checkInputLength(shellPrompt)
-
-	resp, err := providers.NewRequest(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
-
-	if err != nil {
-		stopSpin = true
-		printConnectionErrorMsg(err)
-	}
-
-	defer resp.Body.Close()
-
-	stopSpin = true
-
-	code := resp.StatusCode
-
-	if code >= 400 {
-		handleStatus400(resp)
-	}
-
-	fmt.Print("\r          \r")
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	// Variables
-	fullLine := ""
-	previousText := ""
-
-	// Handling each part
-	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider, shellPrompt)
-		if len(newText) < 1 {
-			continue
-		}
-		mainText := strings.Replace(newText, previousText, "", -1)
-		previousText = newText
-		fullLine += mainText
-
-		bold.Print(mainText)
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-		os.Exit(1)
-	}
-
-	lineCount := strings.Count(fullLine, "\n") + 1
-
-	if lineCount == 1 {
-		if *shouldExecuteCommand {
-			fmt.Println()
-			executeCommand(shellName, shellOptions, fullLine)
-		} else {
-			bold.Print("\n\nExecute shell command? [y/n]: ")
-			reader := bufio.NewReader(os.Stdin)
-			userInput, _ := reader.ReadString('\n')
-			userInput = strings.TrimSpace(userInput)
-
-			if userInput == "y" || userInput == "" {
-				executeCommand(shellName, shellOptions, fullLine)
-			}
-		}
-	}
-
+	makeRequestAndGetData(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetCommand: true})
 }
 
 type RESPONSE struct {
@@ -405,40 +274,8 @@ func getVersionHistory() {
 }
 
 func getWholeText(input string) {
+	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetWhole: true})
 	checkInputLength(input)
-
-	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
-
-	if err != nil {
-		stopSpin = true
-		printConnectionErrorMsg(err)
-	}
-
-	defer resp.Body.Close()
-
-	code := resp.StatusCode
-
-	if code >= 400 {
-		handleStatus400(resp)
-	}
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	// Variables
-	fullText := ""
-	previousText := ""
-
-	// Handling each part
-	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider, input)
-		if len(newText) < 1 {
-			continue
-		}
-		mainText := strings.Replace(newText, previousText, "", -1)
-		previousText = newText
-		fullText += mainText
-	}
-	fmt.Println(fullText)
 }
 
 func getLastCodeBlock(markdown string) string {
@@ -470,39 +307,7 @@ func getLastCodeBlock(markdown string) string {
 }
 
 func getSilentText(input string) {
-	checkInputLength(input)
-
-	resp, err := providers.NewRequest(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{})
-
-	if err != nil {
-		stopSpin = true
-		printConnectionErrorMsg(err)
-	}
-
-	defer resp.Body.Close()
-
-	code := resp.StatusCode
-
-	if code >= 400 {
-		handleStatus400(resp)
-	}
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	// Handling each part
-	previousText := ""
-
-	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider, input)
-		if len(newText) < 1 {
-			continue
-		}
-		mainText := strings.Replace(newText, previousText, "", -1)
-		previousText = newText
-
-		fmt.Print(mainText)
-	}
-	fmt.Println()
+	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetSilent: true})
 }
 
 func checkInputLength(input string) {
@@ -796,4 +601,108 @@ func addToShellHistory(command string) {
 
 		_, err = file.WriteString(command + "\n")
 	}
+}
+
+func makeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
+	checkInputLength(input)
+
+	resp, err := providers.NewRequest(input, params, extraOptions)
+
+	if err != nil {
+		stopSpin = true
+		printConnectionErrorMsg(err)
+	}
+
+	defer resp.Body.Close()
+
+	code := resp.StatusCode
+
+	if code >= 400 {
+		stopSpin = true
+		fmt.Print("\r")
+		if !extraOptions.IsInteractive {
+			handleStatus400(resp)
+		}
+		respBody, _ := io.ReadAll(resp.Body)
+		fmt.Println("Some error has occurred, try again")
+		fmt.Println(string(respBody))
+		return ""
+	}
+
+	stopSpin = true
+	fmt.Print("\r")
+
+	if extraOptions.IsNormal {
+		// Print the Question
+		if !extraOptions.IsInteractive {
+			fmt.Print("\r          \r")
+			// bold.Printf("\r%v\n\n", input)
+			bold.Println()
+		} else {
+			fmt.Println()
+			boldViolet.Println("╭─ Bot")
+		}
+
+		// Handling each part
+		return handleEachPart(resp, input)
+	}
+
+	if extraOptions.IsGetCommand {
+		fmt.Print("\r          \r")
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+
+	// Handling each part
+	previousText := ""
+	fullText := ""
+
+	for scanner.Scan() {
+		newText := providers.GetMainText(scanner.Text(), *provider, input)
+		if len(newText) < 1 {
+			continue
+		}
+		mainText := strings.Replace(newText, previousText, "", -1)
+		previousText = newText
+		fullText += mainText
+
+		if !extraOptions.IsGetWhole {
+			fmt.Print(mainText)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+		os.Exit(1)
+	}
+
+	if extraOptions.IsGetWhole {
+		fmt.Println(fullText)
+	}
+
+	if extraOptions.IsGetSilent || extraOptions.IsGetCode {
+		fmt.Println()
+	}
+
+	if extraOptions.IsGetCommand {
+		lineCount := strings.Count(fullText, "\n") + 1
+
+		if lineCount == 1 {
+			if *shouldExecuteCommand {
+				fmt.Println()
+				executeCommand(shellName, shellOptions, fullText)
+			} else {
+				bold.Print("\n\nExecute shell command? [y/n]: ")
+				reader := bufio.NewReader(os.Stdin)
+				userInput, _ := reader.ReadString('\n')
+				userInput = strings.TrimSpace(userInput)
+
+				if userInput == "y" || userInput == "" {
+					executeCommand(shellName, shellOptions, fullText)
+				}
+			}
+		}
+	}
+
+	return ""
 }
