@@ -16,7 +16,7 @@ type Response struct {
 	Token string `json:"token"`
 }
 
-func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
+func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Println(err)

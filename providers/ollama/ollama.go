@@ -12,7 +12,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/structs"
 )
 
-func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
+func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Println(err)
@@ -25,12 +25,12 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	}
 
 	temperature := "0.5"
-	if params.Temperature != ""{
+	if params.Temperature != "" {
 		temperature = params.Temperature
 	}
 
 	top_p := "0.5"
-	if params.Top_p != ""{
+	if params.Top_p != "" {
 		top_p = params.Top_p
 	}
 
@@ -51,7 +51,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"temperature": %v,
 		"top_p": %v
 	}
-	`, prevMessages, string(safeInput), model, temperature, top_p))
+	`, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
 	req, err := http.NewRequest("POST", "http://localhost:11434/v1/chat/completions", data)
 	if err != nil {
@@ -61,7 +61,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer " + params.ApiKey)
+	req.Header.Set("Authorization", "Bearer "+params.ApiKey)
 
 	// Return response
 	return (client.Do(req))

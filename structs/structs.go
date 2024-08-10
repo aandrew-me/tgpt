@@ -10,12 +10,16 @@ type Params struct {
 	Preprompt   string
 	ThreadID    string
 	Url         string
+	PrevMessages  string
 }
 
 type ExtraOptions struct {
-	ThreadID     string
-	PrevMessages string
-	Provider     string
+	IsGetSilent   bool
+	IsGetWhole    bool
+	IsGetCommand  bool
+	IsNormal      bool
+	IsGetCode     bool
+	IsInteractive bool
 }
 
 type CommonResponse struct {

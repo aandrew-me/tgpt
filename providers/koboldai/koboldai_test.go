@@ -15,7 +15,7 @@ func TestRequest(t *testing.T) {
 		Temperature: "0.5",
 		Top_p: "0.5",
 		Max_length: "300",
-	}, "")
+	})
 	body, _ := io.ReadAll(resp.Body)
 
 	assert := assert.New(t)

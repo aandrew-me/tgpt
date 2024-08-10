@@ -12,7 +12,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/structs"
 )
 
-func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
+func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Println(err)
@@ -53,7 +53,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"requested_model": "%v",
 		"user_input": %v
 	}
-	`, prevMessages, string(safeInput), model, string(safeInput)))
+	`, params.PrevMessages, string(safeInput), model, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://https.extension.phind.com/agent/", data)
 	if err != nil {
@@ -66,7 +66,6 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	req.Header.Set("User-Agent", "")
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Encoding", "Identity")
-
 
 	// Return response
 	return (client.Do(req))

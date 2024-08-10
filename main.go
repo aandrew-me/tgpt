@@ -259,11 +259,11 @@ func main() {
 						if previousMessages == "" {
 							input = *preprompt + input
 						}
-						responseJson, responseTxt := getData(input, true, structs.ExtraOptions{
+						responseJson, responseTxt := getData(input,  structs.Params{
 							PrevMessages: previousMessages,
 							ThreadID:     threadID,
 							Provider:     *provider,
-						})
+						}, structs.ExtraOptions{IsInteractive: true})
 						if len(*logFile) > 0 {
 							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 						}
@@ -302,8 +302,7 @@ func main() {
 						PrevMessages: previousMessages,
 						Provider:     *provider,
 						ThreadID:     threadID,
-					})
-
+					}, structs.ExtraOptions{IsInteractive: true})
 					previousMessages += responseJson
 					lastResponse = responseTxt
 
@@ -339,7 +338,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			getData(*preprompt+formattedInput+contextText+pipedInput, false, structs.ExtraOptions{})
+			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false})
 		}
 
 	} else {
@@ -348,7 +347,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(*preprompt+formattedInput+pipedInput, false, structs.ExtraOptions{})
+		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false})
 	}
 }
 

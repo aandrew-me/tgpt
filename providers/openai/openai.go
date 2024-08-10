@@ -12,7 +12,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/structs"
 )
 
-func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
+func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Println(err)
@@ -58,7 +58,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"temperature": %v,
 		"top_p": %v
 	}
-	`, prevMessages, string(safeInput), model, temperature, top_p))
+	`, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
 	req, err := http.NewRequest("POST", params.Url, data)
 	if err != nil {

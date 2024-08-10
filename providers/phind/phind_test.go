@@ -10,7 +10,7 @@ import (
 )
 
 func TestRequest(t *testing.T) {
-	resp, err := NewRequest("What is 1+1", structs.Params{}, "")
+	resp, err := NewRequest("What is 1+1", structs.Params{})
 	body, _ := io.ReadAll(resp.Body)
 
 	assert := assert.New(t)
