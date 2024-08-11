@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/aandrew-me/tgpt/v2/providers/blackboxai"
+	"github.com/aandrew-me/tgpt/v2/providers/duckduckgo"
 	"github.com/aandrew-me/tgpt/v2/providers/groq"
 	"github.com/aandrew-me/tgpt/v2/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/providers/ollama"
@@ -16,13 +17,15 @@ import (
 )
 
 var availableProviders = []string{
-	"", "opengpts", "ollama", "openai", "phind", "koboldai", "blackboxai", "groq",
+	"", "opengpts", "ollama", "openai", "phind", "koboldai", "blackboxai", "groq", "duckduckgo",
 }
 
 func GetMainText(line string, provider string, input string) string {
 	switch provider {
 	case "blackboxai":
 		return blackboxai.GetMainText(line)
+	case "duckduckgo":
+		return duckduckgo.GetMainText(line)
 	case "groq":
 		return groq.GetMainText(line)
 	case "koboldai":
@@ -54,6 +57,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	switch params.Provider {
 	case "blackboxai":
 		return blackboxai.NewRequest(input, params)
+	case "duckduckgo":
+		return duckduckgo.NewRequest(input, params, params.PrevMessages)
 	case "groq":
 		return groq.NewRequest(input, params)
 	case "koboldai":
