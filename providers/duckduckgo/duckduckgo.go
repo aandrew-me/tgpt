@@ -70,30 +70,21 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		model = params.ApiModel
 	}
 
-	var messageHistory []Message
-	if prevMessages != "" {
-		err = json.Unmarshal([]byte(prevMessages), &messageHistory)
-		if err != nil {
-			return nil, fmt.Errorf("error unmarshalling prevMessages: %v", err)
-		}
+	safeInput, _ := json.Marshal(input)
+
+	var data = strings.NewReader(fmt.Sprintf(`{
+		"messages": [
+			%v
+			{
+				"content": %v,
+				"role": "user"
+			}
+		],
+		"model": "%v"
 	}
+	`, params.PrevMessages, string(safeInput), model,))
 
-	messageHistory = append(messageHistory, Message{
-		Role:    "user",
-		Content: input,
-	})
-
-	data := RequestData{
-		Model:    model,
-		Messages: messageHistory,
-	}
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("error marshalling request data: %v", err)
-	}
-
-	req, err := http.NewRequest("POST", "https://duckduckgo.com/duckchat/v1/chat", strings.NewReader(string(jsonData)))
+	req, err := http.NewRequest("POST", "https://duckduckgo.com/duckchat/v1/chat", data)
 	if err != nil {
 		return nil, fmt.Errorf("error creating chat request: %v", err)
 	}

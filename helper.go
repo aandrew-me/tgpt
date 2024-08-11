@@ -71,6 +71,18 @@ func getData(input string, params structs.Params, extraOptions structs.ExtraOpti
 	},
 	`, string(safeInput), string(safeResponse))
 
+	if params.Provider == "duckduckgo" {
+		safeInput, _ := json.Marshal(input)
+		msgObject = fmt.Sprintf(`{
+			"content": %v,
+			"role": "user"
+		},{
+			"content": %v,
+			"role": "assistant"
+		},
+		`, string(safeInput), string(safeResponse))
+	}
+
 	if params.Provider == "phind" {
 		safeInput, _ := json.Marshal(input)
 		msgObject = fmt.Sprintf(`{
