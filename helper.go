@@ -56,7 +56,7 @@ func getDataResponseTxt(input string, params structs.Params, extraOptions struct
 }
 
 func getData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, string) {
-	responseTxt := getDataResponseTxt(input, params, structs.ExtraOptions{IsInteractive: extraOptions.IsInteractive, IsNormal: true})
+	responseTxt := getDataResponseTxt(input, params, extraOptions)
 	safeResponse, _ := json.Marshal(responseTxt)
 
 	fmt.Print("\n\n")
@@ -275,7 +275,7 @@ func getVersionHistory() {
 
 func getWholeText(input string) {
 	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetWhole: true})
-	checkInputLength(input)
+	checkInputLength(input, *disableInputLimit)
 }
 
 func getLastCodeBlock(markdown string) string {
@@ -310,8 +310,8 @@ func getSilentText(input string) {
 	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetSilent: true})
 }
 
-func checkInputLength(input string) {
-	if len(input) > 4000 {
+func checkInputLength(input string, disableInputLimit bool) {
+	if len(input) > 4000 && !disableInputLimit {
 		fmt.Fprintln(os.Stderr, "Input exceeds the input limit of 4000 characters")
 		os.Exit(1)
 	}
@@ -594,17 +594,17 @@ func addToShellHistory(command string) {
 			historyPath = homeDir + "/.bash_history"
 		}
 
-		file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
-		if err != nil {
-		}
+		file, _ := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
+		// if err != nil {
+		// }
 		defer file.Close()
 
-		_, err = file.WriteString(command + "\n")
+		_, _ = file.WriteString(command + "\n")
 	}
 }
 
 func makeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
-	checkInputLength(input)
+	checkInputLength(input, extraOptions.DisableInputLimit)
 
 	resp, err := providers.NewRequest(input, params, extraOptions)
 

@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.8.0"
+const localVersion = "2.8.1"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -42,8 +42,9 @@ var top_p *string
 var max_length *string
 var preprompt *string
 var url *string
-var logFile *string
+var logFile *string	
 var shouldExecuteCommand *bool
+var disableInputLimit *bool
 
 func main() {
 	execPath, err := os.Executable()
@@ -102,6 +103,8 @@ func main() {
 
 	isChangelog := flag.Bool("cl", false, "See changelog of versions")
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
+
+	disableInputLimit := flag.Bool("disable-input-limit", false, "Disables the checking of 4000 character input limit")
 
 	flag.Parse()
 
@@ -263,7 +266,7 @@ func main() {
 							PrevMessages: previousMessages,
 							ThreadID:     threadID,
 							Provider:     *provider,
-						}, structs.ExtraOptions{IsInteractive: true})
+						}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit})
 						if len(*logFile) > 0 {
 							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 						}
@@ -302,7 +305,7 @@ func main() {
 						PrevMessages: previousMessages,
 						Provider:     *provider,
 						ThreadID:     threadID,
-					}, structs.ExtraOptions{IsInteractive: true})
+					}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit})
 					previousMessages += responseJson
 					lastResponse = responseTxt
 
@@ -338,7 +341,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false})
+			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false, DisableInputLimit: *disableInputLimit})
 		}
 
 	} else {
@@ -347,7 +350,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false})
+		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false, DisableInputLimit: *disableInputLimit})
 	}
 }
 
