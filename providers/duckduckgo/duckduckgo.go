@@ -22,6 +22,9 @@ type RequestData struct {
 	Messages []Message `json:"messages"`
 }
 
+var statusReqMade = false
+var vqd = ""
+
 func NewRequest(input string, params structs.Params, prevMessages string) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
@@ -47,23 +50,40 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		"Cache-Control":   "no-store",
 	}
 
-	statusReq, err := http.NewRequest("GET", "https://duckduckgo.com/duckchat/v1/status", nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating status request: %v", err)
+	// We make the status request and get the vqd
+	if (!statusReqMade) {
+		statusReq, err := http.NewRequest("GET", "https://duckduckgo.com/duckchat/v1/status", nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating status request: %v", err)
+		}
+	
+		for key, value := range headers {
+			statusReq.Header.Set(key, value)
+		}
+	
+		statusResp, err := client.Do(statusReq)
+		if err != nil {
+			return nil, fmt.Errorf("error making status request: %v", err)
+		}
+		defer statusResp.Body.Close()
+	
+		vqd = statusResp.Header.Get("x-vqd-4")
+		statusReqMade = true
 	}
 
-	for key, value := range headers {
-		statusReq.Header.Set(key, value)
+	if vqd != "" {
+		headers["x-vqd-4"] = vqd
 	}
 
-	statusResp, err := client.Do(statusReq)
-	if err != nil {
-		return nil, fmt.Errorf("error making status request: %v", err)
-	}
-	defer statusResp.Body.Close()
+	// We don't make new status requests after the first one
+	// We get the vqd from the main requests afterwards
 
-	token := statusResp.Header.Get("x-vqd-4")
-	headers["x-vqd-4"] = token
+	headers["x-vqd-accept"] = ""
+
+	// Models
+	// "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
+	// "mistralai/Mixtral-8x7B-Instruct-v0.1"
+	// "claude-3-haiku-20240307"
 
 	model := "gpt-4o-mini"
 	if params.ApiModel != "" {
@@ -97,6 +117,8 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	if err != nil {
 		return nil, fmt.Errorf("error making chat request: %v", err)
 	}
+
+	vqd = resp.Header.Get("x-vqd-4")
 
 	return resp, nil
 }
