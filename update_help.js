@@ -2,8 +2,6 @@ const cp = require("child_process")
 const { writeFileSync } = require("fs")
 const helpTxt = cp.execSync("go run *.go -h").toString().trim()
 
-console.log(helpTxt)
-
 const readmeTxt = `<p align="center"><img src="tgpt.svg"></p>
 
 # Terminal GPT (tgpt) 🚀
@@ -46,21 +44,14 @@ You can download it with the following command:
 curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
 \`\`\`
 
-If you are using Arch Linux, you can install the [AUR package](https://aur.archlinux.org/packages/tgpt-bin) with \`paru\`:
+If you are using Arch Linux, you can install with pacman:
 
 \`\`\`bash
-paru -S tgpt-bin
+pacman -S tgpt
 \`\`\`
 
-Or with \`yay\`:
-
-\`\`\`bash
-yay -S tgpt-bin
-\`\`\`
 
 ### FreeBSD 😈 
-
-Currently, the port is not yet in the quarterly branch of the FreeBSD ports tree.
 
 To install the [port](https://www.freshports.org/www/tgpt):
 \`\`\`
@@ -122,4 +113,9 @@ sudo rm $(which tgpt)
 Configuration file is usually located in \`~/.config/tgpt\` on GNU/Linux Systems and in \`"Library/Application Support/tgpt"\` on MacOS
 `
 
-writeFileSync("./README.md", readmeTxt);
+try {
+    writeFileSync("./README.md", readmeTxt);
+    console.log("Updated README")
+} catch (error) {
+    console.log("Failed to update README", error)
+}

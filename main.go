@@ -494,6 +494,7 @@ func showHelpMessage() {
 	fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set max response length\n", "--max_length")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
+	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
 	boldBlue.Println("\nOptions:")

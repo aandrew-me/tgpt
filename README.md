@@ -41,6 +41,7 @@ Some additional options can be set. However not all options are supported by all
 --top_p                                            Set top_p
 --max_length                                       Set max response length
 --log                                              Set filepath to log conversation to (For interactive modes)
+--preprompt                                        Set preprompt
 -y                                                 Execute shell command without confirmation
 
 Options:
@@ -99,17 +100,12 @@ You can download it with the following command:
 curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
 ```
 
-If you are using Arch Linux, you can install the [AUR package](https://aur.archlinux.org/packages/tgpt-bin) with `paru`:
+If you are using Arch Linux, you can install with pacman:
 
 ```bash
-paru -S tgpt-bin
+pacman -S tgpt
 ```
 
-Or with `yay`:
-
-```bash
-yay -S tgpt-bin
-```
 
 ### FreeBSD 😈 
 
