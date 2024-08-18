@@ -71,6 +71,18 @@ func getData(input string, params structs.Params, extraOptions structs.ExtraOpti
 	},
 	`, string(safeInput), string(safeResponse))
 
+	if params.Provider == "duckduckgo" {
+		safeInput, _ := json.Marshal(input)
+		msgObject = fmt.Sprintf(`{
+			"content": %v,
+			"role": "user"
+		},{
+			"content": %v,
+			"role": "assistant"
+		},
+		`, string(safeInput), string(safeResponse))
+	}
+
 	if params.Provider == "phind" {
 		safeInput, _ := json.Marshal(input)
 		msgObject = fmt.Sprintf(`{
@@ -505,7 +517,7 @@ func generateImage(prompt string) {
 	req, _ := http.NewRequest("POST", url, payload)
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/110.0")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
 
 	res, err := client.Do(req)
 

@@ -74,7 +74,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Add("referer", "https://opengpts-example-vz4y4ooboq-uc.a.run.app/")
 	req.Header.Add("sec-fetch-site", "same-origin")
 	req.Header.Add("sec-gpc", "1")
-	req.Header.Add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Add("user-agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
 
 	// Return response
 	return (client.Do(req))
