@@ -342,13 +342,8 @@ func handleEachPart(resp *http.Response, input string) string {
 	isRealCode := false
 
 	lineLength := 0
-	size, err := ts.GetSize()
+	size, termwidthErr := ts.GetSize()
 	termWidth := size.Col()
-
-	if err != nil {
-		fmt.Println("Error occurred getting terminal width. Error:", err)
-		os.Exit(0)
-	}
 
 	previousText := ""
 	fullText := ""
@@ -364,7 +359,7 @@ func handleEachPart(resp *http.Response, input string) string {
 
 		if count <= 0 {
 			wordLength := len([]rune(mainText))
-			if termWidth-lineLength < wordLength {
+			if termwidthErr == nil && (termWidth-lineLength < wordLength) {
 				fmt.Print("\n")
 				lineLength = 0
 			}
@@ -409,7 +404,7 @@ func handleEachPart(resp *http.Response, input string) string {
 		} else {
 			wordLength := len([]rune(mainText))
 
-			if termWidth-lineLength < wordLength {
+			if termwidthErr == nil && (termWidth-lineLength < wordLength) {
 				fmt.Print("\n")
 				lineLength = 0
 			}
