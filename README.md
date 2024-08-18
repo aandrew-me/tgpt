@@ -11,6 +11,7 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 
 ### Currently available providers: 
 - [Blackbox AI](https://www.blackbox.ai/) (Blackbox model)
+- [Duckduckgo](https://duckduckgo.com/aichat) (Supports several models)
 - [Groq](https://groq.com/) (Requires a free API Key. LLaMA2-70b & Mixtral-8x7b)
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [Ollama](https://www.ollama.com/) (Supports many models)
