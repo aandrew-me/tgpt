@@ -7,7 +7,6 @@
 ![Arch Linux package](https://img.shields.io/archlinux/v/extra/x86_64/tgpt)
 ![Chocolatey Version](https://img.shields.io/chocolatey/v/tgpt)
 
-
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
 ### Currently available providers: 
