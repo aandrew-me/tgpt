@@ -9,14 +9,12 @@
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
 ### Currently available providers: 
-- [OpenGPTs](https://opengpts-example-vz4y4ooboq-uc.a.run.app/) (GPT-3.5-turbo)
-- [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
-- [Phind](https://www.phind.com/agent) (Phind Model)
-<!-- - [Llama2](https://www.llama2.ai/) (Llama 2 70b) -->
 - [Blackbox AI](https://www.blackbox.ai/) (Blackbox model)
-- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [Groq](https://groq.com/) (Requires a free API Key. LLaMA2-70b & Mixtral-8x7b)
+- [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [Ollama](https://www.ollama.com/) (Supports many models)
+- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
+- [Phind](https://www.phind.com/agent) (Phind Model)
 
 **Image Generation Model**: Craiyon V3
 
@@ -54,10 +52,13 @@ Options:
 
 Providers:
 The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.
-Available providers to use: blackboxai, groq, koboldai, ollama, opengpts, openai and phind
+Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai and phind
 
 Provider: blackboxai
 Uses BlackBox model. Great for developers
+
+Provider: duckduckgo
+Available models: gpt-4o-mini (default), meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307
 
 Provider: groq
 Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b
@@ -67,9 +68,6 @@ Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels
 
 Provider: ollama
 Needs to be run locally. Supports many models
-
-Provider: opengpts
-Uses gpt-3.5-turbo only. Do not use with sensitive data
 
 Provider: openai
 Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url
@@ -81,7 +79,7 @@ Examples:
 tgpt "What is internet?"
 tgpt -m
 tgpt -s "How to update my system?"
-tgpt --provider opengpts "What is 1+1"
+tgpt --provider duckduckgo "What is 1+1"
 tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"
 cat install.sh | tgpt "Explain the code"
 ```

@@ -13,14 +13,12 @@ const readmeTxt = `<p align="center"><img src="tgpt.svg"></p>
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
 ### Currently available providers: 
-- [OpenGPTs](https://opengpts-example-vz4y4ooboq-uc.a.run.app/) (GPT-3.5-turbo)
-- [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
-- [Phind](https://www.phind.com/agent) (Phind Model)
-<!-- - [Llama2](https://www.llama2.ai/) (Llama 2 70b) -->
 - [Blackbox AI](https://www.blackbox.ai/) (Blackbox model)
-- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [Groq](https://groq.com/) (Requires a free API Key. LLaMA2-70b & Mixtral-8x7b)
+- [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [Ollama](https://www.ollama.com/) (Supports many models)
+- [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
+- [Phind](https://www.phind.com/agent) (Phind Model)
 
 **Image Generation Model**: Craiyon V3
 
