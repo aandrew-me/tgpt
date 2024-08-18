@@ -266,7 +266,7 @@ func main() {
 							PrevMessages: previousMessages,
 							ThreadID:     threadID,
 							Provider:     *provider,
-						}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit})
+						}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit, IsNormal: true})
 						if len(*logFile) > 0 {
 							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 						}
@@ -305,7 +305,7 @@ func main() {
 						PrevMessages: previousMessages,
 						Provider:     *provider,
 						ThreadID:     threadID,
-					}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit})
+					}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit, IsNormal: true})
 					previousMessages += responseJson
 					lastResponse = responseTxt
 
