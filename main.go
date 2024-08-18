@@ -511,6 +511,9 @@ func showHelpMessage() {
 	bold.Println("\nProvider: blackboxai")
 	fmt.Println("Uses BlackBox model. Great for developers")
 
+	bold.Println("\nProvider: duckduckgo")
+	fmt.Println("Available models: gpt-4o-mini (default), meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307")
+
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
 
