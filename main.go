@@ -42,9 +42,10 @@ var top_p *string
 var max_length *string
 var preprompt *string
 var url *string
-var logFile *string	
+var logFile *string
 var shouldExecuteCommand *bool
 var disableInputLimit *bool
+var webhookURL *bool
 
 func main() {
 	execPath, err := os.Executable()
@@ -105,6 +106,8 @@ func main() {
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
 
 	disableInputLimit := flag.Bool("disable-input-limit", false, "Disables the checking of 4000 character input limit")
+
+	webhookURL = flag.Bool("web", false, "opens webhook https://chatgpt.com/auth/login")
 
 	flag.Parse()
 
@@ -262,7 +265,7 @@ func main() {
 						if previousMessages == "" {
 							input = *preprompt + input
 						}
-						responseJson, responseTxt := getData(input,  structs.Params{
+						responseJson, responseTxt := getData(input, structs.Params{
 							PrevMessages: previousMessages,
 							ThreadID:     threadID,
 							Provider:     *provider,
@@ -332,6 +335,25 @@ func main() {
 			}
 		case *isHelp:
 			showHelpMessage()
+
+		case *webhookURL:
+			// Use os/exec to call the appropriate command to open the URL in the default browser.
+			var cmd *exec.Cmd
+			url := "https://www.chatgpt.com"
+			switch runtime.GOOS {
+			case "darwin":
+				cmd = exec.Command("open", url) // For macOS
+			case "linux":
+				cmd = exec.Command("xdg-open", url) // For Linux
+			case "windows":
+				cmd = exec.Command("start", url) // For Windows
+			}
+
+			err := cmd.Run()
+			if err != nil {
+				fmt.Printf("Failed to open URL: %v\n", err)
+			}
+
 		default:
 			go loading(&stopSpin)
 			formattedInput := strings.TrimSpace(prompt)
