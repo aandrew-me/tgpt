@@ -45,7 +45,7 @@ var url *string
 var logFile *string
 var shouldExecuteCommand *bool
 var disableInputLimit *bool
-var webhookURL *bool
+var web *bool
 
 func main() {
 	execPath, err := os.Executable()
@@ -107,7 +107,7 @@ func main() {
 
 	disableInputLimit := flag.Bool("disable-input-limit", false, "Disables the checking of 4000 character input limit")
 
-	webhookURL = flag.Bool("web", false, "opens webhook https://chatgpt.com/auth/login")
+	web = flag.Bool("web", false, "open url in browser. default: opens https://www.chat.openai.com")
 
 	flag.Parse()
 
@@ -336,22 +336,17 @@ func main() {
 		case *isHelp:
 			showHelpMessage()
 
-		case *webhookURL:
-			// Use os/exec to call the appropriate command to open the URL in the default browser.
-			var cmd *exec.Cmd
-			url := "https://www.chatgpt.com"
-			switch runtime.GOOS {
-			case "darwin":
-				cmd = exec.Command("open", url) // For macOS
-			case "linux":
-				cmd = exec.Command("xdg-open", url) // For Linux
-			case "windows":
-				cmd = exec.Command("start", url) // For Windows
-			}
-
-			err := cmd.Run()
-			if err != nil {
-				fmt.Printf("Failed to open URL: %v\n", err)
+		case *web:
+			if len(prompt) > 1 {
+				url := strings.TrimSpace(prompt)
+				fmt.Fprintln(os.Stdout, "opening link in browser")
+				openUrlInBrowser(url)
+				os.Exit(1)
+			} else {
+				url := "https://chat.openai.com"
+				fmt.Fprintln(os.Stdout, "opening chatgpt in browser")
+				openUrlInBrowser(url)
+				os.Exit(1)
 			}
 
 		default:

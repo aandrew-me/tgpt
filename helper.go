@@ -42,16 +42,16 @@ var (
 
 func getDataResponseTxt(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	return makeRequestAndGetData(input, structs.Params{
-		ApiKey:      *apiKey,
-		ApiModel:    *apiModel,
-		Provider:    *provider,
-		Max_length:  *max_length,
-		Temperature: *temperature,
-		Top_p:       *top_p,
-		Preprompt:   *preprompt,
-		Url:         *url,
+		ApiKey:       *apiKey,
+		ApiModel:     *apiModel,
+		Provider:     *provider,
+		Max_length:   *max_length,
+		Temperature:  *temperature,
+		Top_p:        *top_p,
+		Preprompt:    *preprompt,
+		Url:          *url,
 		PrevMessages: params.PrevMessages,
-		ThreadID: params.ThreadID,
+		ThreadID:     params.ThreadID,
 	}, extraOptions)
 }
 
@@ -712,4 +712,22 @@ func makeRequestAndGetData(input string, params structs.Params, extraOptions str
 	}
 
 	return ""
+}
+
+func openUrlInBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url) // For macOS
+	case "linux":
+		cmd = exec.Command("xdg-open", url) // For Linux
+	case "windows":
+		cmd = exec.Command("start", url) // For Windows
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to open URL: %v", err)
+	}
+	return nil
 }
