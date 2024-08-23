@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"regexp"
 	"text/template"
 
 	"github.com/aandrew-me/tgpt/v2/client"
@@ -736,9 +735,25 @@ func openUrlInBrowser(url string) error {
 	return nil
 }
 func containsLaTeX(text string) string {
-	// A more comprehensive regex to check for LaTeX commands
-	re := regexp.MustCompile(`(\\[a-zA-Z]+|\$.*?\$|\\\[.*?\\\]|\\\(.*?\\\))`)
-	return re.ReplaceAllString(text, "$1 ")
+	// Split the content on LaTeX delimiters
+	parts := strings.Split(text, "$")
+
+	var parsed strings.Builder
+	inLatex := false
+
+	// Loop through the parts and detect LaTeX
+	for _, part := range parts {
+		if inLatex {
+			// Handle LaTeX
+			parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", part))
+		} else {
+			// Handle plain text
+			parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+		}
+		inLatex = !inLatex
+	}
+
+	return parsed.String()
 }
 func renderLaTeXInBrowser(text string) {
 	// Add spaces after LaTeX elements
