@@ -739,26 +739,50 @@ func openUrlInBrowser(url string) error {
 func hasLatex(content string) bool {
 	return strings.Contains(content, "$") || strings.Contains(content, `\(`) || strings.Contains(content, `\[`)
 }
+
+// parseLatex function to parse LaTeX and non-LaTeX content
 func parseLatex(text string) string {
-	if !hasLatex(text) {
-		// If no LaTeX is detected, return the content wrapped in a simple HTML paragraph
+	if !hasLatex(text) && !strings.Contains(text, "###") {
 		return fmt.Sprintf("<p>%s</p>", text)
 	}
 
 	var parsed strings.Builder
 	lines := strings.Split(text, "\n")
 
-	// Loop through the lines and check for inline or block LaTeX
+	// Loop through lines and detect LaTeX and custom commands (like ###)
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, `\(`) && strings.HasSuffix(line, `\)`) {
-			// Inline LaTeX: Wrap with inline MathJax syntax
-			parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span><br/>", line[2:len(line)-2]))
+
+		// Check for headers using ###
+		if strings.HasPrefix(line, "###") {
+			// Treat lines starting with ### as <h3>
+			heading := strings.TrimPrefix(line, "###")
+			parsed.WriteString(fmt.Sprintf("<h3>%s</h3>", strings.TrimSpace(heading)))
+
+			// Process block LaTeX equations
 		} else if strings.HasPrefix(line, `\[`) && strings.HasSuffix(line, `\]`) {
-			// Block LaTeX: Wrap with block MathJax syntax
 			parsed.WriteString(fmt.Sprintf("<div class='mathjax-block'>\\[%s\\]</div>", line[2:len(line)-2]))
+
+			// Process inline LaTeX within normal text
+		} else if strings.Contains(line, `\(`) && strings.Contains(line, `\)`) {
+			parts := strings.Split(line, `\(`)
+			for i, part := range parts {
+				if i > 0 {
+					subParts := strings.Split(part, `\)`)
+					if len(subParts) > 1 {
+						parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", subParts[0]))
+						parsed.WriteString(fmt.Sprintf("<span>%s</span>", subParts[1]))
+					} else {
+						parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+					}
+				} else {
+					parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+				}
+			}
+			parsed.WriteString("<br/>")
+
+			// Handle lines with mixed content using `$` for inline LaTeX
 		} else if strings.Contains(line, "$") {
-			// Handle inline LaTeX inside normal text (mixed content)
 			parts := strings.Split(line, "$")
 			inLatex := false
 			for _, part := range parts {
@@ -770,29 +794,99 @@ func parseLatex(text string) string {
 				inLatex = !inLatex
 			}
 			parsed.WriteString("<br/>")
+
+			// Regular text without LaTeX
 		} else {
-			// Normal text
 			parsed.WriteString(fmt.Sprintf("<p>%s</p>", line))
 		}
 	}
 
 	return parsed.String()
 }
+
+// getFirstThreeWords function extracts the first three words from the input text
+func getFirstThreeWords(text string) string {
+	words := strings.Fields(text)
+	if len(words) >= 3 {
+		return strings.Join(words[:3], " ")
+	} else if len(words) > 0 {
+		return strings.Join(words, " ")
+	} else {
+		return "LaTeX Renderer"
+	}
+}
+
+// renderLaTeXInBrowser function to render LaTeX in a browser
 func renderLaTeXInBrowser(text string) {
-	// Add spaces after LaTeX elements
-	text = parseLatex(text)
+	// Parse the LaTeX content
+	parsedText := parseLatex(text)
+
+	// Extract the first three words for the title
+	title := getFirstThreeWords(text)
 
 	htmlTemplate := `
 	<!DOCTYPE html>
 	<html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>LaTeX Renderer</title>
+		<title>{{.Title}}</title>
 		<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 		<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				line-height: 1.6;
+				margin: 40px;
+				background-color: #f7f7f7;
+				color: #333;
+			}
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 20px;
+				background-color: white;
+				box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+				border-radius: 10px;
+			}
+			.mathjax-block {
+				display: block;
+				margin: 20px 0;
+				padding: 10px;
+				background-color: #e9ecef;
+				border-left: 4px solid #007bff;
+				font-size: 1.2em;
+				text-align: center;
+				border-radius: 8px;
+			}
+			.mathjax {
+				font-size: 1.1em;
+				color: #333;
+			}
+			p {
+				margin: 12px 0;
+			}
+			h1, h2, h3 {
+				color: #1a1a1a;
+				margin-bottom: 15px;
+			}
+		</style>
+		<script>
+		window.MathJax = {
+			tex: {
+				inlineMath: [['\\(', '\\)']],
+				displayMath: [['\\[', '\\]']]
+			},
+			svg: {
+				fontCache: 'global'
+			}
+		};
+		</script>
 	</head>
 	<body>
-		<p>{{.Text}}</p>
+		<div class="container">
+			<h1>{{.Title}}</h1>
+			{{.Text}}
+		</div>
 	</body>
 	</html>`
 
@@ -802,8 +896,14 @@ func renderLaTeXInBrowser(text string) {
 		return
 	}
 
+	// Prepare the data for the template
+	data := map[string]string{
+		"Title": title,
+		"Text":  parsedText,
+	}
+
 	var renderedHTML bytes.Buffer
-	err = tmpl.Execute(&renderedHTML, map[string]string{"Text": text})
+	err = tmpl.Execute(&renderedHTML, data)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error executing template:", err)
 		return
