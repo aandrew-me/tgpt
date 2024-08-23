@@ -734,7 +734,12 @@ func openUrlInBrowser(url string) error {
 	}
 	return nil
 }
-func containsLaTeX(text string) string {
+
+// hasLatex function checks if the content has LaTeX delimiters
+func hasLatex(content string) bool {
+	return strings.Contains(content, "$") || strings.Contains(content, `\(`) || strings.Contains(content, `\[`)
+}
+func parseLatex(text string) string {
 	// Split the content on LaTeX delimiters
 	parts := strings.Split(text, "$")
 
@@ -757,7 +762,7 @@ func containsLaTeX(text string) string {
 }
 func renderLaTeXInBrowser(text string) {
 	// Add spaces after LaTeX elements
-	text = containsLaTeX(text)
+	text = parseLatex(text)
 
 	htmlTemplate := `
 	<!DOCTYPE html>
