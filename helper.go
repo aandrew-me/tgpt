@@ -740,62 +740,41 @@ func hasLatex(content string) bool {
 	return strings.Contains(content, "$") || strings.Contains(content, `\(`) || strings.Contains(content, `\[`)
 }
 
-// parseLatex function to parse LaTeX and non-LaTeX content
+// parseLatex parses LaTeX, **bold**, and ### headers
 func parseLatex(text string) string {
-	if !hasLatex(text) && !strings.Contains(text, "###") {
+	if !hasLatex(text) && !strings.Contains(text, "###") && !strings.Contains(text, "**") {
 		return fmt.Sprintf("<p>%s</p>", text)
 	}
 
 	var parsed strings.Builder
 	lines := strings.Split(text, "\n")
 
-	// Loop through lines and detect LaTeX and custom commands (like ###)
+	// Loop through lines and detect LaTeX, headers, and bold formatting
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
-		// Check for headers using ###
+		// Handle headers marked with ###
 		if strings.HasPrefix(line, "###") {
-			// Treat lines starting with ### as <h3>
 			heading := strings.TrimPrefix(line, "###")
 			parsed.WriteString(fmt.Sprintf("<h3>%s</h3>", strings.TrimSpace(heading)))
 
-			// Process block LaTeX equations
+			// Process block LaTeX equations wrapped in \[ \]
 		} else if strings.HasPrefix(line, `\[`) && strings.HasSuffix(line, `\]`) {
 			parsed.WriteString(fmt.Sprintf("<div class='mathjax-block'>\\[%s\\]</div>", line[2:len(line)-2]))
 
-			// Process inline LaTeX within normal text
+			// Process inline LaTeX equations wrapped in \(\)
 		} else if strings.Contains(line, `\(`) && strings.Contains(line, `\)`) {
-			parts := strings.Split(line, `\(`)
-			for i, part := range parts {
-				if i > 0 {
-					subParts := strings.Split(part, `\)`)
-					if len(subParts) > 1 {
-						parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", subParts[0]))
-						parsed.WriteString(fmt.Sprintf("<span>%s</span>", subParts[1]))
-					} else {
-						parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
-					}
-				} else {
-					parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
-				}
-			}
-			parsed.WriteString("<br/>")
+			parsed.WriteString(parseInlineLaTeX(line))
 
-			// Handle lines with mixed content using `$` for inline LaTeX
+			// Handle bold text wrapped in **
+		} else if strings.Contains(line, "**") {
+			parsed.WriteString(parseBoldText(line))
+
+			// Handle lines with mixed content including $...$ for LaTeX
 		} else if strings.Contains(line, "$") {
-			parts := strings.Split(line, "$")
-			inLatex := false
-			for _, part := range parts {
-				if inLatex {
-					parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", part))
-				} else {
-					parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
-				}
-				inLatex = !inLatex
-			}
-			parsed.WriteString("<br/>")
+			parsed.WriteString(parseInlineDollarLaTeX(line))
 
-			// Regular text without LaTeX
+			// Regular text without LaTeX or special formatting
 		} else {
 			parsed.WriteString(fmt.Sprintf("<p>%s</p>", line))
 		}
@@ -804,7 +783,61 @@ func parseLatex(text string) string {
 	return parsed.String()
 }
 
-// getFirstThreeWords function extracts the first three words from the input text
+// parseBoldText function to handle **bold** text
+func parseBoldText(line string) string {
+	var parsed strings.Builder
+	parts := strings.Split(line, "**")
+	inBold := false
+	for _, part := range parts {
+		if inBold {
+			parsed.WriteString(fmt.Sprintf("<strong>%s</strong>", part))
+		} else {
+			parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+		}
+		inBold = !inBold
+	}
+	return parsed.String()
+}
+
+// parseInlineLaTeX handles inline LaTeX equations
+func parseInlineLaTeX(line string) string {
+	var parsed strings.Builder
+	parts := strings.Split(line, `\(`)
+	for i, part := range parts {
+		if i > 0 {
+			subParts := strings.Split(part, `\)`)
+			if len(subParts) > 1 {
+				parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", subParts[0]))
+				parsed.WriteString(fmt.Sprintf("<span>%s</span>", subParts[1]))
+			} else {
+				parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+			}
+		} else {
+			parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+		}
+	}
+	parsed.WriteString("<br/>")
+	return parsed.String()
+}
+
+// parseInlineDollarLaTeX handles inline LaTeX with $...$ syntax
+func parseInlineDollarLaTeX(line string) string {
+	var parsed strings.Builder
+	parts := strings.Split(line, "$")
+	inLatex := false
+	for _, part := range parts {
+		if inLatex {
+			parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", part))
+		} else {
+			parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+		}
+		inLatex = !inLatex
+	}
+	parsed.WriteString("<br/>")
+	return parsed.String()
+}
+
+// getFirstThreeWords extracts the first three words from the input text
 func getFirstThreeWords(text string) string {
 	words := strings.Fields(text)
 	if len(words) >= 3 {
@@ -816,9 +849,9 @@ func getFirstThreeWords(text string) string {
 	}
 }
 
-// renderLaTeXInBrowser function to render LaTeX in a browser
+// renderLaTeXInBrowser renders LaTeX and formatted text in a browser
 func renderLaTeXInBrowser(text string) {
-	// Parse the LaTeX content
+	// Parse the LaTeX content and other formatting
 	parsedText := parseLatex(text)
 
 	// Extract the first three words for the title
@@ -868,6 +901,10 @@ func renderLaTeXInBrowser(text string) {
 			h1, h2, h3 {
 				color: #1a1a1a;
 				margin-bottom: 15px;
+			}
+			strong {
+				font-weight: bold;
+				color: #000;
 			}
 		</style>
 		<script>
