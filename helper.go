@@ -740,22 +740,40 @@ func hasLatex(content string) bool {
 	return strings.Contains(content, "$") || strings.Contains(content, `\(`) || strings.Contains(content, `\[`)
 }
 func parseLatex(text string) string {
-	// Split the content on LaTeX delimiters
-	parts := strings.Split(text, "$")
+	if !hasLatex(text) {
+		// If no LaTeX is detected, return the content wrapped in a simple HTML paragraph
+		return fmt.Sprintf("<p>%s</p>", text)
+	}
 
 	var parsed strings.Builder
-	inLatex := false
+	lines := strings.Split(text, "\n")
 
-	// Loop through the parts and detect LaTeX
-	for _, part := range parts {
-		if inLatex {
-			// Handle LaTeX
-			parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", part))
+	// Loop through the lines and check for inline or block LaTeX
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, `\(`) && strings.HasSuffix(line, `\)`) {
+			// Inline LaTeX: Wrap with inline MathJax syntax
+			parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span><br/>", line[2:len(line)-2]))
+		} else if strings.HasPrefix(line, `\[`) && strings.HasSuffix(line, `\]`) {
+			// Block LaTeX: Wrap with block MathJax syntax
+			parsed.WriteString(fmt.Sprintf("<div class='mathjax-block'>\\[%s\\]</div>", line[2:len(line)-2]))
+		} else if strings.Contains(line, "$") {
+			// Handle inline LaTeX inside normal text (mixed content)
+			parts := strings.Split(line, "$")
+			inLatex := false
+			for _, part := range parts {
+				if inLatex {
+					parsed.WriteString(fmt.Sprintf("<span class='mathjax'>\\(%s\\)</span>", part))
+				} else {
+					parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+				}
+				inLatex = !inLatex
+			}
+			parsed.WriteString("<br/>")
 		} else {
-			// Handle plain text
-			parsed.WriteString(fmt.Sprintf("<span>%s</span>", part))
+			// Normal text
+			parsed.WriteString(fmt.Sprintf("<p>%s</p>", line))
 		}
-		inLatex = !inLatex
 	}
 
 	return parsed.String()
