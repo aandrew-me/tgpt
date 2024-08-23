@@ -273,6 +273,14 @@ func main() {
 						if len(*logFile) > 0 {
 							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 						}
+						// Check for LaTeX in the response
+						if containsLaTeX(responseTxt) != "" {
+							fmt.Println("LaTeX detected in response. Rendering in web browser...")
+							renderLaTeXInBrowser(responseTxt)
+						} else {
+							fmt.Println("No LaTeX detected. Printing response...")
+							fmt.Println(responseTxt)
+						}
 						previousMessages += responseJson
 						history = append(history, input)
 						lastResponse = responseTxt

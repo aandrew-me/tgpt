@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"regexp"
+	"text/template"
 
 	"github.com/aandrew-me/tgpt/v2/client"
 	"github.com/aandrew-me/tgpt/v2/providers"
@@ -730,4 +734,60 @@ func openUrlInBrowser(url string) error {
 		return fmt.Errorf("failed to open URL: %v", err)
 	}
 	return nil
+}
+func containsLaTeX(text string) string {
+	// A more comprehensive regex to check for LaTeX commands
+	re := regexp.MustCompile(`(\\[a-zA-Z]+|\$.*?\$|\\\[.*?\\\]|\\\(.*?\\\))`)
+	return re.ReplaceAllString(text, "$1 ")
+}
+func renderLaTeXInBrowser(text string) {
+	// Add spaces after LaTeX elements
+	text = containsLaTeX(text)
+
+	htmlTemplate := `
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>LaTeX Renderer</title>
+		<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+		<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+	</head>
+	<body>
+		<p>{{.Text}}</p>
+	</body>
+	</html>`
+
+	tmpl, err := template.New("latex").Parse(htmlTemplate)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing template:", err)
+		return
+	}
+
+	var renderedHTML bytes.Buffer
+	err = tmpl.Execute(&renderedHTML, map[string]string{"Text": text})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error executing template:", err)
+		return
+	}
+
+	tmpFile, err := os.CreateTemp("", "latex-*.html")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error creating temp file:", err)
+		return
+	}
+	defer tmpFile.Close()
+
+	_, err = tmpFile.Write(renderedHTML.Bytes())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error writing to temp file:", err)
+		return
+	}
+
+	// Open the temp file in the default web browser
+	err = exec.Command("open", tmpFile.Name()).Start()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error opening browser:", err)
+		return
+	}
 }
