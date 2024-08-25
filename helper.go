@@ -285,9 +285,9 @@ func getVersionHistory() {
 	}
 }
 
-func getWholeText(input string) {
+func getWholeText(input string, extraOptions structs.ExtraOptions) {
 	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetWhole: true})
-	checkInputLength(input, *disableInputLimit)
+	checkInputLength(input, extraOptions.DisableInputLimit)
 }
 
 func getLastCodeBlock(markdown string) string {

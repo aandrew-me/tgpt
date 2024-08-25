@@ -19,7 +19,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "Phind Model"
+	model := "Phind-70B"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}

@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.8.1"
+const localVersion = "2.8.2"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -42,7 +42,7 @@ var top_p *string
 var max_length *string
 var preprompt *string
 var url *string
-var logFile *string	
+var logFile *string
 var shouldExecuteCommand *bool
 var disableInputLimit *bool
 
@@ -168,11 +168,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
 					os.Exit(1)
 				}
-				getWholeText(*preprompt + trimmedPrompt + contextText + pipedInput)
+				getWholeText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getWholeText(*preprompt + formattedInput + cleanPipedInput)
+				getWholeText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
 			}
 		case *isQuiet:
 			if len(prompt) > 1 {
@@ -262,7 +262,7 @@ func main() {
 						if previousMessages == "" {
 							input = *preprompt + input
 						}
-						responseJson, responseTxt := getData(input,  structs.Params{
+						responseJson, responseTxt := getData(input, structs.Params{
 							PrevMessages: previousMessages,
 							ThreadID:     threadID,
 							Provider:     *provider,
