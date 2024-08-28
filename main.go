@@ -5,13 +5,17 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/aandrew-me/tgpt/v2/structs"
 	"github.com/aandrew-me/tgpt/v2/utils"
 	"github.com/atotto/clipboard"
@@ -24,28 +28,36 @@ import (
 
 const localVersion = "2.8.1"
 
-var bold = color.New(color.Bold)
-var boldBlue = color.New(color.Bold, color.FgBlue)
-var blue = color.New(color.FgBlue)
-var boldViolet = color.New(color.Bold, color.FgMagenta)
-var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
-var stopSpin = false
-var programLoop = true
-var userInput = ""
-var lastResponse = ""
-var executablePath = ""
-var provider *string
-var apiModel *string
-var apiKey *string
-var temperature *string
-var top_p *string
-var max_length *string
-var preprompt *string
-var url *string
-var logFile *string
-var shouldExecuteCommand *bool
-var disableInputLimit *bool
-var web *bool
+var (
+	bold                 = color.New(color.Bold)
+	boldBlue             = color.New(color.Bold, color.FgBlue)
+	blue                 = color.New(color.FgBlue)
+	boldViolet           = color.New(color.Bold, color.FgMagenta)
+	codeText             = color.New(color.BgBlack, color.FgGreen, color.Bold)
+	stopSpin             = false
+	programLoop          = true
+	userInput            = ""
+	lastResponse         = ""
+	executablePath       = ""
+	provider             *string
+	apiModel             *string
+	apiKey               *string
+	temperature          *string
+	top_p                *string
+	max_length           *string
+	preprompt            *string
+	urlChat              *string
+	logFile              *string
+	shouldExecuteCommand *bool
+	disableInputLimit    *bool
+	//ws                   *bool
+)
+
+type SearchResult struct {
+	Title   string
+	Link    string
+	Snippet string
+}
 
 func main() {
 	execPath, err := os.Executable()
@@ -68,7 +80,7 @@ func main() {
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
-	url = flag.String("url", "https://api.openai.com/v1/chat/completions", "url for openai providers")
+	urlChat = flag.String("url", "https://api.openai.com/v1/chat/completions", "url for openai providers")
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
 	shouldExecuteCommand = flag.Bool(("y"), false, "Instantly execute the shell command")
 
@@ -107,7 +119,8 @@ func main() {
 
 	disableInputLimit := flag.Bool("disable-input-limit", false, "Disables the checking of 4000 character input limit")
 
-	web = flag.Bool("web", false, "open url in browser. default: opens https://www.chat.openai.com")
+	isWebsearch := flag.Bool("ws", false, "Normal search using duckduckgo.")
+	flag.BoolVar(isWebsearch, "websearch", false, "Normal search using duckduckgo.")
 
 	flag.Parse()
 
@@ -301,7 +314,6 @@ func main() {
 				fmt.Print("\n")
 				p := tea.NewProgram(initialModel())
 				_, err := p.Run()
-
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					os.Exit(1)
@@ -343,19 +355,100 @@ func main() {
 		case *isHelp:
 			showHelpMessage()
 
-		case *web:
-			if len(prompt) > 1 {
-				url := strings.TrimSpace(prompt)
-				fmt.Fprintln(os.Stdout, "opening link in browser")
-				openUrlInBrowser(url)
-				os.Exit(1)
-			} else {
-				url := "https://chat.openai.com"
-				fmt.Fprintln(os.Stdout, "opening chatgpt in browser")
-				openUrlInBrowser(url)
+		case *isWebsearch:
+			if len(prompt) < 1 {
+				fmt.Println("Please provide a search query")
 				os.Exit(1)
 			}
 
+			reader := bufio.NewReader(os.Stdin)
+			var query string
+
+			// Check if a command-line argument was provided
+			if len(os.Args) > 1 {
+				query = strings.Join(os.Args[1:], " ")
+			} else {
+				// If no argument provided, prompt the user for a query immediately
+				fmt.Println("Enter a search query (or press Enter to exit):")
+				query, _ = reader.ReadString('\n')
+				query = strings.TrimSpace(query)
+
+				if query == "" {
+					fmt.Println("No query entered, exiting.")
+					os.Exit(0)
+				}
+			}
+
+			// Main search loop
+			for {
+				fmt.Fprintln(os.Stdout, "Searching DuckDuckGo for:", query)
+
+				// Perform search and retrieve results
+				results, err := searchDuckDuckGo(query)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Error performing search:", err)
+					fmt.Println("Enter a new search query (or press Enter to exit):")
+					query, _ = reader.ReadString('\n')
+					query = strings.TrimSpace(query)
+
+					if query == "" {
+						fmt.Println("No query entered, exiting.")
+						os.Exit(0)
+					}
+					continue // Continue to ask for another query if an error occurs
+				}
+
+				// Display the top 10 search results with a preview of the snippet
+				fmt.Println("Top 10 Search Results:")
+				for i, result := range results {
+					fmt.Printf("%d: %s\n", i+1, result.Title)
+					fmt.Printf("   Link: %s\n", result.Link)
+					fmt.Printf("   Snippet: %s\n\n", result.Snippet)
+				}
+
+				// Ask the user to select a link to open
+				fmt.Println("Enter the number of the link you want to open (or press Enter to search again):")
+				input, _ := reader.ReadString('\n')
+				input = strings.TrimSpace(input)
+
+				if input == "" {
+					// If no link is selected, prompt for a new search query
+					fmt.Println("Enter a new search query (or press Enter to exit):")
+					query, _ = reader.ReadString('\n')
+					query = strings.TrimSpace(query)
+
+					if query == "" {
+						fmt.Println("No query entered, exiting.")
+						os.Exit(0)
+					}
+					continue
+				}
+
+				// Convert input to an integer
+				linkIndex, err := strconv.Atoi(input)
+				if err != nil || linkIndex < 1 || linkIndex > len(results) {
+					fmt.Println("Invalid selection, please try again.")
+					continue
+				}
+
+				// Open the selected link in the browser
+				selectedLink := results[linkIndex-1].Link
+				fmt.Println("Opening link:", selectedLink)
+				err = openUrlInBrowser(selectedLink)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Failed to open link: %v\n", err)
+				}
+
+				// After the link is opened, prompt for a new search query
+				fmt.Println("Enter a new search query (or press Enter to exit):")
+				query, _ = reader.ReadString('\n')
+				query = strings.TrimSpace(query)
+
+				if query == "" {
+					fmt.Println("No query entered, exiting.")
+					os.Exit(0)
+				}
+			}
 		default:
 			go loading(&stopSpin)
 			formattedInput := strings.TrimSpace(prompt)
@@ -367,7 +460,6 @@ func main() {
 
 			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false, DisableInputLimit: *disableInputLimit})
 		}
-
 	} else {
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
@@ -582,4 +674,78 @@ func exit(_ *Prompt.Buffer) {
 	}
 
 	os.Exit(0)
+}
+
+func searchDuckDuckGo(query string) ([]SearchResult, error) {
+	// Prepare the search query URL for DuckDuckGo (GET request)
+	baseURL := "https://html.duckduckgo.com/html/"
+	searchURL := fmt.Sprintf("%s?q=%s", baseURL, url.QueryEscape(query))
+
+	// Create the GET request
+	req, err := http.NewRequest("GET", searchURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the User-Agent header to mimic a browser
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Check the status code of the response
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch search results: status code %d", resp.StatusCode)
+	}
+
+	// Parse the HTML
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract the titles, links, and snippets, and filter out ads
+	var results []SearchResult
+	doc.Find(".result").Each(func(i int, s *goquery.Selection) {
+		// Check if the result is marked as an ad (assuming an ad has a specific class like `.result--ad`)
+		if s.HasClass("result--ad") {
+			// Skip the ads
+			return
+		}
+
+		if i >= 10 { // Limit to top 10 non-ad results
+			return
+		}
+
+		// Extract title
+		title := s.Find(".result__title").Text()
+
+		// Extract link
+		link, exists := s.Find(".result__a").Attr("href")
+		if !exists {
+			return
+		}
+
+		// Extract snippet
+		snippet := s.Find(".result__snippet").Text()
+
+		// Append the result
+		results = append(results, SearchResult{
+			Title:   strings.TrimSpace(title),
+			Link:    link,
+			Snippet: strings.TrimSpace(snippet),
+		})
+	})
+
+	// Check if any results were found
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no results found, check CSS selector or response structure")
+	}
+
+	return results, nil
 }
