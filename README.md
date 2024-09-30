@@ -133,6 +133,10 @@ go install github.com/aandrew-me/tgpt/v2@latest
     ```bash
     scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
     ```
+- **Chocolatey** 
+    ```bash
+    choco install tgpt
+    ```    
 
 ## Updating ⬆️
 If you installed the program with the installation script, you may update it with

@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers"
 	"github.com/aandrew-me/tgpt/v2/structs"
 	http "github.com/bogdanfinn/fhttp"
+
 	"github.com/olekukonko/ts"
 
 	tls_client "github.com/bogdanfinn/tls-client"
@@ -42,16 +42,16 @@ var (
 
 func getDataResponseTxt(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	return makeRequestAndGetData(input, structs.Params{
-		ApiKey:      *apiKey,
-		ApiModel:    *apiModel,
-		Provider:    *provider,
-		Max_length:  *max_length,
-		Temperature: *temperature,
-		Top_p:       *top_p,
-		Preprompt:   *preprompt,
-		Url:         *url,
+		ApiKey:       *apiKey,
+		ApiModel:     *apiModel,
+		Provider:     *provider,
+		Max_length:   *max_length,
+		Temperature:  *temperature,
+		Top_p:        *top_p,
+		Preprompt:    *preprompt,
+		Url:          *url,
 		PrevMessages: params.PrevMessages,
-		ThreadID: params.ThreadID,
+		ThreadID:     params.ThreadID,
 	}, extraOptions)
 }
 
@@ -489,70 +489,163 @@ func handleStatus400(resp *http.Response) {
 	os.Exit(1)
 }
 
-func generateImage(prompt string) {
-	bold.Println("Generating images...")
+// func generateImageCraiyon(prompt string) {
+// 	bold.Println("Generating images...")
+// 	client, err := client.NewClient()
+// 	if err != nil {
+// 		fmt.Fprintln(os.Stderr, err)
+// 		os.Exit(1)
+// 	}
+
+// 	url := "https://api.craiyon.com/v3"
+
+// 	safeInput, _ := json.Marshal(prompt)
+
+// 	payload := strings.NewReader(fmt.Sprintf(`{
+// 		"prompt": %v,
+// 		"token": null,
+// 		"model": "photo",
+// 		"negative_prompt": "",
+// 		"version": "c4ue22fb7kb6wlac"
+// 	}`, string(safeInput)))
+
+// 	req, _ := http.NewRequest("POST", url, payload)
+
+// 	req.Header.Set("Content-Type", "application/json")
+// 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
+
+// 	res, err := client.Do(req)
+
+// 	if err != nil {
+// 		fmt.Fprint(os.Stderr, "Check your internet connection\n\n")
+// 		fmt.Fprintln(os.Stderr, "Error:", err)
+// 		os.Exit(0)
+// 	}
+
+// 	defer res.Body.Close()
+
+// 	var responseObj ImgResponse
+
+// 	err = json.NewDecoder(res.Body).Decode(&responseObj)
+// 	if err != nil {
+// 		// Handle error
+// 		fmt.Fprintln(os.Stderr, "Error:", err)
+// 		return
+// 	}
+
+// 	imgList := responseObj.Images
+
+// 	fmt.Println("Saving images in current directory in folder:", prompt)
+// 	if _, err := os.Stat(prompt); os.IsNotExist(err) {
+// 		err := os.Mkdir(prompt, 0755)
+// 		if err != nil {
+// 			fmt.Fprintln(os.Stderr, err)
+// 			os.Exit(1)
+// 		}
+// 	}
+
+// 	for i := 0; i < len(imgList); i++ {
+// 		downloadUrl := "https://img.craiyon.com/" + imgList[i]
+// 		downloadImage(downloadUrl, prompt)
+
+// 	}
+// }
+
+func generateImageBlackbox(prompt string) {
+	bold.Println("Generating image...")
+
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	url := "https://api.craiyon.com/v3"
+	url := "https://www.blackbox.ai/api/chat"
 
-	safeInput, _ := json.Marshal(prompt)
-
-	payload := strings.NewReader(fmt.Sprintf(`{
-		"prompt": %v,
-		"token": null,
-		"model": "photo",
-		"negative_prompt": "",
-		"version": "c4ue22fb7kb6wlac"
-	}`, string(safeInput)))
+	payload := strings.NewReader(fmt.Sprintf(`
+	{
+	"messages": [
+		{
+			"content": "%v",
+			"role": "user"
+		}
+	],
+	"previewToken": null,
+	"userId": null,
+	"codeModelMode": true,
+	"agentMode": {
+		"mode": true,
+		"id": "ImageGenerationLV45LJp",
+		"name": "Image Generation"
+	},
+	"trendingAgentMode": {},
+	"isMicMode": false,
+	"maxTokens": 1024,
+	"isChromeExt": false,
+	"githubToken": null,
+	"clickedAnswer2": false,
+	"clickedAnswer3": false,
+	"clickedForceWebSearch": false,
+	"visitFromDelta": false,
+	"mobileClient": false
+}`, string(prompt)))
 
 	req, _ := http.NewRequest("POST", url, payload)
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
+	req.Header.Add("accept", "*/*")
+	req.Header.Add("content-type", "application/json")
+	req.Header.Add("origin", "https://www.blackbox.ai")
+	req.Header.Add("priority", "u=1, i")
+	req.Header.Add("referer", "https://www.blackbox.ai/agent/ImageGenerationLV45LJp")
+	req.Header.Add("sec-ch-ua-platform", "Linux")
+	req.Header.Add("sec-fetch-dest", "empty")
+	req.Header.Add("sec-fetch-mode", "cors")
+	req.Header.Add("sec-fetch-site", "same-origin")
+	req.Header.Add("sec-gpc", "1")
+	req.Header.Add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
 
-	res, err := client.Do(req)
-
-	if err != nil {
-		fmt.Fprint(os.Stderr, "Check your internet connection\n\n")
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		os.Exit(0)
-	}
+	res, _ := client.Do(req)
 
 	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	responseText := string(body)
 
-	var responseObj ImgResponse
+	if strings.Contains(responseText, "![Generated Image]") {
+		imgLink := strings.ReplaceAll(strings.ReplaceAll(responseText, "![Generated Image](", ""), ")", "")
 
-	err = json.NewDecoder(res.Body).Decode(&responseObj)
-	if err != nil {
-		// Handle error
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		return
-	}
+		fmt.Println("Generated image link: " + imgLink)
 
-	imgList := responseObj.Images
+		bold.Print("\nDownload image? [y/n]: ")
+		reader := bufio.NewReader(os.Stdin)
+		userInput, _ := reader.ReadString('\n')
+		userInput = strings.TrimSpace(userInput)
 
-	fmt.Println("Saving images in current directory in folder:", prompt)
-	if _, err := os.Stat(prompt); os.IsNotExist(err) {
-		err := os.Mkdir(prompt, 0755)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+		if userInput == "y" || userInput == "" {
+			err := downloadImage(imgLink, "")
+
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
-	}
-
-	for i := 0; i < len(imgList); i++ {
-		downloadUrl := "https://img.craiyon.com/" + imgList[i]
-		downloadImage(downloadUrl, prompt, strconv.Itoa(i+1))
-
+	} else {
+		fmt.Println("Some error has occured, try again later. Response body: " + responseText)
 	}
 }
 
-func downloadImage(url string, destDir string, filename string) error {
-	response, err := http.Get(url)
+func downloadImage(url string, destDir string) error {
+	client, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		// Handle error
+		return err
+	}
+
+	response, err := client.Do(req)
+
 	if err != nil {
 		return err
 	}
@@ -569,7 +662,7 @@ func downloadImage(url string, destDir string, filename string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Saved image", filename)
+	fmt.Println("Saved image", fileName)
 
 	return nil
 }
