@@ -31,6 +31,11 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		apiKey = params.ApiKey
 	}
 
+	url := params.Url
+	if os.Getenv("OPENAI_URL") != "" {
+		url = os.Getenv("OPENAI_URL")
+	}
+
 	temperature := "0.5"
 	if params.Temperature != "" {
 		temperature = params.Temperature
@@ -60,7 +65,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 	`, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
-	req, err := http.NewRequest("POST", params.Url, data)
+	req, err := http.NewRequest("POST", url, data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
