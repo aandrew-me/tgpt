@@ -18,7 +18,7 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [Phind](https://www.phind.com/agent) (Phind Model)
 
-**Image Generation Model**: Craiyon V3
+**Image Generation Model**: BlackBoxAi
 
 ## Usage 
 
