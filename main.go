@@ -182,11 +182,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(*preprompt + trimmedPrompt + contextText + pipedInput)
+				getSilentText(*preprompt + trimmedPrompt + contextText + pipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getSilentText(*preprompt + formattedInput + cleanPipedInput)
+				getSilentText(*preprompt + formattedInput + cleanPipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
 			}
 		case *isShell:
 			if len(prompt) > 1 {

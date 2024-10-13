@@ -318,8 +318,8 @@ func getLastCodeBlock(markdown string) string {
 	return strings.Join(codeBlock, "\n")
 }
 
-func getSilentText(input string) {
-	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetSilent: true})
+func getSilentText(input string, extraOptions structs.ExtraOptions) {
+	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, extraOptions)
 }
 
 func checkInputLength(input string, disableInputLimit bool) {
