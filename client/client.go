@@ -11,53 +11,42 @@ import (
 )
 
 func NewClient() (tls_client.HttpClient, error) {
-	jar := tls_client.NewCookieJar()
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(120),
 		tls_client.WithClientProfile(profiles.Firefox_110),
 		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
+		tls_client.WithCookieJar(tls_client.NewCookieJar()),
 		// tls_client.WithInsecureSkipVerify(),
 	}
 
-	proxyAddress := os.Getenv("HTTP_PROXY")
-	if proxyAddress == "" {
-		proxyAddress = os.Getenv("http_proxy")
-	} else {
+	// proxy in environment variables
+	proxyAddr := os.Getenv("HTTP_PROXY")
+	if proxyAddr == "" {
+		proxyAddr = os.Getenv("http_proxy")
 	}
 
-	if proxyAddress != "" {
-		if strings.HasPrefix(proxyAddress, "http://") || strings.HasPrefix(proxyAddress, "socks5://") {
-			proxyOption := tls_client.WithProxyUrl(proxyAddress)
-			options = append(options, proxyOption)
-		}
-	} else {
+	// No Proxy in env, try to load from configuration
+	if proxyAddr == "" {
 		homeDir, _ := os.UserHomeDir()
-
-		proxyConfigLocations := []string{
+		proxyFiles := []string{
 			"proxy.txt",
 			filepath.Join(homeDir, ".config", "tgpt", "proxy.txt"),
 		}
 
-		for _, proxyConfigLocation := range proxyConfigLocations {
-			_, err := os.Stat(proxyConfigLocation)
-			if err == nil {
-				proxyConfig, readErr := os.ReadFile(proxyConfigLocation)
-				if readErr != nil {
-					fmt.Fprintln(os.Stderr, "Error reading file proxy.txt:", readErr)
-					return nil, readErr
-				}
-
-				proxyAddress := strings.TrimSpace(string(proxyConfig))
-				if proxyAddress != "" {
-					if strings.HasPrefix(proxyAddress, "http://") || strings.HasPrefix(proxyAddress, "socks5://") {
-						proxyOption := tls_client.WithProxyUrl(proxyAddress)
-						options = append(options, proxyOption)
-					}
-				}
-
+		for _, file := range proxyFiles {
+			if content, err := os.ReadFile(file); err == nil {
+				proxyAddr = strings.TrimSpace(string(content))
 				break
 			}
+		}
+	}
+
+	// Set proxy options if valid proxy detected.
+	if proxyAddr != "" {
+		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") {
+			options = append(options, tls_client.WithProxyUrl(proxyAddr))
+		} else {
+			fmt.Fprintln(os.Stderr, "Warning: Invalid proxy format, must start with http:// or socks5://")
 		}
 	}
 
