@@ -63,6 +63,9 @@ jobs:
                   
                   sha256sum tgpt-linux-arm64
                   sha256sum tgpt-linux-arm64 >> ${{ github.workspace }}-CHANGELOG.txt
+
+                  sha256sum tgpt-linux-arm
+                  sha256sum tgpt-linux-arm >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-amd64.exe
                   sha256sum tgpt-amd64.exe >> ${{ github.workspace }}-CHANGELOG.txt
