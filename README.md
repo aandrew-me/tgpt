@@ -51,6 +51,7 @@ Options:
 -m, --multiline                                    Start multi-line interactive mode 
 -cl, --changelog                                   See changelog of versions 
 -u, --update                                       Update program 
+--disable-input-limit                              Disables the checking of 4000 character input limit
 
 Providers:
 The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.
