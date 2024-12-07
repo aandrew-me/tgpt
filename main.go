@@ -44,7 +44,6 @@ var preprompt *string
 var url *string
 var logFile *string
 var shouldExecuteCommand *bool
-var disableInputLimit *bool
 
 func main() {
 	execPath, err := os.Executable()
@@ -103,8 +102,6 @@ func main() {
 
 	isChangelog := flag.Bool("cl", false, "See changelog of versions")
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
-
-	disableInputLimit := flag.Bool("disable-input-limit", false, "Disables the checking of 4000 character input limit")
 
 	flag.Parse()
 
@@ -168,11 +165,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
 					os.Exit(1)
 				}
-				getWholeText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
+				getWholeText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{IsGetWhole: *isWhole})
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getWholeText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
+				getWholeText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{IsGetWhole: *isWhole})
 			}
 		case *isQuiet:
 			if len(prompt) > 1 {
@@ -182,11 +179,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(*preprompt + trimmedPrompt + contextText + pipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
+				getSilentText(*preprompt + trimmedPrompt + contextText + pipedInput, structs.ExtraOptions{})
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getSilentText(*preprompt + formattedInput + cleanPipedInput, structs.ExtraOptions{DisableInputLimit: *disableInputLimit})
+				getSilentText(*preprompt + formattedInput + cleanPipedInput, structs.ExtraOptions{})
 			}
 		case *isShell:
 			if len(prompt) > 1 {
@@ -266,7 +263,7 @@ func main() {
 							PrevMessages: previousMessages,
 							ThreadID:     threadID,
 							Provider:     *provider,
-						}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit, IsNormal: true})
+						}, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
 						if len(*logFile) > 0 {
 							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 						}
@@ -305,7 +302,7 @@ func main() {
 						PrevMessages: previousMessages,
 						Provider:     *provider,
 						ThreadID:     threadID,
-					}, structs.ExtraOptions{IsInteractive: true, DisableInputLimit: *disableInputLimit, IsNormal: true})
+					}, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
 					previousMessages += responseJson
 					lastResponse = responseTxt
 
@@ -341,7 +338,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false, DisableInputLimit: *disableInputLimit})
+			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false, })
 		}
 
 	} else {
@@ -350,7 +347,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false, DisableInputLimit: *disableInputLimit})
+		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false, })
 	}
 }
 

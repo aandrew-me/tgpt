@@ -30,17 +30,30 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 				"role": "user"
 			}
 		],
-		"id": "",
 		"previewToken": null,
-		"userId": "",
+		"userId": null,
 		"codeModelMode": true,
 		"agentMode": {},
 		"trendingAgentMode": {},
-		"isMicMode": false
+		"isMicMode": false,
+		"maxTokens": 1024,
+		"playgroundTopP": null,
+		"playgroundTemperature": null,
+		"isChromeExt": false,
+		"githubToken": "",
+		"clickedAnswer2": false,
+		"clickedAnswer3": false,
+		"clickedForceWebSearch": false,
+		"visitFromDelta": false,
+		"mobileClient": false,
+		"userSelectedModel": null,
+		"validated": "",
+		"imageGenerationMode": false,
+		"webSearchModePrompt": false
 	}
 	`,params.PrevMessages, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://www.blackbox.ai/api/chat", data)
+	req, err := http.NewRequest("POST", "https://api.blackbox.ai/api/chat", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)

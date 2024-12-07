@@ -20,7 +20,6 @@ type ExtraOptions struct {
 	IsNormal          bool
 	IsGetCode         bool
 	IsInteractive     bool
-	DisableInputLimit bool
 }
 
 type CommonResponse struct {

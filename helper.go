@@ -286,8 +286,7 @@ func getVersionHistory() {
 }
 
 func getWholeText(input string, extraOptions structs.ExtraOptions) {
-	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetWhole: true})
-	checkInputLength(input, extraOptions.DisableInputLimit)
+	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, extraOptions)
 }
 
 func getLastCodeBlock(markdown string) string {
@@ -320,13 +319,6 @@ func getLastCodeBlock(markdown string) string {
 
 func getSilentText(input string, extraOptions structs.ExtraOptions) {
 	makeRequestAndGetData(input, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, extraOptions)
-}
-
-func checkInputLength(input string, disableInputLimit bool) {
-	if len(input) > 4000 && !disableInputLimit {
-		fmt.Fprintln(os.Stderr, "Input exceeds the input limit of 4000 characters")
-		os.Exit(1)
-	}
 }
 
 func handleEachPart(resp *http.Response, input string) string {
@@ -560,7 +552,7 @@ func generateImageBlackbox(prompt string) {
 		os.Exit(1)
 	}
 
-	url := "https://www.blackbox.ai/api/chat"
+	url := "https://api.blackbox.ai/api/chat"
 
 	payload := strings.NewReader(fmt.Sprintf(`
 	{
@@ -704,8 +696,6 @@ func addToShellHistory(command string) {
 }
 
 func makeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
-	checkInputLength(input, extraOptions.DisableInputLimit)
-
 	resp, err := providers.NewRequest(input, params, extraOptions)
 
 	if err != nil {
