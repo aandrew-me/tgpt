@@ -11,6 +11,16 @@ import (
 
 func TestRequest(t *testing.T) {
 	resp, err := NewRequest("What is 1+1", structs.Params{})
+
+	if err != nil {
+        t.Fatalf("NewRequest returned an error: %v", err)
+
+	}
+
+	if resp == nil {
+        t.Fatalf("NewRequest returned a nil response")
+	}
+	
 	body, _ := io.ReadAll(resp.Body)
 
 	assert := assert.New(t)
