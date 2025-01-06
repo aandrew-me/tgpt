@@ -7,6 +7,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers/blackboxai"
 	"github.com/aandrew-me/tgpt/v2/providers/duckduckgo"
 	"github.com/aandrew-me/tgpt/v2/providers/groq"
+	"github.com/aandrew-me/tgpt/v2/providers/isou"
 	"github.com/aandrew-me/tgpt/v2/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/providers/openai"
@@ -16,7 +17,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "blackboxai", "groq", "duckduckgo", "koboldai", "ollama", "openai", "phind",
+	"", "blackboxai", "duckduckgo", "isou", "groq", "koboldai", "ollama", "openai", "phind",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -25,6 +26,8 @@ func GetMainText(line string, provider string, input string) string {
 		return blackboxai.GetMainText(line)
 	case "duckduckgo":
 		return duckduckgo.GetMainText(line)
+	case "isou":
+		return isou.GetMainText((line))
 	case "groq":
 		return groq.GetMainText(line)
 	case "koboldai":
@@ -58,6 +61,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return duckduckgo.NewRequest(input, params, params.PrevMessages)
 	case "groq":
 		return groq.NewRequest(input, params)
+	case "isou":
+		return isou.NewRequest(input, params)
 	case "koboldai":
 		return koboldai.NewRequest(input, params)
 	case "ollama":
