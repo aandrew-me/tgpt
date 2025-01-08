@@ -109,6 +109,7 @@ func main() {
 
 	pipedInput := ""
 	cleanPipedInput := ""
+	contextText := ""
 
 	stat, err := os.Stdin.Stat()
 	if err != nil {
@@ -128,6 +129,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	contextTextByte, _ := json.Marshal("\n\nHere is text for the context:\n")
 
 	if len(pipedInput) > 0 {
 		cleanPipedInputByte, err := json.Marshal(pipedInput)
@@ -145,10 +147,12 @@ func main() {
 		}
 		pipedInput = string(safePipedBytes)
 		pipedInput = pipedInput[1 : len(pipedInput)-1]
+		contextText = string(contextTextByte)
 	}
 
-	contextTextByte, _ := json.Marshal("\n\nHere is text for the context:\n")
-	contextText := string(contextTextByte)
+	if len(*preprompt) > 0 {
+		*preprompt += "\n"
+	}
 
 	if len(args) > 1 {
 		switch {
