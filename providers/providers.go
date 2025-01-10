@@ -12,12 +12,13 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/providers/phind"
+	"github.com/aandrew-me/tgpt/v2/providers/pollinations"
 	"github.com/aandrew-me/tgpt/v2/structs"
 	http "github.com/bogdanfinn/fhttp"
 )
 
 var availableProviders = []string{
-	"", "blackboxai", "duckduckgo", "isou", "groq", "koboldai", "ollama", "openai", "phind",
+	"", "blackboxai", "duckduckgo", "isou", "groq", "koboldai", "ollama", "openai", "phind", "pollinations",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -36,6 +37,8 @@ func GetMainText(line string, provider string, input string) string {
 		return ollama.GetMainText(line)
 	case "openai":
 		return openai.GetMainText(line)
+	case "pollinations":
+		return pollinations.GetMainText(line)
 	default:
 		return phind.GetMainText(line)
 	}
@@ -69,6 +72,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return ollama.NewRequest(input, params)
 	case "openai":
 		return openai.NewRequest(input, params)
+	case "pollinations":
+		return pollinations.NewRequest(input, params)
 	default:
 		return phind.NewRequest(input, params)
 	}
