@@ -61,7 +61,7 @@ func main() {
 
 	apiModel = flag.String("model", "", "Choose which model to use")
 	provider = flag.String("provider", os.Getenv("AI_PROVIDER"), "Choose which provider to use")
-	apiKey = flag.String("key", "", "Use personal API Key")
+	apiKey = flag.String("key", os.Getenv("AI_API_KEY"), "Use personal API Key")
 	temperature = flag.String("temperature", "", "Set temperature")
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
@@ -489,7 +489,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
-	fmt.Printf("%-50v Set API Key\n", "--key")
+	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
 	fmt.Printf("%-50v Set OpenAI API endpoint url\n", "--url")
 	fmt.Printf("%-50v Set temperature\n", "--temperature")
 	fmt.Printf("%-50v Set top_p\n", "--top_p")
