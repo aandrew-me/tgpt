@@ -232,6 +232,51 @@ func main() {
 			threadID := utils.RandomString(36)
 			history := []string{}
 
+			getAndPrintResponse := func(input string) {
+				input = strings.TrimSpace(input)
+				if len(input) <= 1 {
+					return
+				}
+				if input == "exit" {
+					bold.Println("Exiting...")
+					if runtime.GOOS != "windows" {
+						rawModeOff := exec.Command("stty", "-raw", "echo")
+						rawModeOff.Stdin = os.Stdin
+						_ = rawModeOff.Run()
+						rawModeOff.Wait()
+					}
+					os.Exit(0)
+				}
+				if len(*logFile) > 0 {
+					utils.LogToFile(input, "USER_QUERY", *logFile)
+				}
+				// Use preprompt for first message
+				if previousMessages == "" {
+					input = *preprompt + input
+				}
+				responseJson, responseTxt := getData(input, structs.Params{
+					PrevMessages: previousMessages,
+					ThreadID:     threadID,
+					Provider:     *provider,
+				}, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
+				if len(*logFile) > 0 {
+					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
+				}
+				previousMessages += responseJson
+				history = append(history, input)
+				lastResponse = responseTxt
+
+			}
+
+			input := strings.TrimSpace(prompt)
+			if len(input) > 1 {
+				// if prompt is passed in interactive mode then send prompt as first message
+				blue.Println("╭─ You")
+				blue.Print("╰─> ")
+				fmt.Println(input)
+				getAndPrintResponse(input)
+			}
+
 			for {
 				blue.Println("╭─ You")
 				input := Prompt.Input("╰─> ", historyCompleter,
@@ -242,40 +287,8 @@ func main() {
 						Fn:  exit,
 					}),
 				)
+				getAndPrintResponse(input)
 
-				if len(input) > 1 {
-					input = strings.TrimSpace(input)
-					if len(input) > 1 {
-						if input == "exit" {
-							bold.Println("Exiting...")
-							if runtime.GOOS != "windows" {
-								rawModeOff := exec.Command("stty", "-raw", "echo")
-								rawModeOff.Stdin = os.Stdin
-								_ = rawModeOff.Run()
-								rawModeOff.Wait()
-							}
-							os.Exit(0)
-						}
-						if len(*logFile) > 0 {
-							utils.LogToFile(input, "USER_QUERY", *logFile)
-						}
-						// Use preprompt for first message
-						if previousMessages == "" {
-							input = *preprompt + input
-						}
-						responseJson, responseTxt := getData(input, structs.Params{
-							PrevMessages: previousMessages,
-							ThreadID:     threadID,
-							Provider:     *provider,
-						}, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
-						if len(*logFile) > 0 {
-							utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
-						}
-						previousMessages += responseJson
-						history = append(history, input)
-						lastResponse = responseTxt
-					}
-				}
 			}
 
 		case *isMultiline:
