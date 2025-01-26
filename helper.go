@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	url_package "net/url"
 
 	"github.com/aandrew-me/tgpt/v2/client"
 	"github.com/aandrew-me/tgpt/v2/providers"
@@ -621,6 +622,60 @@ func generateImageBlackbox(prompt string) {
 		}
 	} else {
 		fmt.Println("Some error has occured, try again later. Response body: " + responseText)
+	}
+}
+
+func generateImagePollinations(prompt string) {
+	bold.Println("Generating image...")
+
+	client, err := client.NewClient()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	full_prompt := url_package.QueryEscape(prompt);
+
+	link := fmt.Sprintf("https://image.pollinations.ai/prompt/%v", full_prompt)
+
+	params := url_package.Values{}
+
+	params.Add("model", "flux")
+	params.Add("width", "1024")
+	params.Add("height", "1024")
+	params.Add("nologo", "true")
+	params.Add("safe", "false")
+	params.Add("nsfw", "true")
+	params.Add("isChild", "false")
+	params.Add("seed", "")
+
+	urlObj, err := url_package.Parse(link)
+	if err != nil {
+		fmt.Println("Error parsing URL:", err)
+		return
+	}
+
+	urlObj.RawQuery = params.Encode()
+
+
+	req, _ := http.NewRequest("GET", urlObj.String(), nil)
+
+	res, _ := client.Do(req)
+
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusOK {
+		file, err := os.Create("image.jpg")
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+	
+		// Copy the response body (image data) to the file
+		_, err = io.Copy(file, res.Body)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

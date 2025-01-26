@@ -42,9 +42,9 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	`, model))
 
 	query := url.QueryEscape(input);
-	url := fmt.Sprintf("https://isou.chat/api/search?q=%v", query);
+	link := fmt.Sprintf("https://isou.chat/api/search?q=%v", query);
 
-	req, err := http.NewRequest("POST", url, data)
+	req, err := http.NewRequest("POST", link, data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)

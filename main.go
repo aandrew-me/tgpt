@@ -325,11 +325,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -img "cat"`)
 					os.Exit(1)
 				}
-				generateImageBlackbox(trimmedPrompt)
+				generateImagePollinations(trimmedPrompt)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				generateImageBlackbox(*preprompt + formattedInput)
+				generateImagePollinations(*preprompt + formattedInput)
 			}
 		case *isHelp:
 			showHelpMessage()
