@@ -17,6 +17,7 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 - [Ollama](https://www.ollama.com/) (Supports many models)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [Phind](https://www.phind.com/agent) (Phind Model)
+- [DeepSeek](https://api-docs.deepseek.com) (DeepSeek API)
 
 **Image Generation Model**: BlackBoxAi
 
@@ -54,7 +55,7 @@ Options:
 
 Providers:
 The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.
-Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai and phind
+Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai, phind and deepseek
 
 Provider: blackboxai
 Uses BlackBox model. Great for developers
@@ -77,12 +78,16 @@ Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY
 Provider: phind
 Uses Phind Model. Great for developers
 
+Provider: deepseek
+Supports DeepSeek API
+
 Examples:
 tgpt "What is internet?"
 tgpt -m
 tgpt -s "How to update my system?"
 tgpt --provider duckduckgo "What is 1+1"
 tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"
+tgpt --provider deepseek --key "sk-xxxx" --model "deepseek-chat" --url "https://api.deepseek.com/v1/chat/completions" "What is 1+1"
 cat install.sh | tgpt "Explain the code"
 ```
 

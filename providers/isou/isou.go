@@ -1,10 +1,8 @@
 package isou
 
 import (
-	// "encoding/json"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 
@@ -26,25 +24,35 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		model = params.ApiModel
 	}
 
-	var data = strings.NewReader(fmt.Sprintf(`{
-		"stream": true,
-		"model": "%v",
-		"provider": "ollama",
-		"mode": "deep",
-		"language": "all",
-		"categories": [
-			"general"
-		],
-		"engine": "SEARXNG",
-		"locally": false,
-		"reload": false
+	apiKey := params.ApiKey
+	url := params.Url
+
+	temperature := "0.5"
+	if params.Temperature != "" {
+		temperature = params.Temperature
 	}
-	`, model))
 
-	query := url.QueryEscape(input);
-	link := fmt.Sprintf("https://isou.chat/api/search?q=%v", query);
+	top_p := "0.5"
+	if params.Top_p != "" {
+		top_p = params.Top_p
+	}
 
-	req, err := http.NewRequest("POST", link, data)
+	safeInput, _ := json.Marshal(input)
+
+	var data = strings.NewReader(fmt.Sprintf(`{
+		"model": "%v",
+		"messages": [
+			{
+				"role": "user",
+				"content": %v
+			}
+		],
+		"temperature": %v,
+		"top_p": %v
+	}
+	`, model, string(safeInput), temperature, top_p))
+
+	req, err := http.NewRequest("POST", url, data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -52,11 +60,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Accept", "*/*")
-	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Add("Referer", "https://isou.chat/search")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Origin", "https://isou.chat")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 
 	// Return response
 	return (client.Do(req))
@@ -65,36 +69,17 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
 	if len(line) > 1 {
-		parts := strings.SplitN(line, "data:", 2)
-		if len(parts) > 1 {
-			obj = parts[1]
-		}
+		obj = strings.Split(line, "data: ")[1]
 	}
 
-	type InnerData struct {
-		Answer string `json:"answer"`
-		
-	}
-
-	type OuterData struct {
-		Data string `json:"data"`
-	}
-
-	var outer OuterData
-	if err := json.Unmarshal([]byte(obj), &outer); err != nil {
+	var d structs.CommonResponse
+	if err := json.Unmarshal([]byte(obj), &d); err != nil {
 		return ""
 	}
 
-	var inner InnerData
-	if err := json.Unmarshal([]byte(outer.Data), &inner); err != nil {
-		return ""
-	}
-
-	if inner.Answer != "" {
-		mainText = inner.Answer
+	if d.Choices != nil && len(d.Choices) > 0 {
+		mainText = d.Choices[0].Delta.Content
 		return mainText
 	}
-
 	return ""
 }
-

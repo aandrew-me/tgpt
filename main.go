@@ -66,7 +66,7 @@ func main() {
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
-	url = flag.String("url", "https://api.openai.com/v1/chat/completions", "url for openai providers")
+	url = flag.String("url", "https://api.deepseek.com/v1/chat/completions", "url for deepseek providers")
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
 	shouldExecuteCommand = flag.Bool(("y"), false, "Instantly execute the shell command")
 
@@ -524,7 +524,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai and phind")
+	fmt.Println("Available providers to use: blackboxai, duckduckgo, groq, isou, koboldai, ollama, openai and phind")
 
 	bold.Println("\nProvider: blackboxai")
 	fmt.Println("Uses BlackBox model. Great for developers")
@@ -534,6 +534,9 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
+
+	bold.Println("\nProvider: isou")
+	fmt.Println("Supports DeepSeek API")
 
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
@@ -553,6 +556,7 @@ func showHelpMessage() {
 	fmt.Println(`tgpt -s "How to update my system?"`)
 	fmt.Println(`tgpt --provider duckduckgo "What is 1+1"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
+	fmt.Println(`tgpt --provider isou --key "sk-xxxx" --model "deepseek-chat" --url "https://api.deepseek.com/v1/chat/completions" "What is 1+1"`)
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
 }
 
