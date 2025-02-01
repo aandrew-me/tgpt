@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.8.3"
+const localVersion = "2.9.0"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -531,8 +531,14 @@ func showHelpMessage() {
 	bold.Println("\nProvider: blackboxai")
 	fmt.Println("Uses BlackBox model. Great for developers")
 
+	bold.Println("\nProvider: deepseek")
+	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
+
 	bold.Println("\nProvider: duckduckgo")
 	fmt.Println("Available models: gpt-4o-mini (default), meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307")
+
+	bold.Println("\nProvider: groq")
+	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
 
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
@@ -548,6 +554,16 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: phind")
 	fmt.Println("Uses Phind Model. Great for developers")
+
+	bold.Println("\nProvider: pollinations")
+	fmt.Println("Completely free, default model is gpt-4o. Supported models: https://text.pollinations.ai/models")
+
+	boldBlue.Println("\nImage generation providers:")
+
+	bold.Println("\nProvider: pollinations")
+	fmt.Println("Supported models: flux, turbo")
+
+	bold.Println("\nProvider: blackboxai")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
