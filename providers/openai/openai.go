@@ -48,7 +48,9 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	safeInput, _ := json.Marshal(input)
 
-	var data = strings.NewReader(fmt.Sprintf(`{
+	includeTopP := !strings.HasPrefix(model, "o1")
+
+	baseFormat := `{
 		"frequency_penalty": 0,
 		"messages": [
 			%v
@@ -60,10 +62,25 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		"model": "%v",
 		"presence_penalty": 0,
 		"stream": true,
-		"temperature": %v,
-		"top_p": %v
+		"temperature": %v`
+
+	if includeTopP {
+		baseFormat += `,
+		"top_p": %v`
 	}
-	`, params.PrevMessages, string(safeInput), model, temperature, top_p))
+
+	baseFormat += `
+	}
+	`
+
+	// Prepare the arguments for fmt.Sprintf
+	args := []interface{}{params.PrevMessages, string(safeInput), model, temperature}
+	if includeTopP {
+		args = append(args, top_p)
+	}
+
+	dataStr := fmt.Sprintf(baseFormat, args...)
+	data := strings.NewReader(dataStr)
 
 	req, err := http.NewRequest("POST", url, data)
 	if err != nil {
@@ -71,12 +88,11 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
-	// Setting all the required headers
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 
-	// Return response
-	return (client.Do(req))
+	return client.Do(req)
 }
 
 func GetMainText(line string) (mainText string) {
