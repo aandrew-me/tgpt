@@ -1,4 +1,4 @@
-package pollinations
+package deepseek
 
 import (
 	"encoding/json"
@@ -19,9 +19,16 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "openai-large"
+	model := "deepseek-reasoner"
 	if params.ApiModel != "" {
 		model = params.ApiModel
+	} else if envModel := os.Getenv("DEEPSEEK_MODEL"); envModel != "" {
+		model = envModel
+	}
+
+	apiKey := os.Getenv("DEEPSEEK_API_KEY")
+	if params.ApiKey != "" {
+		apiKey = params.ApiKey
 	}
 
 	temperature := "0.6"
@@ -51,7 +58,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 	`, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
-	req, err := http.NewRequest("POST", "https://text.pollinations.ai/openai", data)
+	req, err := http.NewRequest("POST", "https://api.deepseek.com/chat/completions", data)
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
@@ -59,12 +66,13 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 
-	// Return response
-	return (client.Do(req))
+	return client.Do(req)
 }
 
 func GetMainText(line string) (mainText string) {
+	// fmt.Println(line)
 	var obj = "{}"
 	if len(line) > 1 {
 		obj = strings.Split(line, "data: ")[1]

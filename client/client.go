@@ -12,7 +12,7 @@ import (
 
 func NewClient() (tls_client.HttpClient, error) {
 	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(120),
+		tls_client.WithTimeoutSeconds(600),
 		tls_client.WithClientProfile(profiles.Firefox_110),
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(tls_client.NewCookieJar()),
@@ -46,7 +46,9 @@ func NewClient() (tls_client.HttpClient, error) {
 		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") {
 			options = append(options, tls_client.WithProxyUrl(proxyAddr))
 		} else {
-			fmt.Fprintln(os.Stderr, "Warning: Invalid proxy format, must start with http:// or socks5://")
+			if !strings.HasPrefix(proxyAddr, "#") {
+				fmt.Fprintln(os.Stderr, "Warning: Invalid proxy format, must start with http:// or socks5://")
+			}
 		}
 	}
 
