@@ -19,17 +19,17 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "openai"
+	model := "openai-large"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}
 
-	temperature := "0.5"
+	temperature := "0.6"
 	if params.Temperature != "" {
 		temperature = params.Temperature
 	}
 
-	top_p := "0.5"
+	top_p := "1"
 	if params.Top_p != "" {
 		top_p = params.Top_p
 	}
@@ -37,7 +37,6 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	safeInput, _ := json.Marshal(input)
 
 	var data = strings.NewReader(fmt.Sprintf(`{
-		"frequency_penalty": 0,
 		"messages": [
 			%v
 			{
@@ -46,7 +45,6 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 			}
 		],
 		"model": "%v",
-		"presence_penalty": 0,
 		"stream": true,
 		"temperature": %v,
 		"top_p": %v
