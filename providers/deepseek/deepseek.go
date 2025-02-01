@@ -75,7 +75,10 @@ func GetMainText(line string) (mainText string) {
 	// fmt.Println(line)
 	var obj = "{}"
 	if len(line) > 1 {
-		obj = strings.Split(line, "data: ")[1]
+		objArr := strings.Split(line, "data: ")
+		if len(objArr) > 1 {
+			obj = objArr[1]
+		}
 	}
 
 	var d structs.CommonResponse
