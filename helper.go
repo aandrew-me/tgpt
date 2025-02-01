@@ -545,7 +545,7 @@ func handleStatus400(resp *http.Response) {
 // }
 
 func generateImageBlackbox(prompt string) {
-	bold.Println("Generating image...")
+	bold.Println("Generating image with blackbox.ai...")
 
 	client, err := client.NewClient()
 	if err != nil {
@@ -626,7 +626,7 @@ func generateImageBlackbox(prompt string) {
 }
 
 func generateImagePollinations(prompt string) {
-	bold.Println("Generating image...")
+	bold.Println("Generating image with pollinations.ai...")
 
 	client, err := client.NewClient()
 	if err != nil {
@@ -635,12 +635,21 @@ func generateImagePollinations(prompt string) {
 	}
 
 	full_prompt := url_package.QueryEscape(prompt);
+	filename := strings.ReplaceAll(prompt, " ", "_") + ".jpg"
+
+	model := "flux"
+
+	if *apiModel != "" {
+		model = *apiModel
+	}
+
+	fmt.Println()
 
 	link := fmt.Sprintf("https://image.pollinations.ai/prompt/%v", full_prompt)
 
 	params := url_package.Values{}
 
-	params.Add("model", "flux")
+	params.Add("model", model)
 	params.Add("width", "1024")
 	params.Add("height", "1024")
 	params.Add("nologo", "true")
@@ -664,18 +673,30 @@ func generateImagePollinations(prompt string) {
 
 	defer res.Body.Close()
 
+
 	if res.StatusCode == http.StatusOK {
-		file, err := os.Create("image.jpg")
+		file, err := os.Create(filename)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "Error: %v", err)
+
+			return
 		}
 		defer file.Close()
 	
 		// Copy the response body (image data) to the file
 		_, err = io.Copy(file, res.Body)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr,"Error: %v", err)
+			
+			return
 		}
+
+		fmt.Printf("Saved image as %v\n", filename)
+	} else {
+		body, _ := io.ReadAll(res.Body)
+		responseText := string(body)
+
+		fmt.Fprintf(os.Stderr,"Some error has occured. Try again (perhaps with a different model).\nError: %v", responseText)
 	}
 }
 
@@ -850,4 +871,15 @@ func makeRequestAndGetData(input string, params structs.Params, extraOptions str
 	}
 
 	return ""
+}
+
+func generateImg(prompt string, provider string) {	
+	if provider == "pollinations" || provider == "" {
+		generateImagePollinations(prompt)
+
+	}  else if provider == "blackboxai" {
+		generateImageBlackbox(prompt)
+	} else {
+		fmt.Fprintln(os.Stderr, "Such a provider doesn't exist")
+	}
 }
