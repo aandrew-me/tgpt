@@ -237,7 +237,7 @@ func shellCommand(input string) {
 	getCommand(shellPrompt)
 }
 
-// getCommand will make a request to an AI model, then it will run the response using an appropiate handler (bash, sh OR powershell, cmd)
+// getCommand will make a request to an AI model, then it will run the response using an appropriate handler (bash, sh OR powershell, cmd)
 func getCommand(shellPrompt string) {
 	makeRequestAndGetData(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetCommand: true})
 }
@@ -621,7 +621,7 @@ func generateImageBlackbox(prompt string) {
 			}
 		}
 	} else {
-		fmt.Println("Some error has occured, try again later. Response body: " + responseText)
+		fmt.Println("Some error has occurred, try again later. Response body: " + responseText)
 	}
 }
 
@@ -696,7 +696,7 @@ func generateImagePollinations(prompt string) {
 		body, _ := io.ReadAll(res.Body)
 		responseText := string(body)
 
-		fmt.Fprintf(os.Stderr,"Some error has occured. Try again (perhaps with a different model).\nError: %v", responseText)
+		fmt.Fprintf(os.Stderr,"Some error has occurred. Try again (perhaps with a different model).\nError: %v", responseText)
 	}
 }
 
