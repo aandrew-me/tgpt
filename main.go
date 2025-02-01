@@ -540,9 +540,9 @@ func showHelpMessage() {
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
 
-	bold.Println("\nProvider: groq")
-	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
-
+	bold.Println("\nProvider: isou")
+	fmt.Println("Free provider with web search")
+	
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
