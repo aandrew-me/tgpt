@@ -103,7 +103,8 @@ tgpt -m
 tgpt -s "How to update my system?"
 tgpt --provider duckduckgo "What is 1+1"
 tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"
-cat install.sh | tgpt "Explain the code"```
+cat install.sh | tgpt "Explain the code"
+```
 
 ![demo](https://user-images.githubusercontent.com/66430340/233759296-c4cf8cf2-0cab-48aa-9e84-40765b823282.gif)
 
