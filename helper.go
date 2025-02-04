@@ -17,6 +17,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/client"
 	"github.com/aandrew-me/tgpt/v2/providers"
 	"github.com/aandrew-me/tgpt/v2/structs"
+	"github.com/aandrew-me/tgpt/v2/utils"
 	http "github.com/bogdanfinn/fhttp"
 
 	"github.com/olekukonko/ts"
@@ -625,7 +626,9 @@ func generateImagePollinations(prompt string) {
 	}
 
 	full_prompt := url_package.QueryEscape(prompt);
-	filename := strings.ReplaceAll(prompt, " ", "_") + ".jpg"
+
+	randId := utils.RandomString(20)
+	filename := randId + ".jpg"
 
 	model := "flux"
 
