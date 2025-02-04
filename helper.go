@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	url_package "net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
-	url_package "net/url"
 
 	"github.com/aandrew-me/tgpt/v2/client"
 	"github.com/aandrew-me/tgpt/v2/providers"
@@ -553,60 +554,52 @@ func generateImageBlackbox(prompt string) {
 		os.Exit(1)
 	}
 
-	url := "https://api.blackbox.ai/api/chat"
+	url := "https://api.blackbox.ai/api/image-generator"
 
 	payload := strings.NewReader(fmt.Sprintf(`
 	{
-	"messages": [
-		{
-			"content": "%v",
-			"role": "user"
-		}
-	],
-	"previewToken": null,
-	"userId": null,
-	"codeModelMode": true,
-	"agentMode": {
-		"mode": true,
-		"id": "ImageGenerationLV45LJp",
-		"name": "Image Generation"
-	},
-	"trendingAgentMode": {},
-	"isMicMode": false,
-	"maxTokens": 1024,
-	"isChromeExt": false,
-	"githubToken": null,
-	"clickedAnswer2": false,
-	"clickedAnswer3": false,
-	"clickedForceWebSearch": false,
-	"visitFromDelta": false,
-	"mobileClient": false
-}`, string(prompt)))
+		"query": "%v",
+		"agentMode": true
+	}`, string(prompt)))
 
 	req, _ := http.NewRequest("POST", url, payload)
 
 	req.Header.Add("accept", "*/*")
 	req.Header.Add("content-type", "application/json")
 	req.Header.Add("origin", "https://www.blackbox.ai")
-	req.Header.Add("priority", "u=1, i")
-	req.Header.Add("referer", "https://www.blackbox.ai/agent/ImageGenerationLV45LJp")
-	req.Header.Add("sec-ch-ua-platform", "Linux")
-	req.Header.Add("sec-fetch-dest", "empty")
-	req.Header.Add("sec-fetch-mode", "cors")
-	req.Header.Add("sec-fetch-site", "same-origin")
-	req.Header.Add("sec-gpc", "1")
+	req.Header.Add("referer", "https://www.blackbox.ai/")
 	req.Header.Add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
 
 	res, _ := client.Do(req)
 
 	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
-	responseText := string(body)
 
-	if strings.Contains(responseText, "![Generated Image]") {
-		imgLink := strings.ReplaceAll(strings.ReplaceAll(responseText, "![Generated Image](", ""), ")", "")
+	var response struct {
+		Markdown string `json:"markdown"`
+	}
 
-		fmt.Println("Generated image link: " + imgLink)
+	rawBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to read response body: %w", err)
+	}
+
+	if err := json.Unmarshal(rawBody, &response); err != nil {
+		fmt.Fprintln(os.Stderr, "failed to unmarshal response: %w", err)
+	}
+
+	if response.Markdown == "" {
+		fmt.Fprintln(os.Stderr, "Some error has occured.")
+	}
+
+	imageURLRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
+	matches := imageURLRegex.FindStringSubmatch(response.Markdown)
+	if len(matches) < 2 {
+		fmt.Println(os.Stderr, "Some error has occured.")
+	}
+
+	imgLink := matches[1]
+
+	fmt.Println("\nGenerated image link: " + imgLink)
 
 		bold.Print("\nDownload image? [y/n]: ")
 		reader := bufio.NewReader(os.Stdin)
@@ -620,9 +613,6 @@ func generateImageBlackbox(prompt string) {
 				fmt.Println(err)
 			}
 		}
-	} else {
-		fmt.Println("Some error has occurred, try again later. Response body: " + responseText)
-	}
 }
 
 func generateImagePollinations(prompt string) {

@@ -529,7 +529,7 @@ func showHelpMessage() {
 	fmt.Println("Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai and phind")
 
 	bold.Println("\nProvider: blackboxai")
-	fmt.Println("Uses BlackBox model. Great for developers")
+	fmt.Println("Default model is deepseek-ai/DeepSeek-R1. Available models: deepseek-ai/DeepSeek-V3, mistralai/Mistral-Small-24B-Instruct-2501, deepseek-ai/deepseek-llm-67b-chat, databricks/dbrx-instruct, Qwen/QwQ-32B-Preview, NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO.")
 
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
@@ -564,6 +564,7 @@ func showHelpMessage() {
 	fmt.Println("Supported models: flux, turbo")
 
 	bold.Println("\nProvider: blackboxai")
+	fmt.Println("Uses flux")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
