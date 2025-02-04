@@ -538,7 +538,7 @@ func showHelpMessage() {
 	fmt.Println("Available models: gpt-4o-mini (default), meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307")
 
 	bold.Println("\nProvider: groq")
-	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
+	fmt.Println("Requires a free API Key. Supported models: https://console.groq.com/docs/models")
 
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")
@@ -571,6 +571,7 @@ func showHelpMessage() {
 	fmt.Println(`tgpt -m`)
 	fmt.Println(`tgpt -s "How to update my system?"`)
 	fmt.Println(`tgpt --provider duckduckgo "What is 1+1"`)
+	fmt.Println(`tgpt --img "cat"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
 }
