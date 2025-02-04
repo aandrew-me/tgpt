@@ -595,7 +595,7 @@ func generateImageBlackbox(prompt string) {
 	imageURLRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
 	matches := imageURLRegex.FindStringSubmatch(response.Markdown)
 	if len(matches) < 2 {
-		fmt.Println(os.Stderr, "Some error has occured.")
+		fmt.Fprintln(os.Stderr, "Some error has occured.")
 	}
 
 	imgLink := matches[1]
