@@ -581,21 +581,24 @@ func generateImageBlackbox(prompt string) {
 
 	rawBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to read response body: %w", err)
+		fmt.Fprintln(os.Stderr, "Failed to read response body: %w", err)
 	}
 
 	if err := json.Unmarshal(rawBody, &response); err != nil {
-		fmt.Fprintln(os.Stderr, "failed to unmarshal response: %w", err)
+		fmt.Fprintln(os.Stderr, "Failed to unmarshal response: %w", err)
+		return
 	}
 
 	if response.Markdown == "" {
 		fmt.Fprintln(os.Stderr, "Some error has occured.")
+		return
 	}
 
 	imageURLRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
 	matches := imageURLRegex.FindStringSubmatch(response.Markdown)
 	if len(matches) < 2 {
 		fmt.Fprintln(os.Stderr, "Some error has occured.")
+		return
 	}
 
 	imgLink := matches[1]
