@@ -31,7 +31,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 			}
 		],
 		"model": "deepseek-ai/DeepSeek-R1",
-		"max_tokens": "3000"
+		"max_tokens": "10000"
 	}
 	`,params.PrevMessages, string(safeInput)))
 
