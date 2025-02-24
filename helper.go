@@ -590,14 +590,14 @@ func generateImageBlackbox(prompt string) {
 	}
 
 	if response.Markdown == "" {
-		fmt.Fprintln(os.Stderr, "Some error has occured.")
+		fmt.Fprintln(os.Stderr, "Some error has occurred.")
 		return
 	}
 
 	imageURLRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
 	matches := imageURLRegex.FindStringSubmatch(response.Markdown)
 	if len(matches) < 2 {
-		fmt.Fprintln(os.Stderr, "Some error has occured.")
+		fmt.Fprintln(os.Stderr, "Some error has occurred.")
 		return
 	}
 
