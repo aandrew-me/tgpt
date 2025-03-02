@@ -66,7 +66,14 @@ func main() {
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
-	url = flag.String("url", "https://api.openai.com/v1/chat/completions", "url for openai providers")
+
+	defaultUrl := ""
+	if *provider == "openai" {
+		// ideally default value should be inside openai provider file. To retain existing behavior and avoid braking change default value for openai is set here.
+		defaultUrl = "https://api.openai.com/v1/chat/completions"
+	}
+	url = flag.String("url", defaultUrl, "url for openai providers")
+
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
 	shouldExecuteCommand = flag.Bool(("y"), false, "Instantly execute the shell command")
 
@@ -524,7 +531,7 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai and phind")
+	fmt.Println("Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai, gemini and phind")
 
 	bold.Println("\nProvider: blackboxai")
 	fmt.Println("Uses BlackBox model. Great for developers")
