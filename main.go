@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.8.3"
+const localVersion = "2.9.1"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -345,11 +345,13 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -img "cat"`)
 					os.Exit(1)
 				}
-				generateImagePollinations(trimmedPrompt)
+
+				generateImg(trimmedPrompt, *provider)
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				generateImagePollinations(*preprompt + formattedInput)
+
+				generateImg(formattedInput, *provider)
 			}
 		case *isHelp:
 			showHelpMessage()
@@ -534,14 +536,20 @@ func showHelpMessage() {
 	fmt.Println("Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai, gemini and phind")
 
 	bold.Println("\nProvider: blackboxai")
-	fmt.Println("Uses BlackBox model. Great for developers")
+	fmt.Println("Default model is deepseek-ai/DeepSeek-R1. Available models: deepseek-ai/DeepSeek-V3, mistralai/Mistral-Small-24B-Instruct-2501, deepseek-ai/deepseek-llm-67b-chat, databricks/dbrx-instruct, Qwen/QwQ-32B-Preview, NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO.")
+
+	bold.Println("\nProvider: deepseek")
+	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
 
 	bold.Println("\nProvider: duckduckgo")
-	fmt.Println("Available models: gpt-4o-mini (default), meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307")
+	fmt.Println("Available models: o3-mini (default), gpt-4o-mini, meta-llama/Llama-3.3-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307")
 
 	bold.Println("\nProvider: groq")
-	fmt.Println("Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b")
+	fmt.Println("Requires a free API Key. Supported models: https://console.groq.com/docs/models")
 
+	bold.Println("\nProvider: isou")
+	fmt.Println("Free provider with web search")
+	
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
@@ -554,11 +562,23 @@ func showHelpMessage() {
 	bold.Println("\nProvider: phind")
 	fmt.Println("Uses Phind Model. Great for developers")
 
+	bold.Println("\nProvider: pollinations")
+	fmt.Println("Completely free, default model is gpt-4o. Supported models: https://text.pollinations.ai/models")
+
+	boldBlue.Println("\nImage generation providers:")
+
+	bold.Println("\nProvider: pollinations")
+	fmt.Println("Supported models: flux, turbo")
+
+	bold.Println("\nProvider: blackboxai")
+	fmt.Println("Uses flux")
+
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
 	fmt.Println(`tgpt -m`)
 	fmt.Println(`tgpt -s "How to update my system?"`)
 	fmt.Println(`tgpt --provider duckduckgo "What is 1+1"`)
+	fmt.Println(`tgpt --img "cat"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
 }

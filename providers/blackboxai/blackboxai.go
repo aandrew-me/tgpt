@@ -30,26 +30,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 				"role": "user"
 			}
 		],
-		"previewToken": null,
-		"userId": null,
-		"codeModelMode": true,
-		"agentMode": {},
-		"trendingAgentMode": {},
-		"isMicMode": false,
-		"maxTokens": 1024,
-		"playgroundTopP": null,
-		"playgroundTemperature": null,
-		"isChromeExt": false,
-		"githubToken": "",
-		"clickedAnswer2": false,
-		"clickedAnswer3": false,
-		"clickedForceWebSearch": false,
-		"visitFromDelta": false,
-		"mobileClient": false,
-		"userSelectedModel": null,
-		"validated": "",
-		"imageGenerationMode": false,
-		"webSearchModePrompt": false
+		"model": "deepseek-ai/DeepSeek-R1",
+		"max_tokens": "10000"
 	}
 	`,params.PrevMessages, string(safeInput)))
 

@@ -10,15 +10,20 @@
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
 ### Currently available providers: 
-- [Blackbox AI](https://www.blackbox.ai/) (Blackbox model)
+- [Blackbox AI](https://www.blackbox.ai/) (Several models)
+- [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Duckduckgo](https://duckduckgo.com/aichat) (Supports several models)
-- [Groq](https://groq.com/) (Requires a free API Key. LLaMA2-70b & Mixtral-8x7b)
+- [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
+- [Isou](https://isou.chat/) (Deepseek-chat with SEARXNG)
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [Ollama](https://www.ollama.com/) (Supports many models)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [Phind](https://www.phind.com/agent) (Phind Model)
+- [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))
 
-**Image Generation Model**: BlackBoxAi
+**Image Generation Models**: 
+- BlackBoxAi
+- Pollinations
 
 ## Usage 
 
@@ -35,22 +40,21 @@ Flags:
 
 Some additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.
 --model                                            Set Model
---key                                              Set API Key
+--key                                              Set API Key. (Env: AI_API_KEY)
 --url                                              Set OpenAI API endpoint url
 --temperature                                      Set temperature
 --top_p                                            Set top_p
 --max_length                                       Set max response length
 --log                                              Set filepath to log conversation to (For interactive modes)
 --preprompt                                        Set preprompt
--y                                                 Execute shell command without confirmation
+-y                                                 Execute shell command without confirmation        
 
 Options:
--v, --version                                      Print version 
--h, --help                                         Print help message 
--i, --interactive                                  Start normal interactive mode 
--m, --multiline                                    Start multi-line interactive mode 
--cl, --changelog                                   See changelog of versions 
--u, --update                                       Update program 
+-v, --version                                      Print version
+-h, --help                                         Print help message
+-i, --interactive                                  Start normal interactive mode
+-m, --multiline                                    Start multi-line interactive mode
+-cl, --changelog                                   See changelog of versions
 
 Providers:
 The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.
@@ -59,11 +63,17 @@ Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, open
 Provider: blackboxai
 Uses BlackBox model. Great for developers
 
+Provider: deepseek
+Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables
+
 Provider: duckduckgo
 Available models: gpt-4o-mini (default), meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307
 
 Provider: groq
 Requires a free API Key. Supports LLaMA2-70b & Mixtral-8x7b
+
+Provider: isou
+Free provider with web search
 
 Provider: koboldai
 Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels
@@ -76,6 +86,16 @@ Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY
 
 Provider: phind
 Uses Phind Model. Great for developers
+
+Provider: pollinations
+Completely free, default model is gpt-4o. Supported models: https://text.pollinations.ai/models      
+
+Image generation providers:
+
+Provider: pollinations
+Supported models: flux, turbo
+
+Provider: blackboxai
 
 Examples:
 tgpt "What is internet?"

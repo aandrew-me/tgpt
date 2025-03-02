@@ -85,7 +85,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 	// "mistralai/Mixtral-8x7B-Instruct-v0.1"
 	// "claude-3-haiku-20240307"
 
-	model := "gpt-4o-mini"
+	model := "o3-mini"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}

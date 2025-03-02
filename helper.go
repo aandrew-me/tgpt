@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers"
 	"github.com/aandrew-me/tgpt/v2/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/structs"
+	"github.com/aandrew-me/tgpt/v2/utils"
 	http "github.com/bogdanfinn/fhttp"
 
 	"github.com/olekukonko/ts"
@@ -242,7 +244,7 @@ func shellCommand(input string) {
 	getCommand(shellPrompt)
 }
 
-// getCommand will make a request to an AI model, then it will run the response using an appropiate handler (bash, sh OR powershell, cmd)
+// getCommand will make a request to an AI model, then it will run the response using an appropriate handler (bash, sh OR powershell, cmd)
 func getCommand(shellPrompt string) {
 	makeRequestAndGetData(shellPrompt, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetCommand: true})
 }
@@ -550,7 +552,7 @@ func handleStatus400(resp *http.Response) {
 // }
 
 func generateImageBlackbox(prompt string) {
-	bold.Println("Generating image...")
+	bold.Println("Generating image with blackbox.ai...")
 
 	client, err := client.NewClient()
 	if err != nil {
@@ -558,60 +560,55 @@ func generateImageBlackbox(prompt string) {
 		os.Exit(1)
 	}
 
-	url := "https://api.blackbox.ai/api/chat"
+	url := "https://api.blackbox.ai/api/image-generator"
 
 	payload := strings.NewReader(fmt.Sprintf(`
 	{
-	"messages": [
-		{
-			"content": "%v",
-			"role": "user"
-		}
-	],
-	"previewToken": null,
-	"userId": null,
-	"codeModelMode": true,
-	"agentMode": {
-		"mode": true,
-		"id": "ImageGenerationLV45LJp",
-		"name": "Image Generation"
-	},
-	"trendingAgentMode": {},
-	"isMicMode": false,
-	"maxTokens": 1024,
-	"isChromeExt": false,
-	"githubToken": null,
-	"clickedAnswer2": false,
-	"clickedAnswer3": false,
-	"clickedForceWebSearch": false,
-	"visitFromDelta": false,
-	"mobileClient": false
-}`, string(prompt)))
+		"query": "%v",
+		"agentMode": true
+	}`, string(prompt)))
 
 	req, _ := http.NewRequest("POST", url, payload)
 
 	req.Header.Add("accept", "*/*")
 	req.Header.Add("content-type", "application/json")
 	req.Header.Add("origin", "https://www.blackbox.ai")
-	req.Header.Add("priority", "u=1, i")
-	req.Header.Add("referer", "https://www.blackbox.ai/agent/ImageGenerationLV45LJp")
-	req.Header.Add("sec-ch-ua-platform", "Linux")
-	req.Header.Add("sec-fetch-dest", "empty")
-	req.Header.Add("sec-fetch-mode", "cors")
-	req.Header.Add("sec-fetch-site", "same-origin")
-	req.Header.Add("sec-gpc", "1")
+	req.Header.Add("referer", "https://www.blackbox.ai/")
 	req.Header.Add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
 
 	res, _ := client.Do(req)
 
 	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
-	responseText := string(body)
 
-	if strings.Contains(responseText, "![Generated Image]") {
-		imgLink := strings.ReplaceAll(strings.ReplaceAll(responseText, "![Generated Image](", ""), ")", "")
+	var response struct {
+		Markdown string `json:"markdown"`
+	}
 
-		fmt.Println("Generated image link: " + imgLink)
+	rawBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to read response body: %w", err)
+	}
+
+	if err := json.Unmarshal(rawBody, &response); err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to unmarshal response: %w", err)
+		return
+	}
+
+	if response.Markdown == "" {
+		fmt.Fprintln(os.Stderr, "Some error has occurred.")
+		return
+	}
+
+	imageURLRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
+	matches := imageURLRegex.FindStringSubmatch(response.Markdown)
+	if len(matches) < 2 {
+		fmt.Fprintln(os.Stderr, "Some error has occurred.")
+		return
+	}
+
+	imgLink := matches[1]
+
+	fmt.Println("\nGenerated image link: " + imgLink)
 
 		bold.Print("\nDownload image? [y/n]: ")
 		reader := bufio.NewReader(os.Stdin)
@@ -625,13 +622,10 @@ func generateImageBlackbox(prompt string) {
 				fmt.Println(err)
 			}
 		}
-	} else {
-		fmt.Println("Some error has occured, try again later. Response body: " + responseText)
-	}
 }
 
 func generateImagePollinations(prompt string) {
-	bold.Println("Generating image...")
+	bold.Println("Generating image with pollinations.ai...")
 
 	client, err := client.NewClient()
 	if err != nil {
@@ -641,11 +635,22 @@ func generateImagePollinations(prompt string) {
 
 	full_prompt := url_package.QueryEscape(prompt);
 
+	randId := utils.RandomString(20)
+	filename := randId + ".jpg"
+
+	model := "flux"
+
+	if *apiModel != "" {
+		model = *apiModel
+	}
+
+	fmt.Println()
+
 	link := fmt.Sprintf("https://image.pollinations.ai/prompt/%v", full_prompt)
 
 	params := url_package.Values{}
 
-	params.Add("model", "flux")
+	params.Add("model", model)
 	params.Add("width", "1024")
 	params.Add("height", "1024")
 	params.Add("nologo", "true")
@@ -669,18 +674,30 @@ func generateImagePollinations(prompt string) {
 
 	defer res.Body.Close()
 
+
 	if res.StatusCode == http.StatusOK {
-		file, err := os.Create("image.jpg")
+		file, err := os.Create(filename)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "Error: %v", err)
+
+			return
 		}
 		defer file.Close()
 	
 		// Copy the response body (image data) to the file
 		_, err = io.Copy(file, res.Body)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr,"Error: %v", err)
+			
+			return
 		}
+
+		fmt.Printf("Saved image as %v\n", filename)
+	} else {
+		body, _ := io.ReadAll(res.Body)
+		responseText := string(body)
+
+		fmt.Fprintf(os.Stderr,"Some error has occurred. Try again (perhaps with a different model).\nError: %v", responseText)
 	}
 }
 
@@ -855,4 +872,15 @@ func makeRequestAndGetData(input string, params structs.Params, extraOptions str
 	}
 
 	return ""
+}
+
+func generateImg(prompt string, provider string) {	
+	if provider == "pollinations" || provider == "" {
+		generateImagePollinations(prompt)
+
+	}  else if provider == "blackboxai" {
+		generateImageBlackbox(prompt)
+	} else {
+		fmt.Fprintln(os.Stderr, "Such a provider doesn't exist")
+	}
 }
