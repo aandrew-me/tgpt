@@ -7,6 +7,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers/blackboxai"
 	"github.com/aandrew-me/tgpt/v2/providers/deepseek"
 	"github.com/aandrew-me/tgpt/v2/providers/duckduckgo"
+	"github.com/aandrew-me/tgpt/v2/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/providers/groq"
 	"github.com/aandrew-me/tgpt/v2/providers/isou"
 	"github.com/aandrew-me/tgpt/v2/providers/koboldai"
@@ -19,7 +20,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "blackboxai", "deepseek", "duckduckgo", "isou", "groq", "koboldai", "ollama", "openai", "phind", "pollinations",
+	"", "blackboxai", "deepseek", "duckduckgo", "isou", "groq", "koboldai", "ollama", "openai", "phind", "pollinations", "gemini",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -42,6 +43,8 @@ func GetMainText(line string, provider string, input string) string {
 		return openai.GetMainText(line)
 	case "pollinations":
 		return pollinations.GetMainText(line)
+	case "gemini":
+		return gemini.GetMainText(line)
 	default:
 		return phind.GetMainText(line)
 	}
@@ -79,6 +82,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return openai.NewRequest(input, params)
 	case "pollinations":
 		return pollinations.NewRequest(input, params)
+	case "gemini":
+		return gemini.NewRequest(input, params)
 	default:
 		return phind.NewRequest(input, params)
 	}
