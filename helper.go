@@ -16,6 +16,7 @@ import (
 
 	"github.com/aandrew-me/tgpt/v2/client"
 	"github.com/aandrew-me/tgpt/v2/providers"
+	"github.com/aandrew-me/tgpt/v2/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/structs"
 	"github.com/aandrew-me/tgpt/v2/utils"
 	http "github.com/bogdanfinn/fhttp"
@@ -106,6 +107,10 @@ func getData(input string, params structs.Params, extraOptions structs.ExtraOpti
 		response := string(safeResponse)[1 : len(string(safeResponse))-1]
 
 		msgObject = fmt.Sprintf(`<s>[INST] %v [/INST] %v </s>`, input, response)
+	}
+
+	if params.Provider == "gemini" {
+		return gemini.GetInputResponseJson(safeInput, safeResponse), responseTxt
 	}
 
 	return msgObject, responseTxt

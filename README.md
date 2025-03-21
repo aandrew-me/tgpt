@@ -19,6 +19,7 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [Phind](https://www.phind.com/agent) (Phind Model)
 - [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))
+- [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-2.0-flash`)
 
 **Image Generation Models**: 
 - Pollinations
