@@ -7,6 +7,7 @@ GTK-based graphical user interface for TGPT on Linux.
 - 🌙 **Dark theme** 
 - 💬 **Font Editing** (removes un-necessery characters from output and gives solid text with some editing)
 -  💬 **Chat history** with session timestamps (works but sometime history file gets erased)
+- 💬 **Stores Chat history and Images Locally**
 - 🖼️ **Image generation mode** using `tgpt -img`
 - 🔄 **Lazy loading** for chat history
 - 🚀 **Lightweight & fast** – built with GTK3 and Python
