@@ -13,7 +13,7 @@ import (
 func NewClient() (tls_client.HttpClient, error) {
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(600),
-		tls_client.WithClientProfile(profiles.Firefox_110),
+		tls_client.WithClientProfile(profiles.Chrome_131),
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(tls_client.NewCookieJar()),
 		// tls_client.WithInsecureSkipVerify(),
