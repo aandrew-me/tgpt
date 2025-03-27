@@ -10,7 +10,6 @@
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
 ### Currently available providers: 
-- [Blackbox AI](https://www.blackbox.ai/) (Several models)
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Duckduckgo](https://duckduckgo.com/aichat) (Supports several models)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
@@ -23,7 +22,6 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 - [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-2.0-flash`)
 
 **Image Generation Models**: 
-- BlackBoxAi
 - Pollinations
 
 ## Usage 

@@ -75,6 +75,8 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		headers["x-vqd-4"] = vqd
 	}
 
+	headers["x-vqd-hash-1"] = "abcdefg"
+
 	// We don't make new status requests after the first one
 	// We get the vqd from the main requests afterwards
 
