@@ -345,16 +345,13 @@ func handleEachPart(resp *http.Response, input string) string {
 	size, termwidthErr := ts.GetSize()
 	termWidth := size.Col()
 
-	previousText := ""
 	fullText := ""
 
 	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider, input)
-		if len(newText) < 1 {
+		mainText := providers.GetMainText(scanner.Text(), *provider, input)
+		if len(mainText) < 1 {
 			continue
 		}
-		mainText := strings.Replace(newText, previousText, "", -1)
-		previousText = newText
 		fullText += mainText
 
 		if count <= 0 {
@@ -821,16 +818,13 @@ func makeRequestAndGetData(input string, params structs.Params, extraOptions str
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Handling each part
-	previousText := ""
 	fullText := ""
 
 	for scanner.Scan() {
-		newText := providers.GetMainText(scanner.Text(), *provider, input)
-		if len(newText) < 1 {
+		mainText := providers.GetMainText(scanner.Text(), *provider, input)
+		if len(mainText) < 1 {
 			continue
 		}
-		mainText := strings.Replace(newText, previousText, "", -1)
-		previousText = newText
 		fullText += mainText
 
 		if !extraOptions.IsGetWhole {
