@@ -16,6 +16,16 @@ func RandomString(length int) string {
 	return string(result)
 }
 
+func GenerateRandomNumber(length int) string {
+	numbers := []rune("0123456789")
+	result := make([]rune, length)
+	for i := range result {
+		result[i] = numbers[rand.Intn(len(numbers))]
+	}
+
+	return string(result)
+}
+
 func LogToFile(text string, logType string, logPath string) {
 	logTxt := logType + ": " + text
 

@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -548,78 +547,6 @@ func handleStatus400(resp *http.Response) {
 // 	}
 // }
 
-func generateImageBlackbox(prompt string) {
-	bold.Println("Generating image with blackbox.ai...")
-
-	client, err := client.NewClient()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	url := "https://api.blackbox.ai/api/image-generator"
-
-	payload := strings.NewReader(fmt.Sprintf(`
-	{
-		"query": "%v",
-		"agentMode": true
-	}`, string(prompt)))
-
-	req, _ := http.NewRequest("POST", url, payload)
-
-	req.Header.Add("accept", "*/*")
-	req.Header.Add("content-type", "application/json")
-	req.Header.Add("origin", "https://www.blackbox.ai")
-	req.Header.Add("referer", "https://www.blackbox.ai/")
-	req.Header.Add("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
-
-	res, _ := client.Do(req)
-
-	defer res.Body.Close()
-
-	var response struct {
-		Markdown string `json:"markdown"`
-	}
-
-	rawBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to read response body: %w", err)
-	}
-
-	if err := json.Unmarshal(rawBody, &response); err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to unmarshal response: %w", err)
-		return
-	}
-
-	if response.Markdown == "" {
-		fmt.Fprintln(os.Stderr, "Some error has occurred.")
-		return
-	}
-
-	imageURLRegex := regexp.MustCompile(`!\[.*?\]\((.*?)\)`)
-	matches := imageURLRegex.FindStringSubmatch(response.Markdown)
-	if len(matches) < 2 {
-		fmt.Fprintln(os.Stderr, "Some error has occurred.")
-		return
-	}
-
-	imgLink := matches[1]
-
-	fmt.Println("\nGenerated image link: " + imgLink)
-
-		bold.Print("\nDownload image? [y/n]: ")
-		reader := bufio.NewReader(os.Stdin)
-		userInput, _ := reader.ReadString('\n')
-		userInput = strings.TrimSpace(userInput)
-
-		if userInput == "y" || userInput == "" {
-			err := downloadImage(imgLink, "")
-
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
-}
 
 func generateImagePollinations(prompt string) {
 	bold.Println("Generating image with pollinations.ai...")
@@ -647,6 +574,8 @@ func generateImagePollinations(prompt string) {
 
 	params := url_package.Values{}
 
+	seed := utils.GenerateRandomNumber(5)
+
 	params.Add("model", model)
 	params.Add("width", "1024")
 	params.Add("height", "1024")
@@ -654,7 +583,7 @@ func generateImagePollinations(prompt string) {
 	params.Add("safe", "false")
 	params.Add("nsfw", "true")
 	params.Add("isChild", "false")
-	params.Add("seed", "")
+	params.Add("seed", seed)
 
 	urlObj, err := url_package.Parse(link)
 	if err != nil {
@@ -667,7 +596,11 @@ func generateImagePollinations(prompt string) {
 
 	req, _ := http.NewRequest("GET", urlObj.String(), nil)
 
-	res, _ := client.Do(req)
+	res, err := client.Do(req)
+
+	if err != nil {
+		fmt.Fprint(os.Stderr, err);
+	}
 
 	defer res.Body.Close()
 
@@ -872,8 +805,6 @@ func generateImg(prompt string, provider string) {
 	if provider == "pollinations" || provider == "" {
 		generateImagePollinations(prompt)
 
-	}  else if provider == "blackboxai" {
-		generateImageBlackbox(prompt)
 	} else {
 		fmt.Fprintln(os.Stderr, "Such a provider doesn't exist")
 	}
