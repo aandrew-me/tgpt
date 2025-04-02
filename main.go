@@ -22,7 +22,7 @@ import (
 	"github.com/olekukonko/ts"
 )
 
-const localVersion = "2.9.2"
+const localVersion = "2.9.3"
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -533,19 +533,19 @@ func showHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: blackboxai, duckduckgo, groq, koboldai, ollama, openai, gemini and phind")
-
-	bold.Println("\nProvider: blackboxai")
-	fmt.Println("Default model is deepseek-ai/DeepSeek-R1. Available models: deepseek-ai/DeepSeek-V3, mistralai/Mistral-Small-24B-Instruct-2501, deepseek-ai/deepseek-llm-67b-chat, databricks/dbrx-instruct, Qwen/QwQ-32B-Preview, NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO.")
+	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, pollinations and phind")
 
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
 
-	bold.Println("\nProvider: duckduckgo")
-	fmt.Println("Available models: o3-mini (default), gpt-4o-mini, meta-llama/Llama-3.3-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307, mistralai/Mistral-Small-24B-Instruct-2501")
+	// bold.Println("\nProvider: duckduckgo")
+	// fmt.Println("Available models: o3-mini (default), gpt-4o-mini, meta-llama/Llama-3.3-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307, mistralai/Mistral-Small-24B-Instruct-2501")
 
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API Key. Supported models: https://console.groq.com/docs/models")
+
+	bold.Println("\nProvider: gemini")
+	fmt.Println("Requires a free API key. https://aistudio.google.com/apikey")
 
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")
@@ -569,9 +569,6 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: pollinations")
 	fmt.Println("Supported models: flux, turbo")
-
-	bold.Println("\nProvider: blackboxai")
-	fmt.Println("Uses flux")
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
