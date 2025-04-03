@@ -45,6 +45,9 @@ var preprompt *string
 var url *string
 var logFile *string
 var shouldExecuteCommand *bool
+var out *string
+var height *int
+var width *int
 
 func main() {
 	execPath, err := os.Executable()
@@ -67,6 +70,9 @@ func main() {
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
+	out = flag.String("out", "", "Output file path")
+	width = flag.Int("width", 1024, "Output image width")
+	height = flag.Int("height", 1024, "Output image height")
 
 	defaultUrl := ""
 	if *provider == "openai" {
@@ -170,17 +176,22 @@ func main() {
 		case *isChangelog:
 			getVersionHistory()
 		case *isImage:
-			params := structs.Params{
-				ApiKey:       *apiKey,
-				ApiModel:     *apiModel,
-				Provider:     *provider,
-				Max_length:   *max_length,
-				Temperature:  *temperature,
-				Top_p:        *top_p,
-				Preprompt:    *preprompt,
-				Url:          *url,
-				PrevMessages: "",
-				ThreadID:     "",
+			params := structs.ImageParams{
+				Params: structs.Params{
+					ApiKey:       *apiKey,
+					ApiModel:     *apiModel,
+					Provider:     *provider,
+					Max_length:   *max_length,
+					Temperature:  *temperature,
+					Top_p:        *top_p,
+					Preprompt:    *preprompt,
+					Url:          *url,
+					PrevMessages: "",
+					ThreadID:     "",
+				},
+				Width:  *width,
+				Height: *height,
+				Out:    *out,
 			}
 
 			if len(prompt) > 1 {
@@ -223,11 +234,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(*preprompt + trimmedPrompt + contextText + pipedInput, structs.ExtraOptions{})
+				getSilentText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{})
 			} else {
 				formattedInput := getFormattedInputStdin()
 				fmt.Println()
-				getSilentText(*preprompt + formattedInput + cleanPipedInput, structs.ExtraOptions{})
+				getSilentText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{})
 			}
 		case *isShell:
 			if len(prompt) > 1 {
@@ -381,7 +392,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false, })
+			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false})
 		}
 
 	} else {
@@ -390,7 +401,7 @@ func main() {
 		input := scanner.Text()
 		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false, })
+		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false})
 	}
 }
 
@@ -537,6 +548,11 @@ func showHelpMessage() {
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
+	boldBlue.Println("\nOptions supported for image generation (with -image flag)")
+	fmt.Printf("%-50v Output image filename\n", "-s, --out")
+	fmt.Printf("%-50v Output image height\n", "-s, --height")
+	fmt.Printf("%-50v Output image width\n", "-s, --width")
+
 	boldBlue.Println("\nOptions:")
 	fmt.Printf("%-50v Print version \n", "-v, --version")
 	fmt.Printf("%-50v Print help message \n", "-h, --help")
@@ -593,6 +609,7 @@ func showHelpMessage() {
 	fmt.Println(`tgpt -s "How to update my system?"`)
 	fmt.Println(`tgpt --provider duckduckgo "What is 1+1"`)
 	fmt.Println(`tgpt --img "cat"`)
+	fmt.Println(`tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
 }
