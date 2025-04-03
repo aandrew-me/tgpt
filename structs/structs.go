@@ -30,3 +30,10 @@ type CommonResponse struct {
 		} `json:"delta"`
 	} `json:"choices"`
 }
+
+type ImageParams struct {
+	Params
+	Height int
+	Width  int
+	Out    string
+}

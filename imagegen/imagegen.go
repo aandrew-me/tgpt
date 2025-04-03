@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	url_package "net/url"
 
@@ -17,7 +18,7 @@ import (
 
 var bold = color.New(color.Bold)
 
-func GenerateImg(prompt string, params structs.Params, isQuite bool) {
+func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 	if params.Provider == "pollinations" || params.Provider == "" {
 		if !isQuite {
 			bold.Println("Generating image with pollinations.ai...")
@@ -29,10 +30,11 @@ func GenerateImg(prompt string, params structs.Params, isQuite bool) {
 
 	} else {
 		fmt.Fprintln(os.Stderr, "Such a provider doesn't exist")
+		os.Exit(1)
 	}
 }
 
-func generateImagePollinations(prompt string, params structs.Params) string {
+func generateImagePollinations(prompt string, params structs.ImageParams) string {
 
 	client, err := client.NewClient()
 	if err != nil {
@@ -42,11 +44,13 @@ func generateImagePollinations(prompt string, params structs.Params) string {
 
 	full_prompt := url_package.QueryEscape(prompt)
 
-	randId := utils.RandomString(20)
-	filename := randId + ".jpg"
+	filepath := params.Out
+	if filepath == "" {
+		randId := utils.RandomString(20)
+		filepath = randId + ".jpg"
+	}
 
 	model := "flux"
-
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}
@@ -58,8 +62,8 @@ func generateImagePollinations(prompt string, params structs.Params) string {
 	seed := utils.GenerateRandomNumber(5)
 
 	queryParams.Add("model", model)
-	queryParams.Add("width", "1024")
-	queryParams.Add("height", "1024")
+	queryParams.Add("width", strconv.Itoa(params.Width))
+	queryParams.Add("height", strconv.Itoa(params.Height))
 	queryParams.Add("nologo", "true")
 	queryParams.Add("safe", "false")
 	queryParams.Add("nsfw", "true")
@@ -80,6 +84,7 @@ func generateImagePollinations(prompt string, params structs.Params) string {
 
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	defer res.Body.Close()
@@ -89,10 +94,10 @@ func generateImagePollinations(prompt string, params structs.Params) string {
 		responseText := string(body)
 
 		fmt.Fprintf(os.Stderr, "Some error has occurred. Try again (perhaps with a different model).\nError: %v", responseText)
-
+		os.Exit(1)
 	}
 
-	file, err := os.Create(filename)
+	file, err := os.Create(filepath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v", err)
 		os.Exit(1)
@@ -106,6 +111,5 @@ func generateImagePollinations(prompt string, params structs.Params) string {
 		os.Exit(1)
 	}
 
-	return filename
-
+	return filepath
 }
