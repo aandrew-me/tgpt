@@ -12,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aandrew-me/tgpt/v2/imagegen"
 	"github.com/aandrew-me/tgpt/v2/structs"
 	"github.com/aandrew-me/tgpt/v2/utils"
 	"github.com/atotto/clipboard"
@@ -168,6 +169,38 @@ func main() {
 			fmt.Println("tgpt", localVersion)
 		case *isChangelog:
 			getVersionHistory()
+		case *isImage:
+			params := structs.Params{
+				ApiKey:       *apiKey,
+				ApiModel:     *apiModel,
+				Provider:     *provider,
+				Max_length:   *max_length,
+				Temperature:  *temperature,
+				Top_p:        *top_p,
+				Preprompt:    *preprompt,
+				Url:          *url,
+				PrevMessages: "",
+				ThreadID:     "",
+			}
+
+			if len(prompt) > 1 {
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					fmt.Fprintln(os.Stderr, "You need to provide some text")
+					fmt.Fprintln(os.Stderr, `Example: tgpt -img "cat"`)
+					os.Exit(1)
+				}
+
+				imagegen.GenerateImg(trimmedPrompt, params, *isQuiet)
+
+			} else {
+				formattedInput := getFormattedInputStdin()
+				if !*isQuiet {
+					fmt.Println()
+				}
+
+				imagegen.GenerateImg(formattedInput, params, *isQuiet)
+			}
 		case *isWhole:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
@@ -337,22 +370,6 @@ func main() {
 
 			}
 
-		case *isImage:
-			if len(prompt) > 1 {
-				trimmedPrompt := strings.TrimSpace(prompt)
-				if len(trimmedPrompt) < 1 {
-					fmt.Fprintln(os.Stderr, "You need to provide some text")
-					fmt.Fprintln(os.Stderr, `Example: tgpt -img "cat"`)
-					os.Exit(1)
-				}
-
-				generateImg(trimmedPrompt, *provider)
-			} else {
-				formattedInput := getFormattedInputStdin()
-				fmt.Println()
-
-				generateImg(formattedInput, *provider)
-			}
 		case *isHelp:
 			showHelpMessage()
 		default:
@@ -549,7 +566,7 @@ func showHelpMessage() {
 
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")
-	
+
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
