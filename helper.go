@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	url_package "net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +16,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/providers"
 	"github.com/aandrew-me/tgpt/v2/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/structs"
-	"github.com/aandrew-me/tgpt/v2/utils"
 	http "github.com/bogdanfinn/fhttp"
 
 	"github.com/olekukonko/ts"
@@ -547,90 +545,6 @@ func handleStatus400(resp *http.Response) {
 // 	}
 // }
 
-
-func generateImagePollinations(prompt string) {
-	bold.Println("Generating image with pollinations.ai...")
-
-	client, err := client.NewClient()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	full_prompt := url_package.QueryEscape(prompt);
-
-	randId := utils.RandomString(20)
-	filename := randId + ".jpg"
-
-	model := "flux"
-
-	if *apiModel != "" {
-		model = *apiModel
-	}
-
-	fmt.Println()
-
-	link := fmt.Sprintf("https://image.pollinations.ai/prompt/%v", full_prompt)
-
-	params := url_package.Values{}
-
-	seed := utils.GenerateRandomNumber(5)
-
-	params.Add("model", model)
-	params.Add("width", "1024")
-	params.Add("height", "1024")
-	params.Add("nologo", "true")
-	params.Add("safe", "false")
-	params.Add("nsfw", "true")
-	params.Add("isChild", "false")
-	params.Add("seed", seed)
-
-	urlObj, err := url_package.Parse(link)
-	if err != nil {
-		fmt.Println("Error parsing URL:", err)
-		return
-	}
-
-	urlObj.RawQuery = params.Encode()
-
-
-	req, _ := http.NewRequest("GET", urlObj.String(), nil)
-
-	res, err := client.Do(req)
-
-	if err != nil {
-		fmt.Fprint(os.Stderr, err);
-	}
-
-	defer res.Body.Close()
-
-
-	if res.StatusCode == http.StatusOK {
-		file, err := os.Create(filename)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v", err)
-
-			return
-		}
-		defer file.Close()
-	
-		// Copy the response body (image data) to the file
-		_, err = io.Copy(file, res.Body)
-		if err != nil {
-			fmt.Fprintf(os.Stderr,"Error: %v", err)
-			
-			return
-		}
-
-		fmt.Printf("Saved image as %v\n", filename)
-	} else {
-		body, _ := io.ReadAll(res.Body)
-		responseText := string(body)
-
-		fmt.Fprintf(os.Stderr,"Some error has occurred. Try again (perhaps with a different model).\nError: %v", responseText)
-	}
-}
-
 func downloadImage(url string, destDir string) error {
 	client, err := client.NewClient()
 	if err != nil {
@@ -799,13 +713,4 @@ func makeRequestAndGetData(input string, params structs.Params, extraOptions str
 	}
 
 	return ""
-}
-
-func generateImg(prompt string, provider string) {	
-	if provider == "pollinations" || provider == "" {
-		generateImagePollinations(prompt)
-
-	} else {
-		fmt.Fprintln(os.Stderr, "Such a provider doesn't exist")
-	}
 }
