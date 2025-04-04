@@ -68,7 +68,7 @@ func getData(input string, params structs.Params, extraOptions structs.ExtraOpti
 		"role": "user"
 	},{
 		"content": %v,
-		"role": "system"
+		"role": "assistant"
 	},
 	`, string(safeInput), string(safeResponse))
 
