@@ -12,44 +12,41 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/aandrew-me/tgpt/v2/imagegen"
-	"github.com/aandrew-me/tgpt/v2/structs"
-	"github.com/aandrew-me/tgpt/v2/utils"
-	"github.com/atotto/clipboard"
+	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
+	"github.com/aandrew-me/tgpt/v2/src/helper"
+	"github.com/aandrew-me/tgpt/v2/src/imagegen"
+	"github.com/aandrew-me/tgpt/v2/src/structs"
+	"github.com/aandrew-me/tgpt/v2/src/utils"
 	Prompt "github.com/c-bata/go-prompt"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fatih/color"
-	"github.com/olekukonko/ts"
 )
 
 const localVersion = "2.9.4"
 
 var bold = color.New(color.Bold)
-var boldBlue = color.New(color.Bold, color.FgBlue)
 var blue = color.New(color.FgBlue)
-var boldViolet = color.New(color.Bold, color.FgMagenta)
-var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
-var stopSpin = false
+
 var programLoop = true
-var userInput = ""
-var lastResponse = ""
-var executablePath = ""
-var provider *string
-var apiModel *string
-var apiKey *string
-var temperature *string
-var top_p *string
-var max_length *string
-var preprompt *string
-var url *string
-var logFile *string
-var shouldExecuteCommand *bool
-var out *string
-var height *int
-var width *int
 
 func main() {
+	var userInput = ""
+	var lastResponse = ""
+	var executablePath = ""
+	var provider *string
+	var apiModel *string
+	var apiKey *string
+	var temperature *string
+	var top_p *string
+	var max_length *string
+	var preprompt *string
+	var url *string
+	var logFile *string
+	var shouldExecuteCommand *bool
+	var out *string
+	var height *int
+	var width *int
+
 	execPath, err := os.Executable()
 	if err == nil {
 		executablePath = execPath
@@ -174,7 +171,7 @@ func main() {
 		case *isVersion:
 			fmt.Println("tgpt", localVersion)
 		case *isChangelog:
-			getVersionHistory()
+			helper.GetVersionHistory()
 		case *isImage:
 			params := structs.ImageParams{
 				Params: structs.Params{
@@ -205,7 +202,7 @@ func main() {
 				imagegen.GenerateImg(trimmedPrompt, params, *isQuiet)
 
 			} else {
-				formattedInput := getFormattedInputStdin()
+				formattedInput := bubbletea.GetFormattedInputStdin()
 				if !*isQuiet {
 					fmt.Println()
 				}
@@ -220,11 +217,32 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
 					os.Exit(1)
 				}
-				getWholeText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{IsGetWhole: *isWhole})
+				helper.GetWholeText(
+					*preprompt+trimmedPrompt+contextText+pipedInput,
+					structs.ExtraOptions{IsGetWhole: *isWhole},
+					structs.Params{
+						ApiKey: *apiKey, ApiModel: *apiModel,
+						Provider: *provider,
+						Max_length: *max_length,
+						Temperature: *temperature,
+						Top_p: *top_p,
+						Preprompt: *preprompt,
+						Url: *url,
+					})
 			} else {
-				formattedInput := getFormattedInputStdin()
-				fmt.Println()
-				getWholeText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{IsGetWhole: *isWhole})
+				formattedInput := bubbletea.GetFormattedInputStdin()
+				helper.GetWholeText(
+					*preprompt+formattedInput+cleanPipedInput,
+					structs.ExtraOptions{IsGetWhole: *isWhole},
+					structs.Params{
+						ApiKey: *apiKey, ApiModel: *apiModel,
+						Provider: *provider,
+						Max_length: *max_length,
+						Temperature: *temperature,
+						Top_p: *top_p,
+						Preprompt: *preprompt,
+						Url: *url,
+					})
 			}
 		case *isQuiet:
 			if len(prompt) > 1 {
@@ -234,22 +252,37 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				getSilentText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{})
+				helper.GetSilentText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{}, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url})
 			} else {
-				formattedInput := getFormattedInputStdin()
+				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				getSilentText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{})
+				helper.GetSilentText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{}, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url})
 			}
 		case *isShell:
 			if len(prompt) > 1 {
-				go loading(&stopSpin)
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
 					fmt.Fprintln(os.Stderr, "You need to provide some text")
 					fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
 					os.Exit(1)
 				}
-				shellCommand(*preprompt + trimmedPrompt + contextText + pipedInput)
+				helper.ShellCommand(
+					*preprompt + trimmedPrompt + contextText + pipedInput,
+					structs.Params{
+						ApiKey: *apiKey,
+						ApiModel: *apiModel,
+						Provider: *provider,
+						Max_length: *max_length,
+						Temperature: *temperature,
+						Top_p: *top_p,
+						Preprompt: *preprompt,
+						Url: *url,
+					},
+					structs.ExtraOptions{
+						IsGetCommand: true,
+						AutoExec: *shouldExecuteCommand,
+					},
+				)
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
@@ -264,14 +297,25 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
 					os.Exit(1)
 				}
-				codeGenerate(*preprompt + trimmedPrompt + contextText + pipedInput)
+				helper.CodeGenerate(
+					*preprompt + trimmedPrompt + contextText + pipedInput,
+					structs.Params{
+						ApiKey: *apiKey,
+						ApiModel: *apiModel,
+						Provider: *provider,
+						Max_length: *max_length,
+						Temperature: *temperature,
+						Top_p: *top_p,
+						Preprompt: *preprompt,
+						Url: *url,
+					})
 			} else {
 				fmt.Fprintln(os.Stderr, "You need to provide some text")
 				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
 				os.Exit(1)
 			}
 		case *isUpdate:
-			update()
+			helper.Update(localVersion, executablePath)
 		case *isInteractive:
 			/////////////////////
 			// Normal interactive
@@ -305,7 +349,7 @@ func main() {
 				if previousMessages == "" {
 					input = *preprompt + input
 				}
-				responseJson, responseTxt := getData(input, structs.Params{
+				responseJson, responseTxt := helper.GetData(input, structs.Params{
 					PrevMessages: previousMessages,
 					ThreadID:     threadID,
 					Provider:     *provider,
@@ -330,7 +374,7 @@ func main() {
 
 			for {
 				blue.Println("╭─ You")
-				input := Prompt.Input("╰─> ", historyCompleter,
+				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
 					Prompt.OptionHistory(history),
 					Prompt.OptionPrefixTextColor(Prompt.Blue),
 					Prompt.OptionAddKeyBind(Prompt.KeyBind{
@@ -354,7 +398,7 @@ func main() {
 
 			for programLoop {
 				fmt.Print("\n")
-				p := tea.NewProgram(initialModel())
+				p := tea.NewProgram(bubbletea.InitialModel(preprompt, &programLoop, &lastResponse, &userInput))
 				_, err := p.Run()
 
 				if err != nil {
@@ -366,7 +410,7 @@ func main() {
 						utils.LogToFile(userInput, "USER_QUERY", *logFile)
 					}
 
-					responseJson, responseTxt := getData(userInput, structs.Params{
+					responseJson, responseTxt := helper.GetData(userInput, structs.Params{
 						PrevMessages: previousMessages,
 						Provider:     *provider,
 						ThreadID:     threadID,
@@ -382,9 +426,8 @@ func main() {
 			}
 
 		case *isHelp:
-			showHelpMessage()
+			helper.ShowHelpMessage()
 		default:
-			go loading(&stopSpin)
 			formattedInput := strings.TrimSpace(prompt)
 
 			if len(formattedInput) < 1 {
@@ -392,232 +435,25 @@ func main() {
 				os.Exit(1)
 			}
 
-			getData(*preprompt+formattedInput+contextText+pipedInput, structs.Params{}, structs.ExtraOptions{IsNormal: true, IsInteractive: false})
+			helper.GetData(
+				*preprompt+formattedInput+contextText+pipedInput,
+				structs.Params{
+					Provider: *provider,
+				},
+				structs.ExtraOptions{
+					IsNormal: true, IsInteractive: false,
+				})
 		}
 
 	} else {
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		input := scanner.Text()
-		go loading(&stopSpin)
 		formattedInput := strings.TrimSpace(input)
-		getData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false})
+		helper.GetData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false})
 	}
 }
 
-// Multiline input
-type errMsg error
-
-type model struct {
-	textarea textarea.Model
-	err      error
-}
-
-func initialModel() model {
-	size, _ := ts.GetSize()
-	termWidth := size.Col()
-	ti := textarea.New()
-	ti.SetWidth(termWidth)
-	ti.CharLimit = 200000
-	ti.ShowLineNumbers = false
-	ti.Placeholder = "Enter your prompt"
-	ti.SetValue(*preprompt)
-	*preprompt = ""
-	ti.Focus()
-
-	return model{
-		textarea: ti,
-		err:      nil,
-	}
-}
-
-func (m model) Init() tea.Cmd {
-	return textarea.Blink
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
-	var cmd tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEsc:
-			if m.textarea.Focused() {
-				m.textarea.Blur()
-			}
-		case tea.KeyCtrlC:
-			programLoop = false
-			userInput = ""
-			return m, tea.Quit
-
-		case tea.KeyCtrlD:
-			userInput = m.textarea.Value()
-
-			if len(userInput) > 1 {
-				m.textarea.Blur()
-				return m, tea.Quit
-			}
-		case tea.KeyTab:
-			if m.textarea.Focused() {
-				m.textarea.InsertString("\t")
-			}
-		default:
-			if m.textarea.Focused() {
-				m.textarea, cmd = m.textarea.Update(msg)
-				m.textarea.SetHeight(min(20, max(6, m.textarea.LineCount()+1)))
-				cmds = append(cmds, cmd)
-			}
-		}
-
-		// Command mode
-		if !m.textarea.Focused() {
-			switch msg.String() {
-			case "i":
-				m.textarea.Focus()
-			case "c":
-				if len(lastResponse) == 0 {
-					break
-				}
-				err := clipboard.WriteAll(lastResponse)
-				if err != nil {
-					fmt.Println("Could not write to clipboard")
-				}
-			case "b":
-				if len(lastResponse) == 0 {
-					break
-				}
-				lastCodeBlock := getLastCodeBlock(lastResponse)
-				err := clipboard.WriteAll(lastCodeBlock)
-				if err != nil {
-					fmt.Println("Could not write to clipboard")
-				}
-			case "p":
-				m.textarea.Focus()
-				clip, err := clipboard.ReadAll()
-				msg.Runes = []rune(clip)
-				if err != nil {
-					fmt.Println("Could not read from clipboard")
-				}
-				userInput = clip
-				m.textarea, cmd = m.textarea.Update(msg)
-				m.textarea.SetHeight(min(20, max(6, m.textarea.LineCount()+1)))
-				cmds = append(cmds, cmd)
-			}
-		}
-
-	// We handle errors just like any other message
-	case errMsg:
-		m.err = msg
-		return m, nil
-	}
-
-	return m, tea.Batch(cmds...)
-}
-
-func (m model) View() string {
-	return m.textarea.View()
-}
-
-func getFormattedInputStdin() (formattedInput string) {
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	input := scanner.Text()
-	return strings.TrimSpace(input)
-}
-
-func showHelpMessage() {
-	boldBlue.Println(`Usage: tgpt [Flags] [Prompt]`)
-
-	boldBlue.Println("\nFlags:")
-	fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
-	fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
-	fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
-	fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
-	fmt.Printf("%-50v Generate images from text\n", "-img, --image")
-	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER)\n", "--provider")
-
-	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
-	fmt.Printf("%-50v Set Model\n", "--model")
-	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
-	fmt.Printf("%-50v Set OpenAI API endpoint url\n", "--url")
-	fmt.Printf("%-50v Set temperature\n", "--temperature")
-	fmt.Printf("%-50v Set top_p\n", "--top_p")
-	fmt.Printf("%-50v Set max response length\n", "--max_length")
-	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
-	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
-	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
-
-	boldBlue.Println("\nOptions supported for image generation (with -image flag)")
-	fmt.Printf("%-50v Output image filename\n", "-s, --out")
-	fmt.Printf("%-50v Output image height\n", "-s, --height")
-	fmt.Printf("%-50v Output image width\n", "-s, --width")
-
-	boldBlue.Println("\nOptions:")
-	fmt.Printf("%-50v Print version \n", "-v, --version")
-	fmt.Printf("%-50v Print help message \n", "-h, --help")
-	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
-	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
-	fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
-
-	if runtime.GOOS != "windows" {
-		fmt.Printf("%-50v Update program \n", "-u, --update")
-	}
-
-	boldBlue.Println("\nProviders:")
-	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, pollinations and phind")
-
-	bold.Println("\nProvider: deepseek")
-	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
-
-	// bold.Println("\nProvider: duckduckgo")
-	// fmt.Println("Available models: o3-mini (default), gpt-4o-mini, meta-llama/Llama-3.3-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307, mistralai/Mistral-Small-24B-Instruct-2501")
-
-	bold.Println("\nProvider: groq")
-	fmt.Println("Requires a free API Key. Supported models: https://console.groq.com/docs/models")
-
-	bold.Println("\nProvider: gemini")
-	fmt.Println("Requires a free API key. https://aistudio.google.com/apikey")
-
-	bold.Println("\nProvider: isou")
-	fmt.Println("Free provider with web search")
-
-	bold.Println("\nProvider: koboldai")
-	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
-
-	bold.Println("\nProvider: ollama")
-	fmt.Println("Needs to be run locally. Supports many models")
-
-	bold.Println("\nProvider: openai")
-	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url")
-
-	bold.Println("\nProvider: phind")
-	fmt.Println("Uses Phind Model. Great for developers")
-
-	bold.Println("\nProvider: pollinations")
-	fmt.Println("Completely free, default model is gpt-4o. Supported models: https://text.pollinations.ai/models")
-
-	boldBlue.Println("\nImage generation providers:")
-
-	bold.Println("\nProvider: pollinations")
-	fmt.Println("Supported models: flux, turbo")
-
-	boldBlue.Println("\nExamples:")
-	fmt.Println(`tgpt "What is internet?"`)
-	fmt.Println(`tgpt -m`)
-	fmt.Println(`tgpt -s "How to update my system?"`)
-	fmt.Println(`tgpt --provider duckduckgo "What is 1+1"`)
-	fmt.Println(`tgpt --img "cat"`)
-	fmt.Println(`tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"`)
-	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
-	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
-}
-
-func historyCompleter(d Prompt.Document) []Prompt.Suggest {
-	s := []Prompt.Suggest{}
-	return Prompt.FilterHasPrefix(s, d.GetWordAfterCursor(), true)
-}
 
 func exit(_ *Prompt.Buffer) {
 	bold.Println("Exiting...")
