@@ -11,7 +11,7 @@ tgpt is a cross-platform command-line interface (CLI) tool that allows you to us
 
 ### Currently available providers: 
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
-- [Duckduckgo](https://duckduckgo.com/aichat) (Supports several models)
+<!-- - [Duckduckgo](https://duckduckgo.com/aichat) (Supports several models) -->
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
 - [Isou](https://isou.chat/) (Deepseek-chat with SEARXNG)
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
