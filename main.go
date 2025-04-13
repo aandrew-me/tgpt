@@ -46,6 +46,9 @@ func main() {
 	var out *string
 	var height *int
 	var width *int
+	var imgNegative *string
+	var imgCount *string
+	var imgRatio *string
 
 	execPath, err := os.Executable()
 	if err == nil {
@@ -67,15 +70,23 @@ func main() {
 	top_p = flag.String("top_p", "", "Set top_p")
 	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
+
 	out = flag.String("out", "", "Output file path")
 	width = flag.Int("width", 1024, "Output image width")
 	height = flag.Int("height", 1024, "Output image height")
 
+	imgNegative = flag.String("img_negative", "", "Negative prompt. Avoid generating specific elements or characteristics")
+	imgCount = flag.String("img_count", "1", "Number of images you want to generate")
+	imgRatio = flag.String("img_ratio", "1:1", "Image Aspect Ratio")
+	
+
 	defaultUrl := ""
+
 	if *provider == "openai" {
 		// ideally default value should be inside openai provider file. To retain existing behavior and avoid braking change default value for openai is set here.
 		defaultUrl = "https://api.openai.com/v1/chat/completions"
 	}
+	
 	url = flag.String("url", defaultUrl, "url for openai providers")
 
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
@@ -128,6 +139,17 @@ func main() {
 		Url: *url,
 		PrevMessages: "",
 	}
+
+	image_params := structs.ImageParams {
+		ImgRatio: *imgRatio,
+		ImgNegativePrompt: *imgNegative,
+		ImgCount: *imgCount,
+		Width: *width,
+		Height: *height,
+		Out: *out,
+		Params: main_params,
+	}
+
 
 	prompt := flag.Arg(0)
 
@@ -191,12 +213,7 @@ func main() {
 		case *isChangelog:
 			helper.GetVersionHistory()
 		case *isImage:
-			params := structs.ImageParams{
-				Params: main_params,
-				Width:  *width,
-				Height: *height,
-				Out:    *out,
-			}
+			
 
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
@@ -207,7 +224,7 @@ func main() {
 					return
 				}
 
-				imagegen.GenerateImg(trimmedPrompt, params, *isQuiet)
+				imagegen.GenerateImg(trimmedPrompt, image_params, *isQuiet)
 
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
@@ -215,7 +232,7 @@ func main() {
 					fmt.Println()
 				}
 
-				imagegen.GenerateImg(formattedInput, params, *isQuiet)
+				imagegen.GenerateImg(formattedInput, image_params, *isQuiet)
 			}
 		case *isWhole:
 			if len(prompt) > 1 {

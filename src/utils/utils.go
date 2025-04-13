@@ -2,8 +2,14 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
+	"path/filepath"
+
+	"github.com/aandrew-me/tgpt/v2/src/client"
+	http "github.com/bogdanfinn/fhttp"
+
 	"github.com/fatih/color"
 )
 
@@ -48,4 +54,39 @@ func PrintError(text string) {
 	red := color.New(color.FgRed)
 
 	red.Fprintln(os.Stderr, text)
+}
+
+func DownloadImage(url string, destDir string) error {
+	client, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		// Handle error
+		return err
+	}
+
+	response, err := client.Do(req)
+
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	fileName := filepath.Join(destDir, filepath.Base(url))
+	file, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Saved image", fileName)
+
+	return nil
 }
