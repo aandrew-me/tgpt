@@ -37,4 +37,7 @@ type ImageParams struct {
 	Height int
 	Width  int
 	Out    string
+	ImgNegativePrompt string
+	ImgRatio string
+	ImgCount string
 }

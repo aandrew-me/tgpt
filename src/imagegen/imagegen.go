@@ -11,6 +11,7 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
+	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	"github.com/fatih/color"
@@ -26,16 +27,23 @@ func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 		filename := generateImagePollinations(prompt, params)
 		if !isQuite {
 			fmt.Printf("Saved image as %v\n", filename)
+		} else {
+			fmt.Println(filename)
 		}
 
+	} else if (params.Provider == "arta") {
+		if !isQuite {
+			bold.Println("Generating image with arta...")
+		}
+		arta.Main(prompt, params, isQuite)
 	} else {
-		fmt.Fprintln(os.Stderr, "Such a provider doesn't exist")
-		os.Exit(1)
+		utils.PrintError("Such a provider doesn't exist")
+		
+		return
 	}
 }
 
 func generateImagePollinations(prompt string, params structs.ImageParams) string {
-
 	client, err := client.NewClient()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

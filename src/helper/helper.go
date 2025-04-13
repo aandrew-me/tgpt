@@ -7,12 +7,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
+	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -533,40 +533,6 @@ func handleStatus400(resp *http.Response) {
 // 	}
 // }
 
-func DownloadImage(url string, destDir string) error {
-	client, err := client.NewClient()
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		// Handle error
-		return err
-	}
-
-	response, err := client.Do(req)
-
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	fileName := filepath.Join(destDir, filepath.Base(url))
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Saved image", fileName)
-
-	return nil
-}
 
 func ExecuteCommand(shellName string, shellOptions []string, fullLine string) {
 	// Directly use the shellName variable set by setShellAndOSVars()
@@ -732,9 +698,13 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
 	boldBlue.Println("\nOptions supported for image generation (with -image flag)")
-	fmt.Printf("%-50v Output image filename\n", "-s, --out")
-	fmt.Printf("%-50v Output image height\n", "-s, --height")
-	fmt.Printf("%-50v Output image width\n", "-s, --width")
+	fmt.Printf("%-50v Output image filename\n", "--out")
+	fmt.Printf("%-50v Output image height\n", "--height")
+	fmt.Printf("%-50v Output image width\n", "--width")
+	fmt.Printf("%-50v Output image count\n", "--img_count")
+	fmt.Printf("%-50v Negative prompt\n", "--img_negative")
+	fmt.Printf("%-50v Output image ratio (Some models may not support it)\n", "--img_ratio")
+
 
 	boldBlue.Println("\nOptions:")
 	fmt.Printf("%-50v Print version \n", "-v, --version")
@@ -785,6 +755,10 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: pollinations")
 	fmt.Println("Supported models: flux, turbo")
+
+	bold.Println("\nProvider: arta")
+	arta.PrintModels()
+	arta.PrintRatios()
 
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
