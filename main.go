@@ -22,7 +22,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const localVersion = "2.9.4"
+const localVersion = "2.9.5"
 
 var bold = color.New(color.Bold)
 var blue = color.New(color.FgBlue)
@@ -252,11 +252,11 @@ func main() {
 					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
 					os.Exit(1)
 				}
-				helper.GetSilentText(*preprompt+trimmedPrompt+contextText+pipedInput, structs.ExtraOptions{}, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url})
+				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetSilent: true})
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				helper.GetSilentText(*preprompt+formattedInput+cleanPipedInput, structs.ExtraOptions{}, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url})
+				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetSilent: true},)
 			}
 		case *isShell:
 			if len(prompt) > 1 {

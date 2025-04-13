@@ -314,10 +314,6 @@ func GetLastCodeBlock(markdown string) string {
 	return strings.Join(codeBlock, "\n")
 }
 
-func GetSilentText(input string, extraOptions structs.ExtraOptions, params structs.Params) {
-	MakeRequestAndGetData(input, params, extraOptions)
-}
-
 func HandleEachPart(resp *http.Response, input string, params structs.Params) string {
 	scanner := bufio.NewScanner(resp.Body)
 
@@ -611,7 +607,9 @@ func AddToShellHistory(command string) {
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	stopSpin := false;
 
-	go Loading(&stopSpin)
+	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole {
+		go Loading(&stopSpin)
+	}
 
 	resp, err := providers.NewRequest(input, params, extraOptions)
 
