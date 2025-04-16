@@ -607,7 +607,7 @@ func AddToShellHistory(command string) {
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	stopSpin := false;
 
-	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole {
+	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive {
 		go Loading(&stopSpin)
 	}
 
