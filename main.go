@@ -116,6 +116,19 @@ func main() {
 
 	flag.Parse()
 
+	main_params := structs.Params{
+		ApiKey: *apiKey,
+		ApiModel: *apiModel,
+		Provider: *provider,
+		Temperature: *temperature,
+		Top_p: *top_p,
+		Max_length: *max_length,
+		Preprompt: *preprompt,
+		ThreadID: "",
+		Url: *url,
+		PrevMessages: "",
+	}
+
 	prompt := flag.Arg(0)
 
 	pipedInput := ""
@@ -123,9 +136,11 @@ func main() {
 	contextText := ""
 
 	stat, err := os.Stdin.Stat()
+	
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "accessing standard input:", err)
-		os.Exit(1)
+		utils.PrintError(fmt.Sprintf("Error accessing standard input: %v", err))
+		
+		return
 	}
 
 	// Checking for piped text
@@ -136,8 +151,9 @@ func main() {
 		}
 
 		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "reading standard input:", err)
-			os.Exit(1)
+			utils.PrintError(fmt.Sprintf("Error reading standard input: %v", err))
+			
+			return
 		}
 	}
 	contextTextByte, _ := json.Marshal("\n\nHere is text for the context:\n")
@@ -145,16 +161,18 @@ func main() {
 	if len(pipedInput) > 0 {
 		cleanPipedInputByte, err := json.Marshal(pipedInput)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "marshaling piped input to JSON:", err)
-			os.Exit(1)
+			utils.PrintError(fmt.Sprintf("Error marshaling piped input to JSON: %v", err))
+
+			return
 		}
 		cleanPipedInput = string(cleanPipedInputByte)
 		cleanPipedInput = cleanPipedInput[1 : len(cleanPipedInput)-1]
 
 		safePipedBytes, err := json.Marshal(pipedInput + "\n")
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "marshaling piped input to JSON:", err)
-			os.Exit(1)
+			utils.PrintError(fmt.Sprintf("Error marshaling piped input to JSON: %v", err))
+
+			return
 		}
 		pipedInput = string(safePipedBytes)
 		pipedInput = pipedInput[1 : len(pipedInput)-1]
@@ -174,18 +192,7 @@ func main() {
 			helper.GetVersionHistory()
 		case *isImage:
 			params := structs.ImageParams{
-				Params: structs.Params{
-					ApiKey:       *apiKey,
-					ApiModel:     *apiModel,
-					Provider:     *provider,
-					Max_length:   *max_length,
-					Temperature:  *temperature,
-					Top_p:        *top_p,
-					Preprompt:    *preprompt,
-					Url:          *url,
-					PrevMessages: "",
-					ThreadID:     "",
-				},
+				Params: main_params,
 				Width:  *width,
 				Height: *height,
 				Out:    *out,
@@ -194,9 +201,10 @@ func main() {
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Fprintln(os.Stderr, "You need to provide some text")
-					fmt.Fprintln(os.Stderr, `Example: tgpt -img "cat"`)
-					os.Exit(1)
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -img "cat"`)
+					
+					return
 				}
 
 				imagegen.GenerateImg(trimmedPrompt, params, *isQuiet)
@@ -213,106 +221,80 @@ func main() {
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Fprintln(os.Stderr, "You need to provide some text")
-					fmt.Fprintln(os.Stderr, `Example: tgpt -w "What is encryption?"`)
-					os.Exit(1)
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -w "What is encryption?"`)
+					
+					return
 				}
 				helper.GetWholeText(
 					*preprompt+trimmedPrompt+contextText+pipedInput,
 					structs.ExtraOptions{IsGetWhole: *isWhole},
-					structs.Params{
-						ApiKey: *apiKey, ApiModel: *apiModel,
-						Provider: *provider,
-						Max_length: *max_length,
-						Temperature: *temperature,
-						Top_p: *top_p,
-						Preprompt: *preprompt,
-						Url: *url,
-					})
+					main_params,
+				)
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				helper.GetWholeText(
 					*preprompt+formattedInput+cleanPipedInput,
 					structs.ExtraOptions{IsGetWhole: *isWhole},
-					structs.Params{
-						ApiKey: *apiKey, ApiModel: *apiModel,
-						Provider: *provider,
-						Max_length: *max_length,
-						Temperature: *temperature,
-						Top_p: *top_p,
-						Preprompt: *preprompt,
-						Url: *url,
-					})
+					main_params,
+				)
 			}
 		case *isQuiet:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Fprintln(os.Stderr, "You need to provide some text")
-					fmt.Fprintln(os.Stderr, `Example: tgpt -q "What is encryption?"`)
-					os.Exit(1)
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -q "What is encryption?"`)
+					
+					return
 				}
-				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetSilent: true})
+				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, structs.Params{ApiKey: *apiKey, ApiModel: *apiModel, Provider: *provider, Max_length: *max_length, Temperature: *temperature, Top_p: *top_p, Preprompt: *preprompt, Url: *url}, structs.ExtraOptions{IsGetSilent: true},)
+				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true},)
 			}
 		case *isShell:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Fprintln(os.Stderr, "You need to provide some text")
-					fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
-					os.Exit(1)
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -s "How to update system"`)
+					
+					return
 				}
 				helper.ShellCommand(
 					*preprompt + trimmedPrompt + contextText + pipedInput,
-					structs.Params{
-						ApiKey: *apiKey,
-						ApiModel: *apiModel,
-						Provider: *provider,
-						Max_length: *max_length,
-						Temperature: *temperature,
-						Top_p: *top_p,
-						Preprompt: *preprompt,
-						Url: *url,
-					},
+					main_params,
 					structs.ExtraOptions{
 						IsGetCommand: true,
 						AutoExec: *shouldExecuteCommand,
 					},
 				)
 			} else {
-				fmt.Fprintln(os.Stderr, "You need to provide some text")
-				fmt.Fprintln(os.Stderr, `Example: tgpt -s "How to update system"`)
-				os.Exit(1)
+				utils.PrintError("You need to provide some text")
+				utils.PrintError(`Example: tgpt -s "How to update system"`)
+				
+				return
 			}
 
 		case *isCode:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
-					fmt.Fprintln(os.Stderr, "You need to provide some text")
-					fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -c "Hello world in Python"`)
 					os.Exit(1)
 				}
 				helper.CodeGenerate(
 					*preprompt + trimmedPrompt + contextText + pipedInput,
-					structs.Params{
-						ApiKey: *apiKey,
-						ApiModel: *apiModel,
-						Provider: *provider,
-						Max_length: *max_length,
-						Temperature: *temperature,
-						Top_p: *top_p,
-						Preprompt: *preprompt,
-						Url: *url,
-					})
+					main_params,
+				)
 			} else {
-				fmt.Fprintln(os.Stderr, "You need to provide some text")
-				fmt.Fprintln(os.Stderr, `Example: tgpt -c "Hello world in Python"`)
-				os.Exit(1)
+				utils.PrintError("You need to provide some text")
+				utils.PrintError(`Example: tgpt -c "Hello world in Python"`)
+				
+				return
 			}
 		case *isUpdate:
 			helper.Update(localVersion, executablePath)
@@ -349,11 +331,11 @@ func main() {
 				if previousMessages == "" {
 					input = *preprompt + input
 				}
-				responseJson, responseTxt := helper.GetData(input, structs.Params{
-					PrevMessages: previousMessages,
-					ThreadID:     threadID,
-					Provider:     *provider,
-				}, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
+
+				main_params.PrevMessages = previousMessages
+				main_params.ThreadID = threadID
+
+				responseJson, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 				}
@@ -402,7 +384,8 @@ func main() {
 				_, err := p.Run()
 
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+					utils.PrintError(err.Error())
+					
 					os.Exit(1)
 				}
 				if len(userInput) > 0 {
@@ -410,11 +393,10 @@ func main() {
 						utils.LogToFile(userInput, "USER_QUERY", *logFile)
 					}
 
-					responseJson, responseTxt := helper.GetData(userInput, structs.Params{
-						PrevMessages: previousMessages,
-						Provider:     *provider,
-						ThreadID:     threadID,
-					}, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
+					main_params.PrevMessages = previousMessages
+					main_params.ThreadID = threadID
+
+					responseJson, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
 					previousMessages += responseJson
 					lastResponse = responseTxt
 
@@ -430,16 +412,15 @@ func main() {
 		default:
 			formattedInput := strings.TrimSpace(prompt)
 
-			if len(formattedInput) < 1 {
-				fmt.Fprintln(os.Stderr, "You need to write something")
-				os.Exit(1)
+			if len(formattedInput) <= 1 {
+				utils.PrintError("You need to write something")
+				
+				return
 			}
 
 			helper.GetData(
 				*preprompt+formattedInput+contextText+pipedInput,
-				structs.Params{
-					Provider: *provider,
-				},
+				main_params,
 				structs.ExtraOptions{
 					IsNormal: true, IsInteractive: false,
 				})
@@ -450,7 +431,7 @@ func main() {
 		scanner.Scan()
 		input := scanner.Text()
 		formattedInput := strings.TrimSpace(input)
-		helper.GetData(*preprompt+formattedInput+pipedInput, structs.Params{}, structs.ExtraOptions{IsInteractive: false})
+		helper.GetData(*preprompt+formattedInput+pipedInput, main_params, structs.ExtraOptions{IsInteractive: false})
 	}
 }
 

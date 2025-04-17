@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"github.com/fatih/color"
 )
 
 func RandomString(length int) string {
@@ -41,4 +42,10 @@ func LogToFile(text string, logType string, logPath string) {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 
 	}
+}
+
+func PrintError(text string) {
+	red := color.New(color.FgRed)
+
+	red.Fprintln(os.Stderr, text)
 }
