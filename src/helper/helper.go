@@ -45,7 +45,7 @@ var (
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
 var boldViolet = color.New(color.Bold, color.FgMagenta)
-var codeText = color.New(color.BgBlack, color.FgGreen, color.Bold)
+var codeText = color.New(color.FgGreen, color.Bold)
 
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, string) {
@@ -341,7 +341,7 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 
 		if count <= 0 {
 			wordLength := len([]rune(mainText))
-			if termwidthErr == nil && (termWidth-lineLength < wordLength) {
+			if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
 				fmt.Print("\n")
 				lineLength = 0
 			}
@@ -386,7 +386,7 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 		} else {
 			wordLength := len([]rune(mainText))
 
-			if termwidthErr == nil && (termWidth-lineLength < wordLength) {
+			if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
 				fmt.Print("\n")
 				lineLength = 0
 			}
