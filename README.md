@@ -46,14 +46,17 @@ Some additional options can be set. However not all options are supported by all
 --temperature                                      Set temperature
 --top_p                                            Set top_p
 --max_length                                       Set max response length
---log                                              Set filepath to log conversation to (For interactive modes)
+--log                                              Set filepath to log conversation to (For interactive modes)  
 --preprompt                                        Set preprompt
 -y                                                 Execute shell command without confirmation
 
 Options supported for image generation (with -image flag)
--s, --out                                          Output image filename
--s, --height                                       Output image height
--s, --width                                        Output image width
+--out                                              Output image filename (Supported by pollinations)
+--height                                           Output image height (Supported by pollinations)
+--width                                            Output image width (Supported by pollinations)
+--img_count                                        Output image count (Supported by arta)
+--img_negative                                     Negative prompt (Supported by arta)
+--img_ratio                                        Output image ratio (Supported by arta, some models may not support it)
 
 Options:
 -v, --version                                      Print version
@@ -64,7 +67,7 @@ Options:
 
 Providers:
 The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.
-Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, pollinations and phind
+Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, pollinations and phind      
 
 Provider: deepseek
 Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables
@@ -97,6 +100,13 @@ Image generation providers:
 
 Provider: pollinations
 Supported models: flux, turbo
+
+Provider: arta
+Supported models:
+Medieval, Vincent Van Gogh, F Dev, Low Poly, Dreamshaper-xl, Anima-pencil-xl, Biomech, Trash Polka, No Style, Cheyenne-xl, Chicano, Embroidery tattoo, Red and Black, Fantasy Art, Watercolor, Dotwork, Old school colored, Realistic tattoo, Japanese_2, Realistic-stock-xl, F Pro, RevAnimated, Katayama-mix-xl, SDXL L, Cor-epica-xl, Anime tattoo, New School, Death metal, Old School, Juggernaut-xl, Photographic, SDXL 1.0, Graffiti, Mini tattoo, Surrealism, Neo-traditional, On limbs black, Yamers-realistic-xl, Pony-xl, Playground-xl, Anything-xl, Flame design, Kawaii, Cinematic Art, Professional, Flux, Black Ink, Epicrealism-xl
+
+Supported ratios:
+1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 9:21, 21:9
 
 Examples:
 tgpt "What is internet?"
