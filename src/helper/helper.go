@@ -698,12 +698,12 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
 	boldBlue.Println("\nOptions supported for image generation (with -image flag)")
-	fmt.Printf("%-50v Output image filename\n", "--out")
-	fmt.Printf("%-50v Output image height\n", "--height")
-	fmt.Printf("%-50v Output image width\n", "--width")
-	fmt.Printf("%-50v Output image count\n", "--img_count")
-	fmt.Printf("%-50v Negative prompt\n", "--img_negative")
-	fmt.Printf("%-50v Output image ratio (Some models may not support it)\n", "--img_ratio")
+	fmt.Printf("%-50v Output image filename (Supported by pollinations)\n", "--out")
+	fmt.Printf("%-50v Output image height (Supported by pollinations)\n", "--height")
+	fmt.Printf("%-50v Output image width (Supported by pollinations)\n", "--width")
+	fmt.Printf("%-50v Output image count (Supported by arta)\n", "--img_count")
+	fmt.Printf("%-50v Negative prompt (Supported by arta)\n", "--img_negative")
+	fmt.Printf("%-50v Output image ratio (Supported by arta, some models may not support it)\n", "--img_ratio")
 
 
 	boldBlue.Println("\nOptions:")
