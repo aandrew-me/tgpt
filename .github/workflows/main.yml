@@ -11,7 +11,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [ubuntu-20.04]
+                os: [ubuntu-24.04]
 
         steps:
             - name: Checkout code
@@ -23,12 +23,12 @@ jobs:
                   go-version: "^1.22.1"
 
             - name: Linux
-              if: matrix.os == 'ubuntu-20.04'
+              if: matrix.os == 'ubuntu-24.04'
               run: |
                   go build -ldflags="-s -w" -o tgpt-linux-amd64
-                  GOARCH=386 go build -ldflags="-s -w" -o tgpt-linux-i386
-                  GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-linux-arm64
-                  GOARCH=arm go build -ldflags="-s -w" -o tgpt-linux-arm
+                  CGO_ENABLED=0 GOARCH=386 go build -ldflags="-s -w" -o tgpt-linux-i386
+                  CGO_ENABLED=0 GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-linux-arm64
+                  CGO_ENABLED=0 GOARCH=arm go build -ldflags="-s -w" -o tgpt-linux-arm
 
                   GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-amd64.exe
                   GOOS=windows GOARCH=arm go build -ldflags="-s -w" -o tgpt-arm.exe

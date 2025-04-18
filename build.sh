@@ -11,9 +11,9 @@ echo "
 read -rp "Please choose One [ 0-4 ]: " -n 1 chs
 if [[ "$chs" == "1" ]]; then
 	# For GNU Linux
-	GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-amd64
-	GOARCH=386 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-i386
-	GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-arm64
+	CGO_ENABLED=0 GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-amd64
+	CGO_ENABLED=0 GOARCH=386 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-i386
+	CGO_ENABLED=0 GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-arm64
 elif [[ "$chs" == "2" ]]; then
 	# For Windows
 	GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-amd64.exe
