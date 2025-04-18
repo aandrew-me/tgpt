@@ -9,6 +9,9 @@
 
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
+<img src="https://github.com/user-attachments/assets/1b554b99-79ca-45b7-87ff-7713b7fd9437" alt="Demo" width="800" height="500">
+
+
 ### Currently available providers: 
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
@@ -105,8 +108,6 @@ tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"
 tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"
 cat install.sh | tgpt "Explain the code"
 ```
-
-![demo](https://user-images.githubusercontent.com/66430340/233759296-c4cf8cf2-0cab-48aa-9e84-40765b823282.gif)
 
 ## Installation ⏬
 
