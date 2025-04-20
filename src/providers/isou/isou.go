@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	http "github.com/bogdanfinn/fhttp"
+	"github.com/fatih/color"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -21,7 +22,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "deepseek-chat"
+	model := "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}
@@ -29,11 +30,11 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"stream": true,
 		"model": "%v",
-		"provider": "ollama",
+		"provider": "siliconflow",
 		"mode": "deep",
 		"language": "all",
 		"categories": [
-			"general"
+			"science"
 		],
 		"engine": "SEARXNG",
 		"locally": false,
@@ -57,6 +58,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Add("Referer", "https://isou.chat/search")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Origin", "https://isou.chat")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
 
 	// Return response
 	return (client.Do(req))
@@ -71,8 +73,16 @@ func GetMainText(line string) (mainText string) {
 		}
 	}
 
+	type Context struct {
+		Name string `json:"name"`
+		Source string `json:"url"`
+		Id int `json:"id"`
+	}
+
 	type InnerData struct {
-		Answer string `json:"answer"`
+		Content string `json:"content"`
+		ReasoningContent string `json:"reasoningContent"`
+		Context *Context `json:"context"`
 	}
 
 	type OuterData struct {
@@ -89,8 +99,23 @@ func GetMainText(line string) (mainText string) {
 		return ""
 	}
 
-	if inner.Answer != "" {
-		mainText = inner.Answer
+	italic := color.New(color.Italic)
+	yellow := color.New(color.FgHiYellow)
+
+	if inner.Context != nil {
+		mainText := yellow.Sprintf("%v. Name: %v, Source: %v\n", inner.Context.Id, inner.Context.Name, inner.Context.Source)
+
+		return mainText
+	}
+
+	if inner.ReasoningContent != "" {
+		mainText = italic.Sprint(inner.ReasoningContent)
+		
+		return mainText
+	}
+
+	if inner.Content != "" {
+		mainText = inner.Content
 		return mainText
 	}
 
