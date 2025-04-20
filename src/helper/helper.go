@@ -47,7 +47,6 @@ var boldBlue = color.New(color.Bold, color.FgBlue)
 var boldViolet = color.New(color.Bold, color.FgMagenta)
 var codeText = color.New(color.FgGreen, color.Bold)
 
-
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, string) {
 	responseTxt := MakeRequestAndGetData(input, params, extraOptions)
 	safeResponse, _ := json.Marshal(responseTxt)
@@ -108,10 +107,8 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 func Loading(stop *bool) {
 	spinChars := []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "}
 	i := 0
-	for {
-		if *stop {
-			break
-		}
+	for !*stop {
+
 		fmt.Printf("\r%s Loading", spinChars[i])
 		i = (i + 1) % len(spinChars)
 		time.Sleep(80 * time.Millisecond)
@@ -367,9 +364,10 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 					isTick = false
 					// If its a normal word
 
-					if tickCount == 1 {
+					switch tickCount {
+					case 1:
 						isGreen = true
-					} else if tickCount == 3 {
+					case 3:
 						isCode = true
 					}
 					previousWasTick = false
@@ -533,7 +531,6 @@ func handleStatus400(resp *http.Response) {
 // 	}
 // }
 
-
 func ExecuteCommand(shellName string, shellOptions []string, fullLine string) {
 	// Directly use the shellName variable set by setShellAndOSVars()
 	cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
@@ -571,7 +568,7 @@ func AddToShellHistory(command string) {
 }
 
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
-	stopSpin := false;
+	stopSpin := false
 
 	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive {
 		go Loading(&stopSpin)
@@ -704,7 +701,6 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Output image count (Supported by arta)\n", "--img_count")
 	fmt.Printf("%-50v Negative prompt (Supported by arta)\n", "--img_negative")
 	fmt.Printf("%-50v Output image ratio (Supported by arta, some models may not support it)\n", "--img_ratio")
-
 
 	boldBlue.Println("\nOptions:")
 	fmt.Printf("%-50v Print version \n", "-v, --version")

@@ -300,7 +300,7 @@ func Main(prompt string, params structs.ImageParams, isQuite bool) {
 			time.Sleep(5 * time.Second)
 			continue
 		} else {
-			var images []ImageResponse = status.Response
+			var images = status.Response
 			for i, image := range images {
 				fmt.Printf("%v.Image URL: %v\n", i+1, image.URL)
 			}

@@ -77,7 +77,7 @@ func GetMainText(line string) (mainText string) {
 		return ""
 	}
 
-	if d.Candidates != nil && len(d.Candidates) > 0 {
+	if len(d.Candidates) > 0 {
 		mainText = d.Candidates[0].Content.Parts[0].Text
 		return mainText
 	}

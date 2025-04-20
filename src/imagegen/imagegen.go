@@ -20,7 +20,8 @@ import (
 var bold = color.New(color.Bold)
 
 func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
-	if params.Provider == "pollinations" || params.Provider == "" {
+	switch params.Provider {
+	case "pollinations", "":
 		if !isQuite {
 			bold.Println("Generating image with pollinations.ai...")
 		}
@@ -31,14 +32,14 @@ func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 			fmt.Println(filename)
 		}
 
-	} else if (params.Provider == "arta") {
+	case "arta":
 		if !isQuite {
 			bold.Println("Generating image with arta...")
 		}
 		arta.Main(prompt, params, isQuite)
-	} else {
+	default:
 		utils.PrintError("Such a provider doesn't exist")
-		
+
 		return
 	}
 }
