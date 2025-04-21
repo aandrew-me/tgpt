@@ -46,6 +46,7 @@ func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 
 func generateImagePollinations(prompt string, params structs.ImageParams) string {
 	client, err := client.NewClient()
+	
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -70,14 +71,26 @@ func generateImagePollinations(prompt string, params structs.ImageParams) string
 
 	seed := utils.GenerateRandomNumber(5)
 
+	width := strconv.Itoa(params.Width)
+	if (width == "") {
+		width = "1024"
+	}
+
+	height := strconv.Itoa(params.Height)
+	if (height == "") {
+		height = "1024"
+	}
+
+	fmt.Println(width)
+
 	queryParams.Add("model", model)
-	queryParams.Add("width", strconv.Itoa(params.Width))
-	queryParams.Add("height", strconv.Itoa(params.Height))
+	queryParams.Add("width", width)
+	queryParams.Add("height", height)
 	queryParams.Add("nologo", "true")
-	queryParams.Add("safe", "false")
-	queryParams.Add("nsfw", "true")
-	queryParams.Add("isChild", "false")
 	queryParams.Add("seed", seed)
+	queryParams.Add("private", "true")
+	queryParams.Add("enhance", "true")
+
 
 	urlObj, err := url_package.Parse(link)
 	if err != nil {
@@ -88,6 +101,8 @@ func generateImagePollinations(prompt string, params structs.ImageParams) string
 	urlObj.RawQuery = queryParams.Encode()
 
 	req, _ := http.NewRequest("GET", urlObj.String(), nil)
+
+	req.Header.Add("Referrer", "tgpt")
 
 	res, err := client.Do(req)
 
