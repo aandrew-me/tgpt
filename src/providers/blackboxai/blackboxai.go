@@ -24,6 +24,10 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	var data = strings.NewReader(fmt.Sprintf(`
 	{
 		"messages": [
+			{
+				"content": "%s",
+				"role": "system"
+			},
 			%v
 			{
 				"content": %v,
@@ -33,7 +37,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		"model": "deepseek-ai/DeepSeek-R1",
 		"max_tokens": "10000"
 	}
-	`, params.PrevMessages, string(safeInput)))
+	`, params.SystemPrompt, params.PrevMessages, string(safeInput)))
 
 	req, err := http.NewRequest("POST", "https://api.blackbox.ai/api/chat", data)
 	if err != nil {

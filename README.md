@@ -63,6 +63,7 @@ Options:
 -h, --help                                         Print help message
 -i, --interactive                                  Start normal interactive mode
 -m, --multiline                                    Start multi-line interactive mode
+-is, --interactive-shell                           Start interactive shell mode
 -cl, --changelog                                   See changelog of versions
 
 Providers:

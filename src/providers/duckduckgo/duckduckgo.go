@@ -96,6 +96,10 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"messages": [
+			{
+				"content": "%s",
+				"role": "system"
+			},
 			%v
 			{
 				"content": %v,
@@ -104,7 +108,7 @@ func NewRequest(input string, params structs.Params, prevMessages string) (*http
 		],
 		"model": "%v"
 	}
-	`, params.PrevMessages, string(safeInput), model))
+	`, params.SystemPrompt, params.PrevMessages, string(safeInput), model))
 
 	req, err := http.NewRequest("POST", "https://duckduckgo.com/duckchat/v1/chat", data)
 	if err != nil {

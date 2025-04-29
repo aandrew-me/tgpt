@@ -11,16 +11,18 @@ type Params struct {
 	ThreadID     string
 	Url          string
 	PrevMessages string
+	SystemPrompt string
 }
 
 type ExtraOptions struct {
-	IsGetSilent       bool
-	IsGetWhole        bool
-	IsGetCommand      bool
-	IsNormal          bool
-	IsGetCode         bool
-	IsInteractive     bool
-	AutoExec		  bool
+	IsGetSilent        bool
+	IsGetWhole         bool
+	IsGetCommand       bool
+	IsNormal           bool
+	IsGetCode          bool
+	IsInteractive      bool
+	IsInteractiveShell bool
+	AutoExec           bool
 }
 
 type CommonResponse struct {
@@ -34,10 +36,10 @@ type CommonResponse struct {
 
 type ImageParams struct {
 	Params
-	Height int
-	Width  int
-	Out    string
+	Height            int
+	Width             int
+	Out               string
 	ImgNegativePrompt string
-	ImgRatio string
-	ImgCount string
+	ImgRatio          string
+	ImgCount          string
 }
