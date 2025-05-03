@@ -433,12 +433,12 @@ func main() {
 			bold.Print("Interactive Shell mode started. Press Ctrl + C or type exit to quit.\n\n")
 			helper.SetShellAndOSVars()
 			promptIs := fmt.Sprintf("You are a powerful terminal assistant. Answer the needs of the user."+
-				"You can execute command in command line if need. Always wrap the command with the xml tag `<tgpt_command>`."+
+				"You can execute command in command line if need. Always wrap the command with the xml tag `<cmd>`."+
 				"Only output command when you think user wants to execute a command. Execute only one command in one response."+
 				"The shell environment you are is %s. The operate system you are is %s."+
 				"Examples:"+
 				"User: list the files in my home dir."+
-				"Assistant: Sure. I will list the files under your home dir. <tgpt_command>ls ~</tgpt_command>",
+				"Assistant: Sure. I will list the files under your home dir. <cmd>ls ~</cmd>",
 				helper.ShellName, helper.OperatingSystem,
 			)
 			previousMessages := ""
@@ -473,8 +473,8 @@ func main() {
 				main_params.SystemPrompt = promptIs
 
 				responseJson, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
-				// Regex to match complete <tgpt_command>...</tgpt_command>
-				commandRegex := regexp.MustCompile(`<tgpt_command>(.*?)</tgpt_command>`)
+				// Regex to match complete <cmd>...</cmd>
+				commandRegex := regexp.MustCompile(`<cmd>(.*?)</cmd>`)
 				matches := commandRegex.FindStringSubmatch(responseTxt)
 				if len(matches) > 1 {
 					command := strings.TrimSpace(matches[1])
@@ -490,26 +490,7 @@ func main() {
 				return ""
 			}
 
-			input := strings.TrimSpace(prompt)
-			if len(input) > 1 {
-				// if prompt is passed in interactive mode then send prompt as first message
-				blue.Println("╭─ You")
-				blue.Print("╰─> ")
-				fmt.Println(input)
-				getAndPrintResponse(input)
-			}
-
-			for {
-				blue.Println("╭─ You")
-				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
-					Prompt.OptionHistory(history),
-					Prompt.OptionPrefixTextColor(Prompt.Blue),
-					Prompt.OptionAddKeyBind(Prompt.KeyBind{
-						Key: Prompt.ControlC,
-						Fn:  exit,
-					}),
-				)
-				cmd := getAndPrintResponse(input)
+			execCmd := func(cmd string) {
 				if cmd != "" {
 					if *shouldExecuteCommand {
 						fmt.Println()
@@ -530,7 +511,30 @@ func main() {
 						}
 					}
 				}
+			}
 
+			input := strings.TrimSpace(prompt)
+			if len(input) > 1 {
+				// if prompt is passed in interactive mode then send prompt as first message
+				blue.Println("╭─ You")
+				blue.Print("╰─> ")
+				fmt.Println(input)
+				cmd := getAndPrintResponse(input)
+				execCmd(cmd)
+			}
+
+			for {
+				blue.Println("╭─ You")
+				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
+					Prompt.OptionHistory(history),
+					Prompt.OptionPrefixTextColor(Prompt.Blue),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlC,
+						Fn:  exit,
+					}),
+				)
+				cmd := getAndPrintResponse(input)
+				execCmd(cmd)
 			}
 
 		case *isHelp:

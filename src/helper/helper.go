@@ -497,7 +497,7 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 				// Possibly end tag part
 				xmlBuffer.WriteRune(char)
 				currentBuffer := xmlBuffer.String()
-				if strings.HasPrefix(currentBuffer, "<tgpt_command>") && strings.HasSuffix(currentBuffer, "</tgpt_command>") {
+				if strings.HasPrefix(currentBuffer, "<cmd>") && strings.HasSuffix(currentBuffer, "</cmd>") {
 					xmlBuffer.Reset()
 					inXMLTag = false
 				}
@@ -693,6 +693,12 @@ func handleStatus400(resp *http.Response) {
 // }
 
 func ExecuteCommand(shellName string, shellOptions []string, fullLine string) {
+	if runtime.GOOS != "windows" {
+		rawModeOff := exec.Command("stty", "-raw", "echo")
+		rawModeOff.Stdin = os.Stdin
+		_ = rawModeOff.Run()
+		rawModeOff.Wait()
+	}
 	// Directly use the shellName variable set by setShellAndOSVars()
 	cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
 
