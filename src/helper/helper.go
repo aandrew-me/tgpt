@@ -37,9 +37,9 @@ type ImgResponse struct {
 }
 
 var (
-	operatingSystem string
-	shellName       string
-	shellOptions    []string
+	OperatingSystem string
+	ShellName       string
+	ShellOptions    []string
 )
 
 var bold = color.New(color.Bold)
@@ -186,47 +186,47 @@ func SetShellAndOSVars() {
 	// Identify OS
 	switch runtime.GOOS {
 	case "windows":
-		operatingSystem = "Windows"
+		OperatingSystem = "Windows"
 		if len(os.Getenv("PSModulePath")) > 0 {
-			shellName = "powershell.exe"
-			shellOptions = []string{"-Command"}
+			ShellName = "powershell.exe"
+			ShellOptions = []string{"-Command"}
 		} else {
-			shellName = "cmd.exe"
-			shellOptions = []string{"/C"}
+			ShellName = "cmd.exe"
+			ShellOptions = []string{"/C"}
 		}
 		return
 	case "darwin":
-		operatingSystem = "MacOS"
+		OperatingSystem = "MacOS"
 	case "linux":
 		result, err := exec.Command("lsb_release", "-si").Output()
 		distro := strings.TrimSpace(string(result))
 		if err != nil {
 			distro = ""
 		}
-		operatingSystem = "Linux" + "/" + distro
+		OperatingSystem = "Linux" + "/" + distro
 	default:
-		operatingSystem = runtime.GOOS
+		OperatingSystem = runtime.GOOS
 	}
 
 	// Identify shell
 	shellEnv := os.Getenv("SHELL")
 	if shellEnv != "" {
-		shellName = shellEnv
+		ShellName = shellEnv
 	} else {
 		_, err := exec.LookPath("bash")
 		if err != nil {
-			shellName = "/bin/sh"
+			ShellName = "/bin/sh"
 		} else {
-			shellName = "bash"
+			ShellName = "bash"
 		}
 	}
-	shellOptions = []string{"-c"}
+	ShellOptions = []string{"-c"}
 }
 
 // shellCommand first sets the global variables getCommand uses, then it creates a prompt to generate a command and then it passes that to getCommand
 func ShellCommand(input string, params structs.Params, extraOptions structs.ExtraOptions) {
 	SetShellAndOSVars()
-	shellPrompt := fmt.Sprintf("Your role: Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. Do not provide any description. If you need to store any data, assume it will be stored in the chat. Provide only %s command for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:", shellName, operatingSystem, input)
+	shellPrompt := fmt.Sprintf("Your role: Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. Do not provide any description. If you need to store any data, assume it will be stored in the chat. Provide only %s command for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:", ShellName, OperatingSystem, input)
 	GetCommand(shellPrompt, params, extraOptions)
 }
 
@@ -456,6 +456,167 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 
 }
 
+// handle response for interactive shell mode
+func HandleEachPartInteractiveShell(resp *http.Response, input string, params structs.Params) string {
+	scanner := bufio.NewScanner(resp.Body)
+
+	// Variables for formatting
+	count := 0
+	isCode := false
+	isGreen := false
+	tickCount := 0
+	previousWasTick := false
+	isTick := false
+	isRealCode := false
+
+	lineLength := 0
+	size, termwidthErr := ts.GetSize()
+	termWidth := size.Col()
+
+	fullText := ""
+	// Buffer for incomplete XML tags
+	var xmlBuffer strings.Builder
+	// Track if inside XML tag
+	inXMLTag := false
+
+	for scanner.Scan() {
+		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
+		if len(mainText) < 1 {
+			continue
+		}
+
+		// Process stream, separating XML tags from natural language/code blocks
+		for _, char := range mainText {
+			word := string(char)
+			fullText += word
+			if char == '<' && !inXMLTag {
+				// Start new XML tag
+				inXMLTag = true
+				xmlBuffer.WriteRune(char)
+			} else if char == '>' && inXMLTag {
+				// Possibly end tag part
+				xmlBuffer.WriteRune(char)
+				currentBuffer := xmlBuffer.String()
+				if strings.HasPrefix(currentBuffer, "<cmd>") && strings.HasSuffix(currentBuffer, "</cmd>") {
+					xmlBuffer.Reset()
+					inXMLTag = false
+				}
+			} else if inXMLTag {
+				// Inside XML tag, continue buffering
+				xmlBuffer.WriteRune(char)
+			} else {
+				// Original formatting logic
+				if count <= 0 {
+					wordLength := len([]rune(word))
+					if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
+						fmt.Print("\n")
+						lineLength = 0
+					}
+					lineLength += wordLength
+
+					// Handle code blocks and colors
+					if word == "`" {
+						tickCount++
+						isTick = true
+						if tickCount == 2 && !previousWasTick {
+							tickCount = 0
+						} else if tickCount == 6 {
+							tickCount = 0
+						}
+						previousWasTick = true
+						isGreen = false
+						isCode = false
+					} else {
+						isTick = false
+						switch tickCount {
+						case 1:
+							isGreen = true
+						case 3:
+							isCode = true
+						}
+						previousWasTick = false
+					}
+
+					if isCode {
+						codeText.Print(word)
+					} else if isGreen {
+						boldBlue.Print(word)
+					} else if !isTick {
+						fmt.Print(word)
+					}
+				} else {
+					wordLength := len([]rune(word))
+					if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
+						fmt.Print("\n")
+						lineLength = 0
+					}
+					lineLength += wordLength
+
+					if mainText == "``" || mainText == "```" {
+						isRealCode = true
+					} else {
+						isRealCode = false
+					}
+
+					// Handle code blocks and colors
+					if word == "`" {
+						tickCount++
+						isTick = true
+						if tickCount == 2 && !previousWasTick {
+							tickCount = 0
+						} else if tickCount >= 6 && tickCount%2 == 0 && previousWasTick {
+							tickCount = 0
+						}
+						isGreen = false
+						isCode = false
+					} else {
+						if word == "\n" {
+							lineLength = 0
+						}
+						isTick = false
+						if tickCount == 1 {
+							isGreen = true
+						} else if tickCount >= 3 {
+							isCode = true
+						}
+					}
+
+					if isCode {
+						codeText.Print(word)
+					} else if isGreen {
+						boldBlue.Print(word)
+					} else if !isTick {
+						fmt.Print(word)
+					} else {
+						if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
+							fmt.Print(word)
+						}
+					}
+
+					if word == "`" {
+						previousWasTick = true
+					} else {
+						previousWasTick = false
+					}
+				}
+			}
+		}
+		count++
+	}
+
+	// Check for unprocessed XML tag remnants
+	if inXMLTag && xmlBuffer.Len() > 0 {
+		fmt.Fprintf(os.Stderr, "Warning: Incomplete XML tag: %s\n", xmlBuffer.String())
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error occurred:", err)
+		os.Exit(1)
+	}
+
+	return fullText
+}
+
 func printConnectionErrorMsg(err error) {
 	bold.Fprintln(os.Stderr, "\rSome error has occurred. Check your internet connection.")
 	fmt.Fprintln(os.Stderr, "\nError:", err)
@@ -532,6 +693,12 @@ func handleStatus400(resp *http.Response) {
 // }
 
 func ExecuteCommand(shellName string, shellOptions []string, fullLine string) {
+	if runtime.GOOS != "windows" {
+		rawModeOff := exec.Command("stty", "-raw", "echo")
+		rawModeOff.Stdin = os.Stdin
+		_ = rawModeOff.Run()
+		rawModeOff.Wait()
+	}
 	// Directly use the shellName variable set by setShellAndOSVars()
 	cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
 
@@ -570,7 +737,7 @@ func AddToShellHistory(command string) {
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	stopSpin := false
 
-	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive {
+	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell {
 		go Loading(&stopSpin)
 	}
 
@@ -602,7 +769,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 	if extraOptions.IsNormal {
 		// Print the Question
-		if !extraOptions.IsInteractive {
+		if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell {
 			fmt.Print("\r          \r")
 			// bold.Printf("\r%v\n\n", input)
 			bold.Println()
@@ -612,6 +779,9 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		}
 
 		// Handling each part
+		if extraOptions.IsInteractiveShell {
+			return HandleEachPartInteractiveShell(resp, input, params)
+		}
 		return HandleEachPart(resp, input, params)
 	}
 
@@ -655,7 +825,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		if lineCount == 1 {
 			if extraOptions.AutoExec {
 				fmt.Println()
-				ExecuteCommand(shellName, shellOptions, fullText)
+				ExecuteCommand(ShellName, ShellOptions, fullText)
 			} else {
 				bold.Print("\n\nExecute shell command? [y/n]: ")
 				reader := bufio.NewReader(os.Stdin)
@@ -663,7 +833,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 				userInput = strings.TrimSpace(userInput)
 
 				if userInput == "y" || userInput == "" {
-					ExecuteCommand(shellName, shellOptions, fullText)
+					ExecuteCommand(ShellName, ShellOptions, fullText)
 				}
 			}
 		}
@@ -707,6 +877,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Print help message \n", "-h, --help")
 	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
+	fmt.Printf("%-50v Start interactive shell mode \n", "-is, --interactive-shell")
 	fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
 
 	if runtime.GOOS != "windows" {

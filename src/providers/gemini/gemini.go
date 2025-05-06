@@ -34,13 +34,18 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	safeInput, _ := json.Marshal(input)
 
 	dataStr := fmt.Sprintf(`{
+		"systemInstruction": {
+			"parts":[{
+				"text": "%s"
+			}]
+		},
 		"contents": [
 		  %v
 		  { 
 			"role": "user",
 			"parts": [ { "text": %v }]
 		  }
-	]}`, params.PrevMessages, string(safeInput))
+	]}`, params.SystemPrompt, params.PrevMessages, string(safeInput))
 
 	data := strings.NewReader(dataStr)
 

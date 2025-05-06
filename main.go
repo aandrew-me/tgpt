@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"runtime"
 	"strings"
 	"syscall"
@@ -78,7 +79,6 @@ func main() {
 	imgNegative = flag.String("img_negative", "", "Negative prompt. Avoid generating specific elements or characteristics")
 	imgCount = flag.String("img_count", "1", "Number of images you want to generate")
 	imgRatio = flag.String("img_ratio", "1:1", "Image Aspect Ratio")
-	
 
 	defaultUrl := ""
 
@@ -86,7 +86,7 @@ func main() {
 		// ideally default value should be inside openai provider file. To retain existing behavior and avoid braking change default value for openai is set here.
 		defaultUrl = "https://api.openai.com/v1/chat/completions"
 	}
-	
+
 	url = flag.String("url", defaultUrl, "url for openai providers")
 
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
@@ -113,6 +113,9 @@ func main() {
 	isMultiline := flag.Bool("m", false, "Start multi-line interactive mode")
 	flag.BoolVar(isMultiline, "multiline", false, "Start multi-line interactive mode")
 
+	isInteractiveShell := flag.Bool("is", false, "Start shell interactive mode")
+	flag.BoolVar(isInteractiveShell, "interactive-shell", false, "Start shell interactive mode")
+
 	isVersion := flag.Bool("v", false, "Gives response back as a whole text")
 	flag.BoolVar(isVersion, "version", false, "Gives response back as a whole text")
 
@@ -128,28 +131,27 @@ func main() {
 	flag.Parse()
 
 	main_params := structs.Params{
-		ApiKey: *apiKey,
-		ApiModel: *apiModel,
-		Provider: *provider,
-		Temperature: *temperature,
-		Top_p: *top_p,
-		Max_length: *max_length,
-		Preprompt: *preprompt,
-		ThreadID: "",
-		Url: *url,
+		ApiKey:       *apiKey,
+		ApiModel:     *apiModel,
+		Provider:     *provider,
+		Temperature:  *temperature,
+		Top_p:        *top_p,
+		Max_length:   *max_length,
+		Preprompt:    *preprompt,
+		ThreadID:     "",
+		Url:          *url,
 		PrevMessages: "",
 	}
 
-	image_params := structs.ImageParams {
-		ImgRatio: *imgRatio,
+	image_params := structs.ImageParams{
+		ImgRatio:          *imgRatio,
 		ImgNegativePrompt: *imgNegative,
-		ImgCount: *imgCount,
-		Width: *width,
-		Height: *height,
-		Out: *out,
-		Params: main_params,
+		ImgCount:          *imgCount,
+		Width:             *width,
+		Height:            *height,
+		Out:               *out,
+		Params:            main_params,
 	}
-
 
 	prompt := flag.Arg(0)
 
@@ -158,10 +160,10 @@ func main() {
 	contextText := ""
 
 	stat, err := os.Stdin.Stat()
-	
+
 	if err != nil {
 		utils.PrintError(fmt.Sprintf("Error accessing standard input: %v", err))
-		
+
 		return
 	}
 
@@ -174,7 +176,7 @@ func main() {
 
 		if err := scanner.Err(); err != nil {
 			utils.PrintError(fmt.Sprintf("Error reading standard input: %v", err))
-			
+
 			return
 		}
 	}
@@ -213,14 +215,13 @@ func main() {
 		case *isChangelog:
 			helper.GetVersionHistory()
 		case *isImage:
-			
 
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
 					utils.PrintError("You need to provide some text")
 					utils.PrintError(`Example: tgpt -img "cat"`)
-					
+
 					return
 				}
 
@@ -240,7 +241,7 @@ func main() {
 				if len(trimmedPrompt) < 1 {
 					utils.PrintError("You need to provide some text")
 					utils.PrintError(`Example: tgpt -w "What is encryption?"`)
-					
+
 					return
 				}
 				helper.GetWholeText(
@@ -262,14 +263,14 @@ func main() {
 				if len(trimmedPrompt) < 1 {
 					utils.PrintError("You need to provide some text")
 					utils.PrintError(`Example: tgpt -q "What is encryption?"`)
-					
+
 					return
 				}
 				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true},)
+				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
 			}
 		case *isShell:
 			if len(prompt) > 1 {
@@ -277,21 +278,21 @@ func main() {
 				if len(trimmedPrompt) < 1 {
 					utils.PrintError("You need to provide some text")
 					utils.PrintError(`Example: tgpt -s "How to update system"`)
-					
+
 					return
 				}
 				helper.ShellCommand(
-					*preprompt + trimmedPrompt + contextText + pipedInput,
+					*preprompt+trimmedPrompt+contextText+pipedInput,
 					main_params,
 					structs.ExtraOptions{
 						IsGetCommand: true,
-						AutoExec: *shouldExecuteCommand,
+						AutoExec:     *shouldExecuteCommand,
 					},
 				)
 			} else {
 				utils.PrintError("You need to provide some text")
 				utils.PrintError(`Example: tgpt -s "How to update system"`)
-				
+
 				return
 			}
 
@@ -304,13 +305,13 @@ func main() {
 					os.Exit(1)
 				}
 				helper.CodeGenerate(
-					*preprompt + trimmedPrompt + contextText + pipedInput,
+					*preprompt+trimmedPrompt+contextText+pipedInput,
 					main_params,
 				)
 			} else {
 				utils.PrintError("You need to provide some text")
 				utils.PrintError(`Example: tgpt -c "Hello world in Python"`)
-				
+
 				return
 			}
 		case *isUpdate:
@@ -402,7 +403,7 @@ func main() {
 
 				if err != nil {
 					utils.PrintError(err.Error())
-					
+
 					os.Exit(1)
 				}
 				if len(userInput) > 0 {
@@ -424,6 +425,118 @@ func main() {
 
 			}
 
+		case *isInteractiveShell:
+			/////////////////////
+			// shell interactive
+			/////////////////////
+
+			bold.Print("Interactive Shell mode started. Press Ctrl + C or type exit to quit.\n\n")
+			helper.SetShellAndOSVars()
+			promptIs := fmt.Sprintf("You are a powerful terminal assistant. Answer the needs of the user."+
+				"You can execute command in command line if need. Always wrap the command with the xml tag `<cmd>`."+
+				"Only output command when you think user wants to execute a command. Execute only one command in one response."+
+				"The shell environment you are is %s. The operate system you are is %s."+
+				"Examples:"+
+				"User: list the files in my home dir."+
+				"Assistant: Sure. I will list the files under your home dir. <cmd>ls ~</cmd>",
+				helper.ShellName, helper.OperatingSystem,
+			)
+			previousMessages := ""
+			threadID := utils.RandomString(36)
+			history := []string{}
+
+			getAndPrintResponse := func(input string) string {
+				input = strings.TrimSpace(input)
+				if len(input) <= 1 {
+					return ""
+				}
+				if input == "exit" {
+					bold.Println("Exiting...")
+					if runtime.GOOS != "windows" {
+						rawModeOff := exec.Command("stty", "-raw", "echo")
+						rawModeOff.Stdin = os.Stdin
+						_ = rawModeOff.Run()
+						rawModeOff.Wait()
+					}
+					os.Exit(0)
+				}
+				if len(*logFile) > 0 {
+					utils.LogToFile(input, "USER_QUERY", *logFile)
+				}
+				// Use preprompt for first message
+				if previousMessages == "" {
+					input = *preprompt + input
+				}
+
+				main_params.PrevMessages = previousMessages
+				main_params.ThreadID = threadID
+				main_params.SystemPrompt = promptIs
+
+				responseJson, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
+				// Regex to match complete <cmd>...</cmd>
+				commandRegex := regexp.MustCompile(`<cmd>(.*?)</cmd>`)
+				matches := commandRegex.FindStringSubmatch(responseTxt)
+				if len(matches) > 1 {
+					command := strings.TrimSpace(matches[1])
+					// execute command
+					return command
+				}
+				if len(*logFile) > 0 {
+					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
+				}
+				previousMessages += responseJson
+				history = append(history, input)
+				lastResponse = responseTxt
+				return ""
+			}
+
+			execCmd := func(cmd string) {
+				if cmd != "" {
+					if *shouldExecuteCommand {
+						fmt.Println()
+						helper.ExecuteCommand(helper.ShellName, helper.ShellOptions, cmd)
+					} else {
+						bold.Printf("\n\nExecute shell command: `%s` ? [y/n]: ", cmd)
+						userInput := Prompt.Input("", bubbletea.HistoryCompleter,
+							Prompt.OptionPrefixTextColor(Prompt.Blue),
+							Prompt.OptionAddKeyBind(Prompt.KeyBind{
+								Key: Prompt.ControlC,
+								Fn:  exit,
+							}),
+						)
+						userInput = strings.TrimSpace(userInput)
+
+						if userInput == "y" || userInput == "" {
+							helper.ExecuteCommand(helper.ShellName, helper.ShellOptions, cmd)
+						}
+					}
+				}
+			}
+
+			input := strings.TrimSpace(prompt)
+			if len(input) > 1 {
+				// if prompt is passed in interactive mode then send prompt as first message
+				blue.Println("╭─ You")
+				blue.Print("╰─> ")
+				fmt.Println(input)
+				cmd := getAndPrintResponse(input)
+				execCmd(cmd)
+			}
+
+			for {
+				blue.Println("╭─ You")
+				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
+					Prompt.OptionHistory(history),
+					Prompt.OptionPrefixTextColor(Prompt.Blue),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlC,
+						Fn:  exit,
+					}),
+				)
+				cmd := getAndPrintResponse(input)
+				execCmd(cmd)
+			}
+
 		case *isHelp:
 			helper.ShowHelpMessage()
 		default:
@@ -431,7 +544,7 @@ func main() {
 
 			if len(formattedInput) <= 1 {
 				utils.PrintError("You need to write something")
-				
+
 				return
 			}
 
@@ -451,7 +564,6 @@ func main() {
 		helper.GetData(*preprompt+formattedInput+pipedInput, main_params, structs.ExtraOptions{IsInteractive: false})
 	}
 }
-
 
 func exit(_ *Prompt.Buffer) {
 	bold.Println("Exiting...")

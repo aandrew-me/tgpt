@@ -53,6 +53,10 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	baseFormat := `{
 		"frequency_penalty": 0,
 		"messages": [
+			{
+				"content": "%v",
+				"role": "system"
+			},
 			%v
 			{
 				"content": %v,
@@ -74,7 +78,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	`
 
 	// Prepare the arguments for fmt.Sprintf
-	args := []interface{}{params.PrevMessages, string(safeInput), model, temperature}
+	args := []interface{}{params.SystemPrompt, params.PrevMessages, string(safeInput), model, temperature}
 	if includeTopP {
 		args = append(args, top_p)
 	}

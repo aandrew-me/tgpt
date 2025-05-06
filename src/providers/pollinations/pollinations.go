@@ -38,6 +38,10 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	var data = strings.NewReader(fmt.Sprintf(`{
 		"messages": [
+			{
+				"content": "%s",
+				"role": "system"
+			},
 			%v
 			{
 				"content": %v,
@@ -49,7 +53,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		"temperature": %v,
 		"top_p": %v
 	}
-	`, params.PrevMessages, string(safeInput), model, temperature, top_p))
+	`, params.SystemPrompt, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
 	req, err := http.NewRequest("POST", "https://text.pollinations.ai/openai", data)
 	if err != nil {
