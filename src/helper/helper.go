@@ -877,7 +877,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Print help message \n", "-h, --help")
 	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
-	fmt.Printf("%-50v Start interactive shell mode \n", "-is, --interactive-shell")
+	fmt.Printf("%-50v Start interactive shell mode. (Doesn't work with all providers) \n", "-is, --interactive-shell")
 	fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
 
 	if runtime.GOOS != "windows" {
