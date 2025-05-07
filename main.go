@@ -23,7 +23,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const localVersion = "2.9.6"
+const localVersion = "2.10.0"
 
 var bold = color.New(color.Bold)
 var blue = color.New(color.FgBlue)
