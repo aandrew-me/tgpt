@@ -81,8 +81,6 @@ func generateImagePollinations(prompt string, params structs.ImageParams) string
 		height = "1024"
 	}
 
-	fmt.Println(width)
-
 	queryParams.Add("model", model)
 	queryParams.Add("width", width)
 	queryParams.Add("height", height)
@@ -90,6 +88,7 @@ func generateImagePollinations(prompt string, params structs.ImageParams) string
 	queryParams.Add("seed", seed)
 	queryParams.Add("private", "true")
 	queryParams.Add("enhance", "true")
+	queryParams.Add("referrer", "tgpt")
 
 
 	urlObj, err := url_package.Parse(link)
