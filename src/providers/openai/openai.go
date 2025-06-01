@@ -48,7 +48,14 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	safeInput, _ := json.Marshal(input)
 
-	includeTopP := !strings.HasPrefix(model, "o1")
+	prefixesNoTopP := []string{"o1", "o4"}
+	includeTopP := true
+	for _, prefix := range prefixesNoTopP {
+		if strings.HasPrefix(model, prefix) {
+			includeTopP = false
+			break
+		}
+	}
 
 	baseFormat := `{
 		"frequency_penalty": 0,
