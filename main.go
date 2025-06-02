@@ -80,14 +80,7 @@ func main() {
 	imgCount = flag.String("img_count", "1", "Number of images you want to generate")
 	imgRatio = flag.String("img_ratio", "1:1", "Image Aspect Ratio")
 
-	defaultUrl := ""
-
-	if *provider == "openai" {
-		// ideally default value should be inside openai provider file. To retain existing behavior and avoid braking change default value for openai is set here.
-		defaultUrl = "https://api.openai.com/v1/chat/completions"
-	}
-
-	url = flag.String("url", defaultUrl, "url for openai providers")
+	url = flag.String("url", "", "url for openai providers")
 
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
 	shouldExecuteCommand = flag.Bool(("y"), false, "Instantly execute the shell command")

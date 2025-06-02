@@ -19,7 +19,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "gpt-3.5-turbo"
+	model := "gpt-4.1"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	} else if envModel := os.Getenv("OPENAI_MODEL"); envModel != "" {
@@ -36,12 +36,16 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		url = os.Getenv("OPENAI_URL")
 	}
 
-	temperature := "0.5"
+	if (url == "") {
+		url = "https://api.openai.com/v1/chat/completions"
+	}
+
+	temperature := "1"
 	if params.Temperature != "" {
 		temperature = params.Temperature
 	}
 
-	top_p := "0.5"
+	top_p := "1"
 	if params.Top_p != "" {
 		top_p = params.Top_p
 	}
