@@ -52,7 +52,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		"stream": true,
 		"temperature": %v,
 		"top_p": %v,
-		"referrer": "tgpt"
+		"referer": "tgpt"
 	}
 	`, params.SystemPrompt, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
