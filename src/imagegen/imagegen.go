@@ -88,7 +88,7 @@ func generateImagePollinations(prompt string, params structs.ImageParams) string
 	queryParams.Add("seed", seed)
 	queryParams.Add("private", "true")
 	queryParams.Add("enhance", "true")
-	queryParams.Add("referrer", "tgpt")
+	queryParams.Add("referer", "tgpt")
 
 
 	urlObj, err := url_package.Parse(link)
@@ -101,7 +101,7 @@ func generateImagePollinations(prompt string, params structs.ImageParams) string
 
 	req, _ := http.NewRequest("GET", urlObj.String(), nil)
 
-	req.Header.Add("Referrer", "tgpt")
+	req.Header.Add("Referer", "tgpt")
 
 	res, err := client.Do(req)
 
