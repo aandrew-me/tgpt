@@ -150,7 +150,10 @@ func GenerateToken() *TokenResponse {
 	// Set some important headers
 	req.Header.Set("X-Android-Cert", "ADC09FCA89A2CE4D0D139031A2A587FA87EE4155")
 	req.Header.Set("X-Firebase-Gmpid", "1:713239656559:android:f9e37753e9ee7324cb759a")
-	req.Header.Set("X-Firebase-Client", "H4sIAAAAAAAAAKtWykhNLCpJSk0sKVayio7VUSpLLSrOzM9TslIyUqoFAFyivEQfAAAA")
+	req.Header.Set("X-Firebase-Client", "H4sIAAAAAAAA_6tWykhNLCpJSk0sKVayio7VUSpLLSrOzM9TslIyUqoFAFyivEQfAAAA")
+	req.Header.Set("X-Client-Version", "Android/Fallback/X22003001/FirebaseCore-Android")
+	req.Header.Set("User-Agent", "Dalvik/2.1.0 (Linux; U; Android 15;)")
+	req.Header.Set("X-Android-Package", "ai.generated.art.maker.image.picture.photo.generator.painting")
 
 	// Make request
 	client, err := client.NewClient()
@@ -248,6 +251,7 @@ func GetImage(statusId, token string) *StatusResponse {
 	url := "https://img-gen-prod.ai-arta.com/api/v1/text2image/" + statusId + "/status"
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Authorization", token)
+	req.Header.Add("User-Agent", "AiArt/3.23.12 okHttp/4.12.0 Android VANILLA_ICE_CREAM")
 
 	client, err := client.NewClient()
 	if err != nil {
