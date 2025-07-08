@@ -17,6 +17,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/fatih/color"
+	"golang.design/x/clipboard"
 
 	"github.com/olekukonko/ts"
 
@@ -773,6 +774,14 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 				if userInput == "y" || userInput == "" {
 					ExecuteCommand(ShellName, ShellOptions, fullText)
+				} else {
+					err := clipboard.Init()
+
+					if err == nil {
+						clipboard.Write(clipboard.FmtText, []byte(fullText))
+
+						fmt.Println("Copied command to clipboard")
+					}
 				}
 			}
 		}

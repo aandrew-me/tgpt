@@ -1,6 +1,8 @@
 module github.com/aandrew-me/tgpt/v2
 
-go 1.22.1
+go 1.24
+
+toolchain go1.24.2
 
 require (
 	github.com/atotto/clipboard v0.1.4
@@ -12,7 +14,13 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/olekukonko/ts v0.0.0-20171002115256-78ecb04241c0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/mod v0.22.0
+	golang.org/x/mod v0.25.0
+)
+
+require (
+	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
+	golang.org/x/image v0.28.0 // indirect
+	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
 )
 
 require (
@@ -40,10 +48,11 @@ require (
 	github.com/quic-go/quic-go v0.49.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/tam7t/hpkp v0.0.0-20160821193359-2b70b4024ed5 // indirect
+	golang.design/x/clipboard v0.7.1
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
