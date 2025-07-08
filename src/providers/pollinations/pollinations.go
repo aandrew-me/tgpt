@@ -1,8 +1,10 @@
 package pollinations
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -12,6 +14,15 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
 
+type RequestBody struct {
+	Model       string `json:"model"`
+	Referrer     string `json:"referrer"`
+	Stream      bool   `json:"stream"`
+	Messages    []any  `json:"messages"`
+	Temperature string `json:"temperature"`
+	Top_p       string `json:"top_p"`
+}
+
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
@@ -19,51 +30,66 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "openai-large"
+	requestInfo := RequestBody{
+		Model:       "openai",
+		Stream:      true,
+		Referrer:     "tgpt",
+		Temperature: "1",
+		Top_p:       "1",
+	}
+
+	apiKey := params.ApiKey
+
 	if params.ApiModel != "" {
-		model = params.ApiModel
+		requestInfo.Model = params.ApiModel
 	}
 
-	temperature := "0.6"
 	if params.Temperature != "" {
-		temperature = params.Temperature
+		requestInfo.Temperature = params.Temperature
 	}
 
-	top_p := "1"
 	if params.Top_p != "" {
-		top_p = params.Top_p
+		requestInfo.Top_p = params.Top_p
 	}
 
-	safeInput, _ := json.Marshal(input)
-
-	var data = strings.NewReader(fmt.Sprintf(`{
-		"messages": [
-			{
-				"content": "%s",
-				"role": "system"
-			},
-			%v
-			{
-				"content": %v,
-				"role": "user"
-			}
-		],
-		"model": "%v",
-		"stream": true,
-		"temperature": %v,
-		"top_p": %v,
-		"referrer": "tgpt"
+	systemMessage := structs.DefaultMessage{
+		Role:    "system",
+		Content: params.SystemPrompt,
 	}
-	`, params.SystemPrompt, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
-	req, err := http.NewRequest("POST", "https://text.pollinations.ai/openai", data)
+	mainMessage := structs.DefaultMessage{
+		Role:    "user",
+		Content: input,
+	}
+
+	messages := []any{systemMessage}
+
+	if len(params.PrevMessages) > 0 {
+		messages = append(messages, params.PrevMessages...)
+	}
+
+	messages = append(messages, mainMessage)
+
+	requestInfo.Messages = messages
+
+	jsonRequest, err := json.Marshal(requestInfo)
+	
 	if err != nil {
-		fmt.Println("\nSome error has occurred.")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		log.Fatal("Failed to build user request")
+
+	}
+
+	req, err := http.NewRequest("POST", "https://text.pollinations.ai/openai", bytes.NewBuffer(jsonRequest))
+
+	if err != nil {
+		log.Fatal("Some error has occured.\nError:", err)
 	}
 	// Setting all the required headers
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+
+	if apiKey != "" {
+		req.Header.Add("Authorization", "Bearer " + apiKey)
+	}
 
 	// Return response
 	return (client.Do(req))

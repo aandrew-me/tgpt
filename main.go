@@ -39,7 +39,6 @@ func main() {
 	var apiKey *string
 	var temperature *string
 	var top_p *string
-	var max_length *string
 	var preprompt *string
 	var url *string
 	var logFile *string
@@ -65,11 +64,10 @@ func main() {
 	args := os.Args
 
 	apiModel = flag.String("model", "", "Choose which model to use")
-	provider = flag.String("provider", os.Getenv("AI_PROVIDER"), "Choose which provider to use")
+	provider = flag.String("provider", "", "Choose which provider to use")
 	apiKey = flag.String("key", os.Getenv("AI_API_KEY"), "Use personal API Key")
 	temperature = flag.String("temperature", "", "Set temperature")
 	top_p = flag.String("top_p", "", "Set top_p")
-	max_length = flag.String("max_length", "", "Set max length of response")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
 
 	out = flag.String("out", "", "Output file path")
@@ -123,17 +121,26 @@ func main() {
 
 	flag.Parse()
 
+	final_provider := *provider
+
+	if *provider == "" {
+		if *isImage {
+			final_provider = os.Getenv("IMG_PROVIDER")
+		} else {
+			final_provider = os.Getenv("AI_PROVIDER")
+		}
+	}
+
 	main_params := structs.Params{
 		ApiKey:       *apiKey,
 		ApiModel:     *apiModel,
-		Provider:     *provider,
+		Provider:     final_provider,
 		Temperature:  *temperature,
 		Top_p:        *top_p,
-		Max_length:   *max_length,
 		Preprompt:    *preprompt,
 		ThreadID:     "",
 		Url:          *url,
-		PrevMessages: "",
+		PrevMessages: []any{},
 	}
 
 	image_params := structs.ImageParams{
@@ -250,21 +257,6 @@ func main() {
 					main_params,
 				)
 			}
-		case *isQuiet:
-			if len(prompt) > 1 {
-				trimmedPrompt := strings.TrimSpace(prompt)
-				if len(trimmedPrompt) < 1 {
-					utils.PrintError("You need to provide some text")
-					utils.PrintError(`Example: tgpt -q "What is encryption?"`)
-
-					return
-				}
-				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
-			} else {
-				formattedInput := bubbletea.GetFormattedInputStdin()
-				fmt.Println()
-				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
-			}
 		case *isShell:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
@@ -280,6 +272,7 @@ func main() {
 					structs.ExtraOptions{
 						IsGetCommand: true,
 						AutoExec:     *shouldExecuteCommand,
+						IsGetSilent:  *isQuiet,
 					},
 				)
 			} else {
@@ -300,6 +293,10 @@ func main() {
 				helper.CodeGenerate(
 					*preprompt+trimmedPrompt+contextText+pipedInput,
 					main_params,
+					structs.ExtraOptions{
+						IsGetCode:   true,
+						IsGetSilent: *isQuiet,
+					},
 				)
 			} else {
 				utils.PrintError("You need to provide some text")
@@ -316,7 +313,8 @@ func main() {
 
 			bold.Print("Interactive mode started. Press Ctrl + C or type exit to quit.\n\n")
 
-			previousMessages := ""
+			var previousMessages []interface{}
+
 			threadID := utils.RandomString(36)
 			history := []string{}
 
@@ -339,18 +337,18 @@ func main() {
 					utils.LogToFile(input, "USER_QUERY", *logFile)
 				}
 				// Use preprompt for first message
-				if previousMessages == "" {
+				if len(previousMessages) == 0 {
 					input = *preprompt + input
 				}
 
-				main_params.PrevMessages = previousMessages
+				main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 				main_params.ThreadID = threadID
 
-				responseJson, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 				}
-				previousMessages += responseJson
+				previousMessages = append(previousMessages, responseObjects...)
 				history = append(history, input)
 				lastResponse = responseTxt
 
@@ -369,7 +367,7 @@ func main() {
 				blue.Println("╭─ You")
 				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
 					Prompt.OptionHistory(history),
-					Prompt.OptionPrefixTextColor(Prompt.Blue),
+					Prompt.OptionPrefixTextColor(Prompt.DarkBlue),
 					Prompt.OptionAddKeyBind(Prompt.KeyBind{
 						Key: Prompt.ControlC,
 						Fn:  exit,
@@ -386,7 +384,8 @@ func main() {
 
 			fmt.Print("\nPress Ctrl + D to submit, Ctrl + C to exit, Esc to unfocus, i to focus. When unfocused, press p to paste, c to copy response, b to copy last code block in response\n")
 
-			previousMessages := ""
+			var previousMessages []any
+
 			threadID := utils.RandomString(36)
 
 			for programLoop {
@@ -404,11 +403,11 @@ func main() {
 						utils.LogToFile(userInput, "USER_QUERY", *logFile)
 					}
 
-					main_params.PrevMessages = previousMessages
+					main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 					main_params.ThreadID = threadID
 
-					responseJson, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true})
-					previousMessages += responseJson
+					responseObjects, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+					previousMessages = append(previousMessages, responseObjects...)
 					lastResponse = responseTxt
 
 					if len(*logFile) > 0 {
@@ -434,7 +433,8 @@ func main() {
 				"Assistant: Sure. I will list the files under your home dir. <cmd>ls ~</cmd>",
 				helper.ShellName, helper.OperatingSystem,
 			)
-			previousMessages := ""
+			var previousMessages []any
+
 			threadID := utils.RandomString(36)
 			history := []string{}
 
@@ -457,7 +457,7 @@ func main() {
 					utils.LogToFile(input, "USER_QUERY", *logFile)
 				}
 				// Use preprompt for first message
-				if previousMessages == "" {
+				if len(previousMessages) == 0 {
 					input = *preprompt + input
 				}
 
@@ -465,7 +465,7 @@ func main() {
 				main_params.ThreadID = threadID
 				main_params.SystemPrompt = promptIs
 
-				responseJson, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
 				// Regex to match complete <cmd>...</cmd>
 				commandRegex := regexp.MustCompile(`<cmd>(.*?)</cmd>`)
 				matches := commandRegex.FindStringSubmatch(responseTxt)
@@ -477,7 +477,7 @@ func main() {
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 				}
-				previousMessages += responseJson
+				previousMessages = append(previousMessages, responseObjects...)
 				history = append(history, input)
 				lastResponse = responseTxt
 				return ""
@@ -532,6 +532,21 @@ func main() {
 
 		case *isHelp:
 			helper.ShowHelpMessage()
+		case *isQuiet:
+			if len(prompt) > 1 {
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -q "What is encryption?"`)
+
+					return
+				}
+				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+			} else {
+				formattedInput := bubbletea.GetFormattedInputStdin()
+				fmt.Println()
+				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+			}
 		default:
 			formattedInput := strings.TrimSpace(prompt)
 

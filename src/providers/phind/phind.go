@@ -1,8 +1,10 @@
 package phind
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -12,58 +14,66 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
 
+type Message struct {
+	Content string `json:"content"`
+	Role    string `json:"role"`
+}
+type RequestBody struct {
+	AdditionalExtensionContext string `json:"additional_extension_context"`
+	AllowMagicButtons          bool   `json:"allow_magic_buttons"`
+	IsVSCodeExtension          bool   `json:"is_vscode_extension"`
+	MessageHistory             []any  `json:"message_history"`
+	RequestedModel             string `json:"requested_model"`
+	UserInput                  string `json:"user_input"`
+}
+
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
 
 	model := "Phind-70B"
+
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}
 
-	// preprompt := "You are a helpful assistant"
-
-	// if params.Preprompt != "" {
-	// 	preprompt = params.Preprompt
-	// }
-
-	// finalPreprompt := fmt.Sprintf(`
-	// {
-	// 	"content": "%v",
-	// 	"role": "system"
-	// },
-	// `, preprompt)
-
-	safeInput, _ := json.Marshal(input)
-
-	var data = strings.NewReader(fmt.Sprintf(`{
-		"additional_extension_context": "",
-		"allow_magic_buttons": true,
-		"is_vscode_extension": true,
-		"message_history": [
-			{
-				"content": "%s",
-				"role": "system"
+	requestInfo := RequestBody{
+		AdditionalExtensionContext: "",
+		AllowMagicButtons:          true,
+		IsVSCodeExtension:          true,
+		RequestedModel:             model,
+		UserInput:                  input,
+		MessageHistory: []any{
+			structs.DefaultMessage{
+				Content: params.SystemPrompt,
+				Role:    "system",
 			},
-			%v
-			{
-				"content": %v,
-				"role": "user"
-			}
-		],
-		"requested_model": "%v",
-		"user_input": %v
+		},
 	}
-	`, params.SystemPrompt, params.PrevMessages, string(safeInput), model, string(safeInput)))
 
-	req, err := http.NewRequest("POST", "https://https.extension.phind.com/agent/", data)
+	if len(params.PrevMessages) > 0 {
+		requestInfo.MessageHistory = append(requestInfo.MessageHistory, params.PrevMessages...)
+	}
+
+	requestInfo.MessageHistory = append(requestInfo.MessageHistory, structs.DefaultMessage{
+		Role:    "user",
+		Content: input,
+	})
+
+	jsonRequest, err := json.Marshal(requestInfo)
+
 	if err != nil {
-		fmt.Println("\nSome error has occurred.")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		log.Fatal("Failed to build user request")
+	}
+
+	req, err := http.NewRequest("POST", "https://https.extension.phind.com/agent/", bytes.NewBuffer(jsonRequest))
+
+	if err != nil {
+		log.Fatal("Some error has occured.\nError:", err)
 	}
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
@@ -77,6 +87,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
+
 	if len(line) > 1 {
 		parts := strings.Split(line, "data: ")
 		if len(parts) > 1 {
@@ -85,6 +96,7 @@ func GetMainText(line string) (mainText string) {
 	}
 
 	var d structs.CommonResponse
+
 	if err := json.Unmarshal([]byte(obj), &d); err != nil {
 		return ""
 	}
@@ -93,5 +105,6 @@ func GetMainText(line string) (mainText string) {
 		mainText = d.Choices[0].Delta.Content
 		return mainText
 	}
+	
 	return ""
 }

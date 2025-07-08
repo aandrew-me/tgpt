@@ -254,12 +254,14 @@ func GetImage(statusId, token string) *StatusResponse {
 	req.Header.Add("User-Agent", "AiArt/3.23.12 okHttp/4.12.0 Android VANILLA_ICE_CREAM")
 
 	client, err := client.NewClient()
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
 	resp, err := client.Do(req)
+
 	if err != nil {
 		panic(err)
 	}
@@ -267,6 +269,7 @@ func GetImage(statusId, token string) *StatusResponse {
 
 	var data StatusResponse
 	var body []byte
+
 	if body, err = io.ReadAll(resp.Body); err != nil {
 		panic(err)
 	}
@@ -300,6 +303,7 @@ func Main(prompt string, params structs.ImageParams, isQuite bool) {
 
 	for {
 		status := GetImage(generator.RecordID, token)
+
 		if status.Status != "DONE" {
 			time.Sleep(5 * time.Second)
 			continue
@@ -320,7 +324,6 @@ func Main(prompt string, params structs.ImageParams, isQuite bool) {
 						utils.DownloadImage(images[i].URL, ".")
 					}
 				}
-
 			}
 
 			return
