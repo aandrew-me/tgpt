@@ -64,7 +64,7 @@ func main() {
 	args := os.Args
 
 	apiModel = flag.String("model", "", "Choose which model to use")
-	provider = flag.String("provider", os.Getenv("AI_PROVIDER"), "Choose which provider to use")
+	provider = flag.String("provider", "", "Choose which provider to use")
 	apiKey = flag.String("key", os.Getenv("AI_API_KEY"), "Use personal API Key")
 	temperature = flag.String("temperature", "", "Set temperature")
 	top_p = flag.String("top_p", "", "Set top_p")
@@ -121,10 +121,20 @@ func main() {
 
 	flag.Parse()
 
+	final_provider := *provider
+
+	if *provider == "" {
+		if *isImage {
+			final_provider = os.Getenv("IMG_PROVIDER")
+		} else {
+			final_provider = os.Getenv("AI_PROVIDER")
+		}
+	}
+
 	main_params := structs.Params{
 		ApiKey:       *apiKey,
 		ApiModel:     *apiModel,
-		Provider:     *provider,
+		Provider:     final_provider,
 		Temperature:  *temperature,
 		Top_p:        *top_p,
 		Preprompt:    *preprompt,
@@ -522,7 +532,7 @@ func main() {
 
 		case *isHelp:
 			helper.ShowHelpMessage()
-				case *isQuiet:
+		case *isQuiet:
 			if len(prompt) > 1 {
 				trimmedPrompt := strings.TrimSpace(prompt)
 				if len(trimmedPrompt) < 1 {
