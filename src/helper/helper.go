@@ -799,7 +799,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
 	fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
 	fmt.Printf("%-50v Generate images from text\n", "-img, --image")
-	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER)\n", "--provider")
+	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER for chat and IMG_PROVIDER for image gen.)\n", "--provider")
 
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
