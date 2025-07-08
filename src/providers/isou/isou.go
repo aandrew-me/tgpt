@@ -17,12 +17,14 @@ import (
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
 
 	model := "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+	
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}
@@ -46,11 +48,13 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	link := fmt.Sprintf("https://isou.chat/api/search?q=%v", query)
 
 	req, err := http.NewRequest("POST", link, data)
+
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
 		os.Exit(0)
 	}
+
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Accept", "*/*")
@@ -66,6 +70,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
+
 	if len(line) > 1 {
 		parts := strings.SplitN(line, "data:", 2)
 		if len(parts) > 1 {
@@ -90,11 +95,13 @@ func GetMainText(line string) (mainText string) {
 	}
 
 	var outer OuterData
+
 	if err := json.Unmarshal([]byte(obj), &outer); err != nil {
 		return ""
 	}
 
 	var inner InnerData
+
 	if err := json.Unmarshal([]byte(outer.Data), &inner); err != nil {
 		return ""
 	}

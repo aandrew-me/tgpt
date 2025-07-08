@@ -1,8 +1,10 @@
 package ollama
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -12,6 +14,12 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
 
+type RequestBody struct {
+	Model    string `json:"model"`
+	Stream   bool   `json:"stream"`
+	Messages []any  `json:"messages"`
+}
+
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
@@ -20,55 +28,58 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	model := "mistral"
+
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}
 
-	temperature := "0.5"
-	if params.Temperature != "" {
-		temperature = params.Temperature
+	apiKey := params.ApiKey
+
+	url := params.Url
+
+	if url == "" {
+		url = "http://localhost:11434/v1/chat/completions"
 	}
 
-	top_p := "0.5"
-	if params.Top_p != "" {
-		top_p = params.Top_p
-	}
-
-	safeInput, _ := json.Marshal(input)
-
-	var data = strings.NewReader(fmt.Sprintf(`{
-		"frequency_penalty": 0,
-		"messages": [
-			{
-				"content": "%s",
-				"role": "system"
+	requestInfo := RequestBody{
+		Model:  model,
+		Stream: true,
+		Messages: []any{
+			structs.DefaultMessage{
+				Content: params.SystemPrompt,
+				Role:    "system",
 			},
-			%v
-			{
-				"content": %v,
-				"role": "user"
-			}
-		],
-		"model": "%v",
-		"presence_penalty": 0,
-		"stream": true,
-		"temperature": %v,
-		"top_p": %v
+		},
 	}
-	`, params.SystemPrompt, params.PrevMessages, string(safeInput), model, temperature, top_p))
 
-	req, err := http.NewRequest("POST", "http://localhost:11434/v1/chat/completions", data)
+	if len(params.PrevMessages) > 0 {
+		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
+	}
+
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+		Role:    "user",
+		Content: input,
+	})
+
+	jsonRequest, err := json.Marshal(requestInfo)
+
 	if err != nil {
-		fmt.Println("\nSome error has occurred.")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		log.Fatal("Failed to build user request")
 	}
-	// Setting all the required headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+params.ApiKey)
 
-	// Return response
-	return (client.Do(req))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonRequest))
+
+	if err != nil {
+		log.Fatal("Some error has occured.\nError:", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	return client.Do(req)
 }
 
 func GetMainText(line string) (mainText string) {

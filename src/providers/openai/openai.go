@@ -1,8 +1,10 @@
 package openai
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -11,6 +13,12 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
+
+type RequestBody struct {
+	Model       string `json:"model"`
+	Stream      bool   `json:"stream"`
+	Messages    []any  `json:"messages"`
+}
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
@@ -40,72 +48,43 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		url = "https://api.openai.com/v1/chat/completions"
 	}
 
-	temperature := "1"
-	if params.Temperature != "" {
-		temperature = params.Temperature
-	}
-
-	top_p := "1"
-	if params.Top_p != "" {
-		top_p = params.Top_p
-	}
-
-	safeInput, _ := json.Marshal(input)
-
-	prefixesNoTopP := []string{"o1", "o4"}
-	includeTopP := true
-	for _, prefix := range prefixesNoTopP {
-		if strings.HasPrefix(model, prefix) {
-			includeTopP = false
-			break
-		}
-	}
-
-	baseFormat := `{
-		"frequency_penalty": 0,
-		"messages": [
-			{
-				"content": "%v",
-				"role": "system"
+	requestInfo := RequestBody{
+		Model:       model,
+		Stream:      true,
+		Messages: []any{
+			structs.DefaultMessage {
+				Content: params.SystemPrompt,
+				Role: "system",
 			},
-			%v
-			{
-				"content": %v,
-				"role": "user"
-			}
-		],
-		"model": "%v",
-		"presence_penalty": 0,
-		"stream": true,
-		"temperature": %v`
-
-	if includeTopP {
-		baseFormat += `,
-		"top_p": %v`
+		},
 	}
 
-	baseFormat += `
-	}
-	`
-
-	// Prepare the arguments for fmt.Sprintf
-	args := []interface{}{params.SystemPrompt, params.PrevMessages, string(safeInput), model, temperature}
-	if includeTopP {
-		args = append(args, top_p)
+	if len(params.PrevMessages) > 0 {
+		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
 	}
 
-	dataStr := fmt.Sprintf(baseFormat, args...)
-	data := strings.NewReader(dataStr)
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage {
+		Role: "user",
+		Content: input,
+	})
 
-	req, err := http.NewRequest("POST", url, data)
+	jsonRequest, err := json.Marshal(requestInfo)
+
 	if err != nil {
-		fmt.Println("\nSome error has occurred.")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		log.Fatal("Failed to build user request")
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonRequest))
+
+	if err != nil {
+		log.Fatal("Some error has occured.\nError:", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer " + apiKey)
+	}
 
 	return client.Do(req)
 }

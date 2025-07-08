@@ -10,7 +10,7 @@ type Params struct {
 	Preprompt    string
 	ThreadID     string
 	Url          string
-	PrevMessages string
+	PrevMessages []any
 	SystemPrompt string
 }
 
@@ -42,4 +42,22 @@ type ImageParams struct {
 	ImgNegativePrompt string
 	ImgRatio          string
 	ImgCount          string
+}
+
+type DefaultMessage struct {
+	Content string `json:"content"`
+	Role    string `json:"role"`
+}
+
+type UserMessagePhind struct {
+	Content  string `json:"content"`
+	Role     string `json:"role"`
+	Metadata string `json:"metadata"`
+}
+
+type AssistantResponsePhind struct {
+	Content  string `json:"content"`
+	Role     string `json:"role"`
+	Metadata string `json:"metadata"`
+	Name     string `json:"name"`
 }

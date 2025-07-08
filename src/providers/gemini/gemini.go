@@ -1,8 +1,10 @@
 package gemini
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -12,6 +14,12 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
 
+type RequestBody struct {
+	Model    string `json:"model"`
+	Stream   bool   `json:"stream"`
+	Messages []any  `json:"messages"`
+}
+
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 	if err != nil {
@@ -20,55 +28,58 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	model := "gemini-2.0-flash"
-	if params.ApiModel == "" {
-		params.ApiModel = model
+
+	if params.ApiModel != "" {
+		model = params.ApiModel
 	}
 
-	if params.Url == "" {
-		params.Url = "https://generativelanguage.googleapis.com/v1beta/models"
+	apiKey := params.ApiKey
+
+	url := params.Url
+
+	if url == "" {
+		url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 	}
 
-	// sending api key as query param could be security concern.
-	url := params.Url + "/" + model + ":streamGenerateContent?alt=sse&key=" + params.ApiKey
-
-	safeInput, _ := json.Marshal(input)
-
-	dataStr := fmt.Sprintf(`{
-		"systemInstruction": {
-			"parts":[{
-				"text": "%s"
-			}]
+	requestInfo := RequestBody{
+		Model:  model,
+		Stream: true,
+		Messages: []any{
+			structs.DefaultMessage{
+				Content: params.SystemPrompt,
+				Role:    "system",
+			},
 		},
-		"contents": [
-		  %v
-		  { 
-			"role": "user",
-			"parts": [ { "text": %v }]
-		  }
-	]}`, params.SystemPrompt, params.PrevMessages, string(safeInput))
+	}
 
-	data := strings.NewReader(dataStr)
+	if len(params.PrevMessages) > 0 {
+		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
+	}
 
-	req, err := http.NewRequest("POST", url, data)
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+		Role:    "user",
+		Content: input,
+	})
+
+	jsonRequest, err := json.Marshal(requestInfo)
+
 	if err != nil {
-		fmt.Println("\nSome error has occurred.")
-		fmt.Println("Error:", err)
-		os.Exit(0)
+		log.Fatal("Failed to build user request")
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonRequest))
+
+	if err != nil {
+		log.Fatal("Some error has occured.\nError:", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	return client.Do(req)
-}
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
 
-type geminiResponse struct {
-	Candidates []struct {
-		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-		} `json:"content"`
-	} `json:"candidates"`
+	return client.Do(req)
 }
 
 func GetMainText(line string) (mainText string) {
@@ -77,25 +88,14 @@ func GetMainText(line string) (mainText string) {
 		obj = strings.Split(line, "data: ")[1]
 	}
 
-	var d geminiResponse
+	var d structs.CommonResponse
 	if err := json.Unmarshal([]byte(obj), &d); err != nil {
 		return ""
 	}
 
-	if len(d.Candidates) > 0 {
-		mainText = d.Candidates[0].Content.Parts[0].Text
+	if len(d.Choices) > 0 {
+		mainText = d.Choices[0].Delta.Content
 		return mainText
 	}
 	return ""
-}
-
-func GetInputResponseJson(input []byte, response []byte) string {
-	return fmt.Sprintf(`{
-			"parts": [{ "text": %v  }],
-			"role": "user"
-		},{
-			"parts": [{ "text": %v  }],
-			"role": "model"
-		},
-		`, string(input), string(response))
 }

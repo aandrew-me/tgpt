@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aandrew-me/tgpt/v2/src/providers/blackboxai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
-	"github.com/aandrew-me/tgpt/v2/src/providers/duckduckgo"
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/providers/groq"
 	"github.com/aandrew-me/tgpt/v2/src/providers/isou"
@@ -20,17 +18,13 @@ import (
 )
 
 var availableProviders = []string{
-	"", "blackboxai", "deepseek", "duckduckgo", "isou", "groq", "koboldai", "ollama", "openai", "phind", "pollinations", "gemini",
+	"", "deepseek", "isou", "groq", "koboldai", "ollama", "openai", "phind", "pollinations", "gemini",
 }
 
 func GetMainText(line string, provider string, input string) string {
 	switch provider {
-	case "blackboxai":
-		return blackboxai.GetMainText(line)
 	case "deepseek":
 		return deepseek.GetMainText(line)
-	case "duckduckgo":
-		return duckduckgo.GetMainText(line)
 	case "isou":
 		return isou.GetMainText((line))
 	case "groq":
@@ -64,12 +58,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	}
 
 	switch params.Provider {
-	case "blackboxai":
-		return blackboxai.NewRequest(input, params)
 	case "deepseek":
 		return deepseek.NewRequest(input, params)
-	case "duckduckgo":
-		return duckduckgo.NewRequest(input, params, params.PrevMessages)
 	case "groq":
 		return groq.NewRequest(input, params)
 	case "isou":

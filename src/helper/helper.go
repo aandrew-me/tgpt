@@ -14,7 +14,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
-	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/fatih/color"
@@ -47,61 +46,63 @@ var boldBlue = color.New(color.Bold, color.FgBlue)
 var boldViolet = color.New(color.Bold, color.FgMagenta)
 var codeText = color.New(color.FgGreen, color.Bold)
 
-func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, string) {
+func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
 	responseTxt := MakeRequestAndGetData(input, params, extraOptions)
-	safeResponse, _ := json.Marshal(responseTxt)
+	// safeResponse, _ := json.Marshal(responseTxt)
 
 	fmt.Print("\n\n")
 
-	safeInput, _ := json.Marshal(input)
-	msgObject := fmt.Sprintf(`{
-		"content": %v,
-		"role": "user"
-	},{
-		"content": %v,
-		"role": "assistant"
-	},
-	`, string(safeInput), string(safeResponse))
+	// safeInput, _ := json.Marshal(input)
+	// msgObject := fmt.Sprintf(`{
+	// 	"content": %v,
+	// 	"role": "user"
+	// },{
+	// 	"content": %v,
+	// 	"role": "assistant"
+	// },
+	// `, string(safeInput), string(safeResponse))
 
-	if params.Provider == "duckduckgo" {
-		safeInput, _ := json.Marshal(input)
-		msgObject = fmt.Sprintf(`{
-			"content": %v,
-			"role": "user"
-		},{
-			"content": %v,
-			"role": "assistant"
+	msgObjectNew := []interface{}{
+		structs.DefaultMessage{
+			Content: input,
+			Role:    "user",
 		},
-		`, string(safeInput), string(safeResponse))
+		structs.DefaultMessage{
+			Content: responseTxt,
+			Role:    "assistant",
+		},
 	}
 
 	if params.Provider == "phind" {
-		safeInput, _ := json.Marshal(input)
-		msgObject = fmt.Sprintf(`{
-		"content": %v,
-		"metadata": {},
-		"role": "user"
-	},{
-		"content": %v,
-		"metadata": {},
-		"role": "assistant",
-		"name": "base"
-	},
-	`, string(safeInput), string(safeResponse))
+	// 	safeInput, _ := json.Marshal(input)
+	// 	msgObject = fmt.Sprintf(`{
+	// 	"content": %v,
+	// 	"metadata": {},
+	// 	"role": "user"
+	// },{
+	// 	"content": %v,
+	// 	"metadata": {},
+	// 	"role": "assistant",
+	// 	"name": "base"
+	// },
+	// `, string(safeInput), string(safeResponse))
+
+		msgObjectNew = []interface{}{
+			structs.UserMessagePhind{
+				Content:  input,
+				Role:     "user",
+				Metadata: "{}",
+			},
+			structs.AssistantResponsePhind{
+				Content:  responseTxt,
+				Role:     "assistant",
+				Metadata: "{}",
+				Name:     "base",
+			},
+		}
 	}
 
-	if params.Provider == "llama2" {
-		input := string(safeInput)[1 : len(string(safeInput))-1]
-		response := string(safeResponse)[1 : len(string(safeResponse))-1]
-
-		msgObject = fmt.Sprintf(`<s>[INST] %v [/INST] %v </s>`, input, response)
-	}
-
-	if params.Provider == "gemini" {
-		return gemini.GetInputResponseJson(safeInput, safeResponse), responseTxt
-	}
-
-	return msgObject, responseTxt
+	return msgObjectNew, responseTxt
 }
 
 func Loading(stop *bool) {
@@ -176,10 +177,10 @@ func Update(localVersion string, executablePath string) {
 	}
 }
 
-func CodeGenerate(input string, params structs.Params) {
+func CodeGenerate(input string, params structs.Params, extraOptions structs.ExtraOptions) {
 	codePrompt := fmt.Sprintf("Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:", input)
 
-	MakeRequestAndGetData(codePrompt, params, structs.ExtraOptions{IsGetCode: true})
+	MakeRequestAndGetData(codePrompt, params, extraOptions)
 }
 
 func SetShellAndOSVars() {
@@ -630,68 +631,6 @@ func handleStatus400(resp *http.Response) {
 	os.Exit(1)
 }
 
-// func generateImageCraiyon(prompt string) {
-// 	bold.Println("Generating images...")
-// 	client, err := client.NewClient()
-// 	if err != nil {
-// 		fmt.Fprintln(os.Stderr, err)
-// 		os.Exit(1)
-// 	}
-
-// 	url := "https://api.craiyon.com/v3"
-
-// 	safeInput, _ := json.Marshal(prompt)
-
-// 	payload := strings.NewReader(fmt.Sprintf(`{
-// 		"prompt": %v,
-// 		"token": null,
-// 		"model": "photo",
-// 		"negative_prompt": "",
-// 		"version": "c4ue22fb7kb6wlac"
-// 	}`, string(safeInput)))
-
-// 	req, _ := http.NewRequest("POST", url, payload)
-
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
-
-// 	res, err := client.Do(req)
-
-// 	if err != nil {
-// 		fmt.Fprint(os.Stderr, "Check your internet connection\n\n")
-// 		fmt.Fprintln(os.Stderr, "Error:", err)
-// 		os.Exit(0)
-// 	}
-
-// 	defer res.Body.Close()
-
-// 	var responseObj ImgResponse
-
-// 	err = json.NewDecoder(res.Body).Decode(&responseObj)
-// 	if err != nil {
-// 		// Handle error
-// 		fmt.Fprintln(os.Stderr, "Error:", err)
-// 		return
-// 	}
-
-// 	imgList := responseObj.Images
-
-// 	fmt.Println("Saving images in current directory in folder:", prompt)
-// 	if _, err := os.Stat(prompt); os.IsNotExist(err) {
-// 		err := os.Mkdir(prompt, 0755)
-// 		if err != nil {
-// 			fmt.Fprintln(os.Stderr, err)
-// 			os.Exit(1)
-// 		}
-// 	}
-
-// 	for i := 0; i < len(imgList); i++ {
-// 		downloadUrl := "https://img.craiyon.com/" + imgList[i]
-// 		downloadImage(downloadUrl, prompt)
-
-// 	}
-// }
-
 func ExecuteCommand(shellName string, shellOptions []string, fullLine string) {
 	if runtime.GOOS != "windows" {
 		rawModeOff := exec.Command("stty", "-raw", "echo")
@@ -857,9 +796,8 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
 	fmt.Printf("%-50v Set OpenAI API endpoint url\n", "--url")
-	fmt.Printf("%-50v Set temperature\n", "--temperature")
-	fmt.Printf("%-50v Set top_p\n", "--top_p")
-	fmt.Printf("%-50v Set max response length\n", "--max_length")
+	// fmt.Printf("%-50v Set temperature\n", "--temperature")
+	// fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")

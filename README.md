@@ -46,7 +46,6 @@ Some additional options can be set. However not all options are supported by all
 --url                                              Set OpenAI API endpoint url
 --temperature                                      Set temperature
 --top_p                                            Set top_p
---max_length                                       Set max response length
 --log                                              Set filepath to log conversation to (For interactive modes)  
 --preprompt                                        Set preprompt
 -y                                                 Execute shell command without confirmation
