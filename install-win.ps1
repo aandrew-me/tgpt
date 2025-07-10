@@ -1,6 +1,6 @@
 # TGPT installer script for Windows OS
 
-# If receiving error "execution of scripts is disabled on this system", open powershell as admin and type next command:
+# If receiving error "execution of scripts is disabled on this system", open powershell as admin and type:
 # Set-ExecutionPolicy RemoteSigned
 
 #Requires -RunAsAdministrator
@@ -14,7 +14,7 @@ $target_dir = 'C:\Program Files\TGPT' # <-- here we wanna store our executable f
 $prog_name = "tgpt.exe" # <-- this is how we wanna call our executable
 
 # Check if system is AMD64 or I386
-if ((Get-WmiObject win32_operatingsystem | select osarchitecture).osarchitecture -eq "64-bit"){
+if ( [System.Environment]::Is64BitOperatingSystem ){
     write "Downloading executable for: 64-bit OS"
     Invoke-WebRequest -URI "https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-amd64.exe" -OutFile "$PWD\$prog_name"
 }
