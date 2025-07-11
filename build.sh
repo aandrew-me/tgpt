@@ -9,21 +9,25 @@ echo "
 "
 
 read -rp "Please choose One [ 0-4 ]: " -n 1 chs
-if [[ "$chs" == "1" ]]; then
+case $chs in
+	1)
 	# For GNU Linux
 	CGO_ENABLED=0 GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-amd64
 	CGO_ENABLED=0 GOARCH=386 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-i386
 	CGO_ENABLED=0 GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-arm64
-elif [[ "$chs" == "2" ]]; then
+	;;
+	2)
 	# For Windows
 	GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-amd64.exe
 	GOOS=windows GOARCH=386 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-i386.exe
 	GOOS=windows GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-arm64.exe
-elif [[ "$chs" == "3" ]]; then
+	;;
+	3)
 	# For MacOS
 	GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-mac-amd64
 	GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-mac-arm64
-elif [[ "$chs" == "4" ]]; then
+	;;
+	4)
 	# For GNU Linux
 	GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-amd64
 	GOARCH=386 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-linux-i386
@@ -37,9 +41,12 @@ elif [[ "$chs" == "4" ]]; then
 	# For MacOS
 	GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-mac-amd64
 	GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./build/tgpt-mac-arm64
-elif [[ "$chs" == "0" ]]; then
+	;;
+	0)
 	exit 0
-else
+	;;
+	*)
 	echo "Invalid Options !"
 	exit 1
-fi
+	;;
+esac
