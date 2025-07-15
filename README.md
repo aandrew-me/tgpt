@@ -9,23 +9,83 @@
 
 tgpt is a cross-platform command-line interface (CLI) tool that allows you to use AI chatbot in your Terminal without requiring API keys. 
 
-<img src="https://github.com/user-attachments/assets/1b554b99-79ca-45b7-87ff-7713b7fd9437" alt="Demo" width="800" height="500">
+<img src="https://github.com/user-attachments/assets/1b554b99-79ca-45b7-87ff-7713b7fd9437" alt="Demo" width="500" height="330">
 
 
 ### Currently available providers: 
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
-- [Isou](https://isou.chat/) (Deepseek-chat with SEARXNG)
-- [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/)  (koboldcpp/HF_SPACE_Tiefighter-13B)
-- [Ollama](https://www.ollama.com/) (Supports many models)
+- [Isou](https://isou.chat/) (Free) (Deepseek-chat with SEARXNG)
+- [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/) (Free) (koboldcpp/HF_SPACE_Tiefighter-13B)
+- [Ollama](https://www.ollama.com/) (Local models) (Supports many models)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
-- [Phind](https://www.phind.com/agent) (Phind Model)
+- [Phind](https://www.phind.com/agent) (Free) (Phind Model)
 - [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))
 - [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-2.0-flash`)
 
 **Image Generation Models**: 
-- Arta
-- Pollinations
+- Arta (Free)
+- Pollinations (Free) ([Models](https://image.pollinations.ai/models))
+
+## Installation ⏬
+
+### Download for GNU/Linux 🐧 or MacOS 🍎
+
+The default download location is `/usr/local/bin`, but you can change it in the command to use a different location. However, make sure the location is added to your PATH environment variable for easy accessibility.
+
+You can download it with the following command:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
+```
+
+If you are using Arch Linux, you can install with pacman:
+
+```bash
+pacman -S tgpt
+```
+
+
+### FreeBSD 😈 
+
+To install the [port](https://www.freshports.org/www/tgpt):
+```
+cd /usr/ports/www/tgpt/ && make install clean
+```
+To install the package, run one of these commands:
+```
+pkg install www/tgpt
+pkg install tgpt
+```
+
+### Install with Go
+You need to [add the Go install directory to your system's shell path](https://go.dev/doc/tutorial/compile-install). 
+
+```bash
+go install github.com/aandrew-me/tgpt/v2@latest
+```
+
+### Windows 🪟
+
+-   **Scoop:** Package installation with [Scoop](https://scoop.sh/) can be done using the following command:
+
+    ```bash
+    scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
+    ```
+- **Chocolatey** 
+    ```bash
+    choco install tgpt
+    ```    
+### From Release
+
+You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
+
+## Updating ⬆️
+If you installed the program with the installation script, you may update it with
+```bash
+tgpt -u
+```
+**It may require admin privileges.**
 
 ## Usage 
 
@@ -120,92 +180,31 @@ tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"
 cat install.sh | tgpt "Explain the code"
 ```
 
-## Installation ⏬
-
-### Download for GNU/Linux 🐧 or MacOS 🍎
-
-The default download location is `/usr/local/bin`, but you can change it in the command to use a different location. However, make sure the location is added to your PATH environment variable for easy accessibility.
-
-You can download it with the following command:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
-```
-
-If you are using Arch Linux, you can install with pacman:
-
-```bash
-pacman -S tgpt
-```
-
-
-### FreeBSD 😈 
-
-To install the [port](https://www.freshports.org/www/tgpt):
-```
-cd /usr/ports/www/tgpt/ && make install clean
-```
-To install the package, run one of these commands:
-```
-pkg install www/tgpt
-pkg install tgpt
-```
-
-### Install with Go
-You need to [add the Go install directory to your system's shell path](https://go.dev/doc/tutorial/compile-install). 
-
-```bash
-go install github.com/aandrew-me/tgpt/v2@latest
-```
-
-### Windows 🪟
-
--   **Scoop:** Package installation with [Scoop](https://scoop.sh/) can be done using the following command:
-
-    ```bash
-    scoop install https://raw.githubusercontent.com/aandrew-me/tgpt/main/tgpt.json
-    ```
-- **Chocolatey** 
-    ```bash
-    choco install tgpt
-    ```    
-
-## Updating ⬆️
-If you installed the program with the installation script, you may update it with
-```bash
-tgpt -u
-```
-**It may require admin privileges.**
 ### Proxy
 
 Support:
 
-1. environment variable
+### 1. Environment variable
 
-http_proxy or HTTP_PROXY with following available formats:
+`http_proxy` or `HTTP_PROXY` with following available formats:
 
 - Http Proxy [ `http://ip:port` ]
 - Http Auth [ `http://user:pass@ip:port` ]
 - Socks5 Proxy [ `socks5://ip:port ]`
 - Socks5 Auth [ `socks5://user:pass@ip:port` ]
 
-2. configuration file
+### 2. Configuration file
 
-file location in the following order:
+Supported file locations:
 
-- ./proxy.txt (in the same directory from where you are executing)
-- ~/.config/tgpt/proxy.txt
+- `./proxy.txt` (in the same directory from where you are executing)
+- `~/.config/tgpt/proxy.txt`
 
 Example:
 
 ```bash
 http://127.0.0.1:8080
 ```
-
-### From Release
-
-You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
-
 
 ## Uninstalling
 If you installed with the install script, you can execute the following command to remove the tgpt executable
