@@ -1,20 +1,12 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
+about: Info about the bug
+title: Bug/Issue report
 labels: ''
 assignees: ''
 
 ---
 
-I am using the latest version - [ ]
+**tgpt version**
 
-**Describe the bug**
-A clear and concise description of what the bug is.
-
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**Bug description**
