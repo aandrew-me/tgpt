@@ -6,6 +6,8 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/aandrew-me/tgpt)](https://github.com/aandrew-me/tgpt/releases/latest)
 ![Arch Linux package](https://img.shields.io/archlinux/v/extra/x86_64/tgpt)
 ![Chocolatey Version](https://img.shields.io/chocolatey/v/tgpt)
+![Homebrew Formula Version](https://img.shields.io/homebrew/v/tgpt)
+
 
 **tgpt** is a Cross-platform Command-Line Interface (CLI) tool that allows you to use AI in your Terminal.
 
@@ -44,7 +46,10 @@ If you are using Arch Linux, you can install with pacman:
 ```bash
 pacman -S tgpt
 ```
-
+#### Install with Homebrew
+```bash
+brew install tgpt
+```
 
 ### FreeBSD 😈 
 
