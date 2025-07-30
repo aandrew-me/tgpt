@@ -865,6 +865,9 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: pollinations")
 	fmt.Println("Completely free, default model is gpt-4o. Supported models: https://text.pollinations.ai/models")
 
+	bold.Println("\nProvider: sky")
+	fmt.Println("Free, uses gpt-4.1-mini model")
+
 	boldBlue.Println("\nImage generation providers:")
 
 	bold.Println("\nProvider: pollinations")
