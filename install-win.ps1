@@ -1,7 +1,7 @@
 # TGPT Installer Script for Windows 10/11
 
 # If you receive "execution of scripts is disabled on this system" error while running this script,
-# In PowerShell (as Administrator) type:
+# Open PowerShell as Administrator and type:
 #   Set-ExecutionPolicy RemoteSigned
 
 # Once you no longer need to run any PowerShell scripts,
@@ -18,7 +18,7 @@ function Check-Command($cmdname){
 $target_dir = 'C:\Program Files\TGPT' # <-- Needed directory for the executable
 $prog_name = "tgpt.exe"               # <-- Needed executable filename
 
-# Check if system is AMD64 or I386
+# Check if system is 64-bit or 32-bit
 if ( [System.Environment]::Is64BitOperatingSystem ){
     write "Downloading executable for: 64-bit OS"
     Invoke-WebRequest -URI "https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-amd64.exe" -OutFile "$PWD\$prog_name"
@@ -40,7 +40,7 @@ Sleep 1
 if ( !( Test-Path -Path $target_dir ) ) {
     New-Item -ItemType Directory -Path $target_dir
 }
-# Remove existing tgpt to install the new version
+# Remove existing TGPT to install the new version
 if ( Test-Path -Path $target_dir\$prog_name -PathType Leaf ){
     Remove-Item $target_dir\$prog_name -force
 }
@@ -92,6 +92,6 @@ $remove_dir = "Remove-Item -Path '$target_dir' -Recurse -Force"
 Sleep 1
 write "To uninstall it, open PowerShell as Admin, and run the following commands:"
 
-write "Delete it:`n$remove_dir"
+write "To Delete it:`n$remove_dir"
 
-write "Remove it from PATH:`n$remove_path"
+write "To Remove it from PATH:`n$remove_path"
