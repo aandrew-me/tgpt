@@ -80,7 +80,14 @@ go install github.com/aandrew-me/tgpt/v2@latest
 - **Chocolatey** 
     ```bash
     choco install tgpt
-    ```    
+    ```
+- Or install with [this script](https://github.com/aandrew-me/tgpt/blob/main/install-win.ps1):
+	
+	Open PowerShell as Administrator and run:
+    ```
+    Set-ExecutionPolicy RemoteSigned; Invoke-WebRequest -URI "https://raw.githubusercontent.com/aandrew-me/tgpt/main/install-win.ps1" -OutFile "$PWD\install-win.ps1"; ./install-win.ps1
+    ```
+  
 ### From Release
 
 You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
