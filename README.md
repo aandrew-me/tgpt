@@ -71,6 +71,17 @@ go install github.com/aandrew-me/tgpt/v2@latest
 ```
 
 ### Windows 🪟
+- #### Installation Script 
+    Open Powershell, copy and paste the command and press Enter to install.
+    ```
+    irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1 | iex
+    ```
+
+    Uninstall with
+    ```
+    iex "& { $(irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1) } -Uninstall"
+    ```
+
 
 -   **Scoop:** Package installation with [Scoop](https://scoop.sh/) can be done using the following command:
 
