@@ -49,19 +49,8 @@ var codeText = color.New(color.FgGreen, color.Bold)
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
 	responseTxt := MakeRequestAndGetData(input, params, extraOptions)
-	// safeResponse, _ := json.Marshal(responseTxt)
 
 	fmt.Print("\n\n")
-
-	// safeInput, _ := json.Marshal(input)
-	// msgObject := fmt.Sprintf(`{
-	// 	"content": %v,
-	// 	"role": "user"
-	// },{
-	// 	"content": %v,
-	// 	"role": "assistant"
-	// },
-	// `, string(safeInput), string(safeResponse))
 
 	msgObjectNew := []interface{}{
 		structs.DefaultMessage{
@@ -75,19 +64,6 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 	}
 
 	if params.Provider == "phind" {
-	// 	safeInput, _ := json.Marshal(input)
-	// 	msgObject = fmt.Sprintf(`{
-	// 	"content": %v,
-	// 	"metadata": {},
-	// 	"role": "user"
-	// },{
-	// 	"content": %v,
-	// 	"metadata": {},
-	// 	"role": "assistant",
-	// 	"name": "base"
-	// },
-	// `, string(safeInput), string(safeResponse))
-
 		msgObjectNew = []interface{}{
 			structs.UserMessagePhind{
 				Content:  input,

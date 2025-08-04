@@ -106,6 +106,7 @@ var Styles = []string{
 	"Flux",
 	"Black Ink",
 	"Epicrealism-xl",
+	"High GPT4o",
 }
 
 var Ratios = []string{"1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "9:21", "21:9"}
