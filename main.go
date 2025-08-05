@@ -345,9 +345,11 @@ func main() {
 				main_params.ThreadID = threadID
 
 				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 				}
+
 				previousMessages = append(previousMessages, responseObjects...)
 				history = append(history, input)
 				lastResponse = responseTxt

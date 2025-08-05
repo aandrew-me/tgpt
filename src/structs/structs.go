@@ -61,3 +61,9 @@ type AssistantResponsePhind struct {
 	Metadata string `json:"metadata"`
 	Name     string `json:"name"`
 }
+
+type KimiResponse struct {
+	Event string `json:"event"`
+	Text string `json:"text"`
+	
+}
