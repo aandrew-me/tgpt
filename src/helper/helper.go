@@ -826,6 +826,9 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")
 
+	bold.Println("\nProvider: kimi")
+	fmt.Println("Free provider with web search, limited context")
+
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
