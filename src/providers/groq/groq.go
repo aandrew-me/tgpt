@@ -99,4 +99,3 @@ func GetMainText(line string) (mainText string) {
 	}
 	return ""
 }
-

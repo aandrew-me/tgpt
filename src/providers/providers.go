@@ -20,7 +20,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "deepseek", "isou","gemini", "groq","kimi", "koboldai", "ollama", "openai", "phind", "pollinations", "sky",
+	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "ollama", "openai", "phind", "pollinations", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {

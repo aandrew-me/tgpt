@@ -115,10 +115,10 @@ func PrintModels() {
 	fmt.Println("Supported models: ")
 
 	for i, style := range Styles {
-		if (i == len(Styles) - 1) {
+		if i == len(Styles)-1 {
 			fmt.Printf("%v\n\n", style)
 		} else {
-			fmt.Print(style+", ")
+			fmt.Print(style + ", ")
 
 		}
 	}
@@ -128,10 +128,10 @@ func PrintRatios() {
 	fmt.Println("Supported ratios: ")
 
 	for i, ratio := range Ratios {
-		if (i == len(Ratios) - 1) {
+		if i == len(Ratios)-1 {
 			fmt.Printf("%v\n", ratio)
 		} else {
-			fmt.Print(ratio+", ")
+			fmt.Print(ratio + ", ")
 
 		}
 	}
@@ -237,7 +237,7 @@ func GenerateImage(imageDescription Image, token string, debug bool) *StatusResp
 
 	if resp.StatusCode != 200 {
 		if len(data.Detail) > 0 {
-			utils.PrintError("Error: "+ data.Detail[0].Msg)
+			utils.PrintError("Error: " + data.Detail[0].Msg)
 		} else {
 			utils.PrintError(string(responseBody))
 		}
@@ -314,7 +314,7 @@ func Main(prompt string, params structs.ImageParams, isQuite bool) {
 				fmt.Printf("%v.Image URL: %v\n", i+1, image.URL)
 			}
 
-			if (!isQuite) {
+			if !isQuite {
 				fmt.Print("\nSave images? [y/n]: ")
 				reader := bufio.NewReader(os.Stdin)
 				userInput, _ := reader.ReadString('\n')

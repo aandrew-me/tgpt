@@ -18,7 +18,7 @@ type Response struct {
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
-	
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(0)

@@ -21,11 +21,11 @@ type model struct {
 
 type errMsg error
 
-var loop* bool
-var userInput* string
-var lastResp* string
+var loop *bool
+var userInput *string
+var lastResp *string
 
-func InitialModel(preprompt* string, programLoop* bool, lastResponse* string, userInputPtr* string) model {
+func InitialModel(preprompt *string, programLoop *bool, lastResponse *string, userInputPtr *string) model {
 	loop = programLoop
 	lastResp = lastResponse
 	userInput = userInputPtr
@@ -141,7 +141,6 @@ func GetFormattedInputStdin() (formattedInput string) {
 	input := scanner.Text()
 	return strings.TrimSpace(input)
 }
-
 
 func HistoryCompleter(d Prompt.Document) []Prompt.Suggest {
 	s := []Prompt.Suggest{}

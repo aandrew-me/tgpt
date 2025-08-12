@@ -64,6 +64,5 @@ type AssistantResponsePhind struct {
 
 type KimiResponse struct {
 	Event string `json:"event"`
-	Text string `json:"text"`
-	
+	Text  string `json:"text"`
 }
