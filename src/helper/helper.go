@@ -811,6 +811,12 @@ func ShowHelpMessage() {
 	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
 	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, pollinations and phind")
 
+	bold.Println("\nProvider: deepseek")
+	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
+
+	bold.Println("\nProvider: groq")
+	fmt.Println("Requires a free API Key. Supported models: https://console.groq.com/docs/models")
+
 	bold.Println("\nProvider: gemini")
 	fmt.Println("Requires a free API key. Recognizes the GEMINI_MODEL environment variable. https://aistudio.google.com/apikey")
 
