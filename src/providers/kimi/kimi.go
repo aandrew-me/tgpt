@@ -16,7 +16,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 )
 
-
 type Extend struct {
 	Sidebar bool `json:"sidebar"`
 }

@@ -16,7 +16,7 @@ import (
 
 type RequestBody struct {
 	Model       string `json:"model"`
-	Referrer     string `json:"referrer"`
+	Referrer    string `json:"referrer"`
 	Stream      bool   `json:"stream"`
 	Messages    []any  `json:"messages"`
 	Temperature string `json:"temperature"`
@@ -33,7 +33,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	requestInfo := RequestBody{
 		Model:       "openai",
 		Stream:      true,
-		Referrer:     "tgpt",
+		Referrer:    "tgpt",
 		Temperature: "1",
 		Top_p:       "1",
 	}
@@ -73,7 +73,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	requestInfo.Messages = messages
 
 	jsonRequest, err := json.Marshal(requestInfo)
-	
+
 	if err != nil {
 		log.Fatal("Failed to build user request")
 
@@ -88,7 +88,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Add("Content-Type", "application/json")
 
 	if apiKey != "" {
-		req.Header.Add("Authorization", "Bearer " + apiKey)
+		req.Header.Add("Authorization", "Bearer "+apiKey)
 	}
 
 	// Return response

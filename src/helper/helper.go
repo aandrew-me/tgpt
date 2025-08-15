@@ -814,14 +814,11 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
 
-	// bold.Println("\nProvider: duckduckgo")
-	// fmt.Println("Available models: o3-mini (default), gpt-4o-mini, meta-llama/Llama-3.3-70B-Instruct-Turbo, mistralai/Mixtral-8x7B-Instruct-v0.1, claude-3-haiku-20240307, mistralai/Mistral-Small-24B-Instruct-2501")
-
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API Key. Supported models: https://console.groq.com/docs/models")
 
 	bold.Println("\nProvider: gemini")
-	fmt.Println("Requires a free API key. https://aistudio.google.com/apikey")
+	fmt.Println("Requires a free API key. Recognizes the GEMINI_MODEL environment variable. https://aistudio.google.com/apikey")
 
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")

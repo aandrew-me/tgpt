@@ -105,6 +105,6 @@ func GetMainText(line string) (mainText string) {
 		mainText = d.Choices[0].Delta.Content
 		return mainText
 	}
-	
+
 	return ""
 }

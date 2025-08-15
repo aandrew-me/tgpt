@@ -15,9 +15,9 @@ import (
 )
 
 type RequestBody struct {
-	Model       string `json:"model"`
-	Stream      bool   `json:"stream"`
-	Messages    []any  `json:"messages"`
+	Model    string `json:"model"`
+	Stream   bool   `json:"stream"`
+	Messages []any  `json:"messages"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -44,17 +44,17 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		url = os.Getenv("OPENAI_URL")
 	}
 
-	if (url == "") {
+	if url == "" {
 		url = "https://api.openai.com/v1/chat/completions"
 	}
 
 	requestInfo := RequestBody{
-		Model:       model,
-		Stream:      true,
+		Model:  model,
+		Stream: true,
 		Messages: []any{
-			structs.DefaultMessage {
+			structs.DefaultMessage{
 				Content: params.SystemPrompt,
-				Role: "system",
+				Role:    "system",
 			},
 		},
 	}
@@ -63,8 +63,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
 	}
 
-	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage {
-		Role: "user",
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+		Role:    "user",
 		Content: input,
 	})
 
@@ -83,7 +83,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	if apiKey != "" {
-		req.Header.Set("Authorization", "Bearer " + apiKey)
+		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}
 
 	return client.Do(req)

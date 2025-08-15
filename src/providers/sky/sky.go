@@ -15,7 +15,7 @@ import (
 )
 
 type RequestBody struct {
-	Messages    []any  `json:"messages"`
+	Messages []any `json:"messages"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -28,24 +28,22 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	url := "https://api.sky.foresko.com/v1/create-chat-completion"
 
 	requestInfo := RequestBody{
-		Messages: []any{
-
-		},
+		Messages: []any{},
 	}
 
 	if len(params.SystemPrompt) > 0 {
-		requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage {
-				Content: params.SystemPrompt,
-				Role: "system",
-			},)
+		requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+			Content: params.SystemPrompt,
+			Role:    "system",
+		})
 	}
 
 	if len(params.PrevMessages) > 0 {
 		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
 	}
 
-	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage {
-		Role: "user",
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+		Role:    "user",
 		Content: input,
 	})
 

@@ -38,7 +38,6 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		apiKey = params.ApiKey
 	}
 
-	
 	url := "https://api.deepseek.com/chat/completions"
 
 	requestInfo := RequestBody{
@@ -99,4 +98,3 @@ func GetMainText(line string) (mainText string) {
 	}
 	return ""
 }
-

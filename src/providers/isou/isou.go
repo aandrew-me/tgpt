@@ -24,7 +24,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	model := "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
-	
+
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	}
@@ -79,15 +79,15 @@ func GetMainText(line string) (mainText string) {
 	}
 
 	type Context struct {
-		Name string `json:"name"`
+		Name   string `json:"name"`
 		Source string `json:"url"`
-		Id int `json:"id"`
+		Id     int    `json:"id"`
 	}
 
 	type InnerData struct {
-		Content string `json:"content"`
-		ReasoningContent string `json:"reasoningContent"`
-		Context *Context `json:"context"`
+		Content          string   `json:"content"`
+		ReasoningContent string   `json:"reasoningContent"`
+		Context          *Context `json:"context"`
 	}
 
 	type OuterData struct {
@@ -117,7 +117,7 @@ func GetMainText(line string) (mainText string) {
 
 	if inner.ReasoningContent != "" {
 		mainText = italic.Sprint(inner.ReasoningContent)
-		
+
 		return mainText
 	}
 
