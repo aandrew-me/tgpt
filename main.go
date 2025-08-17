@@ -487,9 +487,10 @@ func main() {
 
 			execCmd := func(cmd string) {
 				if cmd != "" {
+					var output string
 					if *shouldExecuteCommand {
 						fmt.Println()
-						helper.ExecuteCommand(helper.ShellName, helper.ShellOptions, cmd)
+						output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true)
 					} else {
 						bold.Printf("\n\nExecute shell command: `%s` ? [y/n]: ", cmd)
 						userInput := Prompt.Input("", bubbletea.HistoryCompleter,
@@ -502,8 +503,24 @@ func main() {
 						userInput = strings.TrimSpace(userInput)
 
 						if userInput == "y" || userInput == "" {
-							helper.ExecuteCommand(helper.ShellName, helper.ShellOptions, cmd)
+							output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true)
 						}
+					}
+					
+					// Add command execution to conversation context
+					commandMsg := structs.DefaultMessage{
+						Role:    "user",
+						Content: fmt.Sprintf("Executed command: %s", cmd),
+					}
+					previousMessages = append(previousMessages, commandMsg)
+
+					// Add command output to conversation context only if it's not empty
+					if output != "" {
+						outputMsg := structs.DefaultMessage{
+							Role:    "assistant",
+							Content: fmt.Sprintf("Command output:\n%s", output),
+						}
+						previousMessages = append(previousMessages, outputMsg)
 					}
 				}
 			}
