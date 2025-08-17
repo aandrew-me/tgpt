@@ -30,18 +30,30 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	model := "gpt-4.1"
 	if params.ApiModel != "" {
 		model = params.ApiModel
+	} else if envModel := os.Getenv("CEREBRAS_MODEL"); envModel != "" {
+		model = envModel
 	} else if envModel := os.Getenv("OPENAI_MODEL"); envModel != "" {
 		model = envModel
 	}
 
-	apiKey := os.Getenv("OPENAI_API_KEY")
+	apiKey := ""
 	if params.ApiKey != "" {
 		apiKey = params.ApiKey
+	} else if envKey := os.Getenv("CEREBRAS_API_KEY"); envKey != "" {
+		apiKey = envKey
+	} else if envKey := os.Getenv("OPENAI_API_KEY"); envKey != "" {
+		apiKey = envKey
+	} else if envKey := os.Getenv("AI_API_KEY"); envKey != "" {
+		apiKey = envKey
 	}
 
 	url := params.Url
-	if os.Getenv("OPENAI_URL") != "" {
-		url = os.Getenv("OPENAI_URL")
+	if url == "" {
+		if envUrl := os.Getenv("CEREBRAS_BASE_URL"); envUrl != "" {
+			url = envUrl + "/chat/completions"
+		} else if envUrl := os.Getenv("OPENAI_URL"); envUrl != "" {
+			url = envUrl
+		}
 	}
 
 	if url == "" {
