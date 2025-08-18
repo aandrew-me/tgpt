@@ -608,7 +608,12 @@ func handleStatus400(resp *http.Response) {
 	os.Exit(1)
 }
 
-func ExecuteCommand(shellName string, shellOptions []string, fullLine string) {
+func ExecuteCommand(shellName string, shellOptions []string, fullLine string) string {
+	return ExecuteCommandWithCapture(shellName, shellOptions, fullLine, false)
+}
+
+// ExecuteCommandWithCapture executes a command and optionally captures its output
+func ExecuteCommandWithCapture(shellName string, shellOptions []string, fullLine string, captureOutput bool) string {
 	if runtime.GOOS != "windows" {
 		rawModeOff := exec.Command("stty", "-raw", "echo")
 		rawModeOff.Stdin = os.Stdin
@@ -618,16 +623,34 @@ func ExecuteCommand(shellName string, shellOptions []string, fullLine string) {
 	// Directly use the shellName variable set by setShellAndOSVars()
 	cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
 
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	var result string
+	if captureOutput {
+		// Capture output for context
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			// Include error in output for context
+			result = fmt.Sprintf("Command failed with error: %v\nOutput: %s", err, string(output))
+		} else {
+			result = string(output)
+		}
+		// Show output to user
+		fmt.Print(result)
+	} else {
+		// Original behavior - pipe directly to stdout/stderr
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
 
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		result = ""
 	}
+	
 	AddToShellHistory(fullLine)
+	return result
 }
 
 func AddToShellHistory(command string) {
