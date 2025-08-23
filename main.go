@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
+	"github.com/aandrew-me/tgpt/v2/src/config"
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -131,11 +132,46 @@ func main() {
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
+	profileName := flag.String("profile", "", "Use a configuration profile")
+
+	// Add config CLI subcommand handling before flag parsing
+	if len(os.Args) > 1 && os.Args[1] == "config" {
+		helper.HandleConfigCommand(os.Args[2:])
+		return
+	}
+
 	flag.Parse()
 
-	final_provider := *provider
+	// Load configuration system
+	appConfig, err := config.LoadConfig("")
+	if err != nil {
+		// Non-critical error - continue with defaults if config fails to load
+		if *isVerbose {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to load configuration: %v\n", err)
+		}
+		appConfig = config.GetDefaultConfig()
+	}
 
-	if *provider == "" {
+	// Apply profile if specified
+	if *profileName != "" {
+		if profile, exists := appConfig.Profiles[*profileName]; exists {
+			appConfig.ApplyProfile(profile)
+		} else {
+			utils.PrintError(fmt.Sprintf("Profile '%s' not found in configuration", *profileName))
+			os.Exit(1)
+		}
+	}
+
+	// Resolve effective provider using precedence
+	var final_provider string
+	if *provider != "" {
+		final_provider = *provider
+	} else if *isImage && appConfig.Image.DefaultProvider != "" {
+		final_provider = appConfig.Image.DefaultProvider
+	} else if appConfig.Defaults.Provider != "" {
+		final_provider = appConfig.Defaults.Provider
+	} else {
+		// Fallback to environment variables for backward compatibility
 		if *isImage {
 			final_provider = os.Getenv("IMG_PROVIDER")
 		} else {
@@ -143,15 +179,55 @@ func main() {
 		}
 	}
 
+	// Resolve other configuration values with precedence
+	var effectiveApiKey, effectiveModel, effectiveTemperature, effectiveTopP, effectiveUrl string
+	
+	if *apiKey != "" {
+		effectiveApiKey = *apiKey
+	}
+	if *apiModel != "" {
+		effectiveModel = *apiModel
+	}
+	if *temperature != "" {
+		effectiveTemperature = *temperature
+	}
+	if *top_p != "" {
+		effectiveTopP = *top_p
+	}
+	if *url != "" {
+		effectiveUrl = *url
+	}
+
+	// Get provider-specific configuration if available
+	if providerConfig, exists := appConfig.Providers[final_provider]; exists && final_provider != "" {
+		if effectiveApiKey == "" {
+			effectiveApiKey = providerConfig.APIKey
+		}
+		if effectiveModel == "" {
+			effectiveModel = providerConfig.Model
+		}
+		if effectiveUrl == "" {
+			effectiveUrl = providerConfig.URL
+		}
+	}
+	
+	// Apply configuration defaults if still empty
+	if effectiveTemperature == "" && appConfig.Defaults.Temperature != 0 {
+		effectiveTemperature = fmt.Sprintf("%.1f", appConfig.Defaults.Temperature)
+	}
+	if effectiveTopP == "" && appConfig.Defaults.TopP != 0 {
+		effectiveTopP = fmt.Sprintf("%.1f", appConfig.Defaults.TopP)
+	}
+
 	main_params := structs.Params{
-		ApiKey:       *apiKey,
-		ApiModel:     *apiModel,
+		ApiKey:       effectiveApiKey,
+		ApiModel:     effectiveModel,
 		Provider:     final_provider,
-		Temperature:  *temperature,
-		Top_p:        *top_p,
+		Temperature:  effectiveTemperature,
+		Top_p:        effectiveTopP,
 		Preprompt:    *preprompt,
 		ThreadID:     "",
-		Url:          *url,
+		Url:          effectiveUrl,
 		PrevMessages: []any{},
 	}
 
