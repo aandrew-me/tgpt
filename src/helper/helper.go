@@ -867,7 +867,9 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
 	fmt.Printf("%-50v Start interactive shell mode. (Doesn't work with all providers) \n", "-is, --interactive-shell")
-	fmt.Printf("%-50v Start interactive shell mode with aliases and functions \n", "-a, --alias")
+	fmt.Printf("%-50v Find information using web search \n", "-f, --find")
+	fmt.Printf("%-50v Interactive find mode with web search \n", "-if, --interactive-find")
+	fmt.Printf("%-50v Start interactive shell mode with aliases and functions \n", "-ia, --interactive-alias")
 	fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
 
 	if runtime.GOOS != "windows" {
