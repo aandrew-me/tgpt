@@ -23,6 +23,9 @@ type ExtraOptions struct {
 	IsInteractive      bool
 	IsInteractiveShell bool
 	AutoExec           bool
+	IsFind             bool
+	IsInteractiveFind  bool
+	Verbose            bool
 }
 
 type CommonResponse struct {

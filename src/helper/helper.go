@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -14,7 +15,9 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
+	"github.com/aandrew-me/tgpt/v2/src/search"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
+	"github.com/aandrew-me/tgpt/v2/src/utils"
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/fatih/color"
 	"golang.design/x/clipboard"
@@ -492,9 +495,11 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 				// Possibly end tag part
 				xmlBuffer.WriteRune(char)
 				currentBuffer := xmlBuffer.String()
-				if strings.HasPrefix(currentBuffer, "<cmd>") && strings.HasSuffix(currentBuffer, "</cmd>") {
+				if (strings.HasPrefix(currentBuffer, "<cmd>") && strings.HasSuffix(currentBuffer, "</cmd>")) ||
+					(strings.HasPrefix(currentBuffer, "<search>") && strings.HasSuffix(currentBuffer, "</search>")) {
 					xmlBuffer.Reset()
 					inXMLTag = false
+					// Don't print XML tags - they are processed separately
 				}
 			} else if inXMLTag {
 				// Inside XML tag, continue buffering
@@ -711,7 +716,7 @@ func AddToShellHistory(command string) {
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	stopSpin := false
 
-	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell {
+	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
 		go Loading(&stopSpin)
 	}
 
@@ -743,7 +748,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 	if extraOptions.IsNormal {
 		// Print the Question
-		if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell {
+		if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
 			fmt.Print("\r          \r")
 			// bold.Printf("\r%v\n\n", input)
 			bold.Println()
@@ -755,6 +760,9 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		// Handling each part
 		if extraOptions.IsInteractiveShell {
 			return HandleEachPartInteractiveShell(resp, input, params)
+		}
+		if extraOptions.IsInteractiveFind {
+			return HandleEachPartInteractiveShell(resp, input, params) // Use same formatting as interactive shell
 		}
 		return HandleEachPart(resp, input, params)
 	}
@@ -921,4 +929,162 @@ func ShowHelpMessage() {
 	fmt.Println(`tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
+}
+
+// SearchQuery performs web search and AI synthesis
+func SearchQuery(input string, params structs.Params, extraOptions structs.ExtraOptions, isQuiet bool, logFile string) {
+	if extraOptions.Verbose {
+		fmt.Printf("DEBUG: searchQuery called with input: %s\n", input)
+	}
+
+	// Perform web search with optimization and confirmation
+	// For one-shot find mode (-f), skip confirmation. For interactive find mode (-if), show confirmation
+	skipConfirmation := extraOptions.IsFind && !extraOptions.IsInteractiveFind
+	searchResults, err := search.ProcessSearchWithConfirmation(input, params, extraOptions.Verbose, skipConfirmation, isQuiet)
+	if err != nil {
+		fmt.Printf("Search failed: %v\n", err)
+		return
+	}
+
+	// Handle user cancellation
+	if searchResults == "Search cancelled by user." {
+		fmt.Println(searchResults)
+		return
+	}
+
+	// Process the search results through the AI
+	if len(logFile) > 0 {
+		utils.LogToFile(input, "SEARCH_QUERY", logFile)
+	}
+
+	// Set up the AI request with search results as input
+	searchOptions := structs.ExtraOptions{
+		IsGetSilent: isQuiet,
+		IsGetWhole:  false,
+	}
+
+	// Get AI response
+	response := MakeRequestAndGetData(searchResults, params, searchOptions)
+
+	if len(logFile) > 0 {
+		utils.LogToFile(response, "SEARCH_RESPONSE", logFile)
+	}
+
+	fmt.Print(response)
+}
+
+// InteractiveFindSession handles the interactive web search conversation mode
+func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOptions, logFile string) {
+	var previousMessages []any
+
+	threadID := utils.RandomString(36)
+
+	// System prompt for interactive find mode
+	promptFind := "You are an intelligent search assistant. When a user asks a question that requires current information, web search, or factual lookup, " +
+		"wrap your search intent in XML tags like <search>search query here</search>. " +
+		"For follow-up questions about previous search results, you can reference the context. " +
+		"For general conversation that doesn't need search, respond normally without search tags. " +
+		"Examples:\n" +
+		"User: What's the weather like in Paris today?\n" +
+		"Assistant: <search>current weather Paris France today</search>\n" +
+		"User: Tell me more about the first result\n" +
+		"Assistant: Based on the previous search results, [provide more detail from context]\n" +
+		"User: How are you?\n" +
+		"Assistant: I'm doing well, thank you! How can I help you with finding information today?"
+
+	getAndPrintFindResponse := func(input string) {
+		input = strings.TrimSpace(input)
+		if len(input) <= 1 {
+			return
+		}
+		if input == "exit" {
+			bold.Println("Exiting...")
+			os.Exit(0)
+		}
+
+		if len(logFile) > 0 {
+			utils.LogToFile(input, "USER_QUERY", logFile)
+		}
+
+		// Use preprompt for first message
+		if len(previousMessages) == 0 && len(params.Preprompt) > 0 {
+			input = params.Preprompt + input
+		}
+
+		// Set up conversation context
+		params.PrevMessages = previousMessages
+		params.ThreadID = threadID
+		params.SystemPrompt = promptFind
+
+		// Get AI response (this will print with Bot label)
+		responseObjects, responseTxt := GetData(input, params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true})
+
+		// Check if response contains search intent
+		searchRegex := regexp.MustCompile(`<search>(.*?)</search>`)
+		matches := searchRegex.FindStringSubmatch(responseTxt)
+
+		if len(matches) > 1 {
+			// Search intent detected - the XML was already printed, but now do the search
+			searchQuery := strings.TrimSpace(matches[1])
+			if extraOptions.Verbose {
+				fmt.Printf("DEBUG: Search intent detected: '%s'\n", searchQuery)
+			}
+
+			// Perform the search with confirmation (interactive find mode always shows confirmation)
+			searchResults, err := search.ProcessSearchWithConfirmation(searchQuery, params, extraOptions.Verbose, false, false)
+			if err != nil {
+				fmt.Printf("Search failed: %v\n", err)
+				return
+			}
+
+			// Handle user cancellation
+			if searchResults == "Search cancelled by user." {
+				fmt.Println(searchResults)
+				return
+			}
+
+			// Add search context to conversation
+			searchContextMsg := structs.DefaultMessage{
+				Role:    "system",
+				Content: fmt.Sprintf("Search results for '%s':\n%s", searchQuery, searchResults),
+			}
+			previousMessages = append(previousMessages, searchContextMsg)
+
+			// Update conversation with search context and get final response (this will print with Bot label)
+			params.PrevMessages = previousMessages
+			finalResponseObjects, finalResponseTxt := GetData(fmt.Sprintf("Based on these search results, answer the user's question: %s", input), params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true})
+
+			if len(logFile) > 0 {
+				utils.LogToFile(finalResponseTxt, "ASSISTANT_RESPONSE", logFile)
+			}
+
+			// Update conversation history
+			previousMessages = append(previousMessages, responseObjects...)
+			previousMessages = append(previousMessages, finalResponseObjects...)
+
+		} else {
+			// No search needed, regular conversation - response already printed with Bot label
+			if len(logFile) > 0 {
+				utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", logFile)
+			}
+
+			previousMessages = append(previousMessages, responseObjects...)
+		}
+	}
+
+	// Interactive loop using simple input (avoiding import cycles)
+	for {
+		fmt.Print("🔍 ")
+		boldBlue.Println("╭─ You")
+		fmt.Print("╰─> ")
+		scanner := bufio.NewScanner(os.Stdin)
+		if !scanner.Scan() {
+			break
+		}
+
+		userInput := scanner.Text()
+		if len(userInput) > 0 {
+			getAndPrintFindResponse(userInput)
+		}
+	}
 }

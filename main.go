@@ -107,8 +107,14 @@ func main() {
 	isInteractiveShell := flag.Bool("is", false, "Start shell interactive mode")
 	flag.BoolVar(isInteractiveShell, "interactive-shell", false, "Start shell interactive mode")
 
-	isAliasMode := flag.Bool("a", false, "Start interactive shell mode with aliases and functions")
-	flag.BoolVar(isAliasMode, "alias", false, "Start interactive shell mode with aliases and functions")
+	isFind := flag.Bool("f", false, "Find information using web search")
+	flag.BoolVar(isFind, "find", false, "Find information using web search")
+
+	isInteractiveFind := flag.Bool("if", false, "Interactive find mode with web search")
+	flag.BoolVar(isInteractiveFind, "interactive-find", false, "Interactive find mode with web search")
+
+	isInteractiveAlias := flag.Bool("ia", false, "Start interactive shell mode with aliases and functions")
+	flag.BoolVar(isInteractiveAlias, "interactive-alias", false, "Start interactive shell mode with aliases and functions")
 
 	isVersion := flag.Bool("v", false, "Gives response back as a whole text")
 	flag.BoolVar(isVersion, "version", false, "Gives response back as a whole text")
@@ -121,6 +127,9 @@ func main() {
 
 	isChangelog := flag.Bool("cl", false, "See changelog of versions")
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
+
+	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
+	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
 	flag.Parse()
 
@@ -552,9 +561,49 @@ func main() {
 				execCmd(cmd)
 			}
 
-		case *isAliasMode:
+		case *isFind:
 			/////////////////////
-			// Alias interactive shell mode
+			// Find - One-shot web search
+			/////////////////////
+
+			if len(prompt) > 1 {
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -f "What is the latest news about AI?"`)
+					return
+				}
+
+				extraOptions := structs.ExtraOptions{
+					IsFind:  true,
+					Verbose: *isVerbose,
+				}
+
+				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, *isQuiet, *logFile)
+			} else {
+				utils.PrintError("You need to provide some text")
+				utils.PrintError(`Example: tgpt -f "What is the latest news about AI?"`)
+			}
+
+		case *isInteractiveFind:
+			/////////////////////
+			// Interactive Find - Interactive web search session
+			/////////////////////
+
+			bold.Print("Interactive Find mode started. Press Ctrl + C or type exit to quit.\n\n")
+
+			// Set up interactive find session
+			extraOptions := structs.ExtraOptions{
+				IsInteractiveFind: true,
+				IsFind:            true,
+				Verbose:           *isVerbose,
+			}
+
+			helper.InteractiveFindSession(main_params, extraOptions, *logFile)
+
+		case *isInteractiveAlias:
+			/////////////////////
+			// Interactive Alias - Interactive shell mode with aliases and functions
 			/////////////////////
 
 			bold.Print("Interactive Shell mode with aliases started. Press Ctrl + C or type exit to quit.\n\n")
