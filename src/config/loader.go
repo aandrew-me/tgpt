@@ -8,6 +8,11 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// Helper function to create a pointer to a float64 value
+func floatPtr(f float64) *float64 {
+	return &f
+}
+
 // loadConfigFromFile loads configuration from a TOML file
 func loadConfigFromFile(configPath string) (*Config, error) {
 	// Ensure the config file exists
@@ -122,12 +127,18 @@ func validateConfig(config *Config) error {
 		}
 		
 		// Validate profile temperature and top_p ranges
-		if profile.Temperature < 0 || profile.Temperature > 2 {
-			return fmt.Errorf("profile '%s' temperature must be between 0 and 2, got: %f", profileName, profile.Temperature)
+		if profile.Temperature != nil {
+			temp := *profile.Temperature
+			if temp < 0 || temp > 2 {
+				return fmt.Errorf("profile '%s' temperature must be between 0 and 2, got: %f", profileName, temp)
+			}
 		}
 		
-		if profile.TopP < 0 || profile.TopP > 1 {
-			return fmt.Errorf("profile '%s' top_p must be between 0 and 1, got: %f", profileName, profile.TopP)
+		if profile.TopP != nil {
+			topP := *profile.TopP
+			if topP < 0 || topP > 1 {
+				return fmt.Errorf("profile '%s' top_p must be between 0 and 1, got: %f", profileName, topP)
+			}
 		}
 	}
 	
@@ -197,17 +208,17 @@ func InitConfig(configPath string) error {
 		"quick": {
 			Provider:    "cerebras",
 			Quiet:       true,
-			Temperature: 0.3,
+			Temperature: floatPtr(0.3),
 		},
 		"detailed": {
 			Provider:       "openai",
 			Verbose:        true,
-			Temperature:    0.7,
+			Temperature:    floatPtr(0.7),
 			MarkdownOutput: true,
 		},
 		"coding": {
 			Provider:    "cerebras",
-			Temperature: 0.2,
+			Temperature: floatPtr(0.2),
 		},
 	}
 	

@@ -71,8 +71,8 @@ type ModeConfig struct {
 // ProfileConfig contains profile-specific overrides
 type ProfileConfig struct {
 	Provider        string                 `toml:"provider"`
-	Temperature     float64               `toml:"temperature,omitempty"`
-	TopP           float64               `toml:"top_p,omitempty"`
+	Temperature     *float64              `toml:"temperature,omitempty"`
+	TopP           *float64              `toml:"top_p,omitempty"`
 	Quiet          bool                  `toml:"quiet,omitempty"`
 	Verbose        bool                  `toml:"verbose,omitempty"`
 	MarkdownOutput bool                  `toml:"markdown_output,omitempty"`
@@ -428,7 +428,7 @@ func (c *Config) GetEffectiveProvider(cliProvider string, envProvider string, is
 // GetEffectiveValue returns the effective value for a configuration field
 func (c *Config) GetEffectiveValue(fieldName string, cliValue interface{}, envValue string) interface{} {
 	// 1. CLI flag has highest priority
-	if cliValue != nil && !isEmptyValue(cliValue) {
+	if cliValue != nil && !isEmptyValue(cliValue, fieldName) {
 		return cliValue
 	}
 	
@@ -454,13 +454,17 @@ func (c *Config) GetEffectiveValue(fieldName string, cliValue interface{}, envVa
 }
 
 // Helper functions
-func isEmptyValue(value interface{}) bool {
+func isEmptyValue(value interface{}, fieldName string) bool {
 	switch v := value.(type) {
 	case string:
 		return v == ""
 	case bool:
 		return false // bools are never "empty"
 	case float64:
+		// For temperature and top_p, zero is a valid value and should not be considered empty
+		if fieldName == "temperature" || fieldName == "top_p" {
+			return false
+		}
 		return v == 0
 	case int:
 		return v == 0
@@ -482,12 +486,10 @@ func parseEnvValue(envValue string, fieldName string) interface{} {
 }
 
 func parseFloat64(s string) (float64, error) {
-	// Simple float parsing, could use strconv.ParseFloat for more robust parsing
 	if s == "" {
 		return 0, fmt.Errorf("empty string")
 	}
-	// Placeholder - implement actual parsing
-	return 0.7, nil
+	return strconv.ParseFloat(s, 64)
 }
 
 func (c *Config) getProfileValue(fieldName string) interface{} {
@@ -502,14 +504,16 @@ func (c *Config) getProfileValue(fieldName string) interface{} {
 	
 	switch fieldName {
 	case "provider":
-		return profile.Provider
+		if profile.Provider != "" {
+			return profile.Provider
+		}
 	case "temperature":
-		if profile.Temperature != 0 {
-			return profile.Temperature
+		if profile.Temperature != nil {
+			return *profile.Temperature
 		}
 	case "top_p":
-		if profile.TopP != 0 {
-			return profile.TopP
+		if profile.TopP != nil {
+			return *profile.TopP
 		}
 	case "quiet":
 		return profile.Quiet
@@ -562,11 +566,15 @@ func (c *Config) ApplyProfile(profile ProfileConfig) {
 	if profile.Provider != "" {
 		c.Defaults.Provider = profile.Provider
 	}
-	if profile.Temperature != 0 {
-		c.Defaults.Temperature = profile.Temperature
+	if profile.Temperature != nil {
+		c.Defaults.Temperature = *profile.Temperature
+	}
+	if profile.TopP != nil {
+		c.Defaults.TopP = *profile.TopP
 	}
 	c.Defaults.Quiet = profile.Quiet
 	c.Defaults.Verbose = profile.Verbose
+	c.Defaults.MarkdownOutput = profile.MarkdownOutput
 	
 	// Apply mode-specific settings from profile
 	for modeName, modeConfig := range profile.Modes {
@@ -575,4 +583,218 @@ func (c *Config) ApplyProfile(profile ProfileConfig) {
 		}
 		c.Modes[modeName] = modeConfig
 	}
+}
+
+// ResolvedConfig contains all resolved configuration values with proper precedence
+type ResolvedConfig struct {
+	Provider    string
+	APIKey      string
+	Model       string
+	Temperature string
+	TopP        string
+	URL         string
+	Quiet       bool
+	Verbose     bool
+	Markdown    bool
+}
+
+// ResolveConfig resolves all configuration values using proper precedence logic
+// Returns a ResolvedConfig with all values resolved according to precedence rules
+func (c *Config) ResolveConfig(cliFlags map[string]string, isImage bool) *ResolvedConfig {
+	resolved := &ResolvedConfig{}
+	
+	// 1. Resolve provider first as it affects other fields
+	resolved.Provider = c.resolveProvider(cliFlags["provider"], isImage)
+	
+	// 2. Get provider-specific config if available
+	var providerConfig *ProviderConfig
+	if pc, exists := c.Providers[resolved.Provider]; exists {
+		providerConfig = &pc
+	}
+	
+	// 3. Resolve other configuration values
+	resolved.APIKey = c.resolveString("api_key", cliFlags["key"], providerConfig)
+	resolved.Model = c.resolveString("model", cliFlags["model"], providerConfig)
+	resolved.Temperature = c.resolveFloat("temperature", cliFlags["temperature"])
+	resolved.TopP = c.resolveFloat("top_p", cliFlags["top_p"])
+	resolved.URL = c.resolveString("url", cliFlags["url"], providerConfig)
+	
+	// Boolean flags (these are handled differently as they can have profile/config defaults)
+	resolved.Quiet = c.resolveBool("quiet", cliFlags["quiet"])
+	resolved.Verbose = c.resolveBool("verbose", cliFlags["verbose"])
+	resolved.Markdown = c.resolveBool("markdown_output", cliFlags["markdown_output"])
+	
+	return resolved
+}
+
+// resolveProvider resolves the provider using precedence logic
+func (c *Config) resolveProvider(cliProvider string, isImage bool) string {
+	// 1. CLI flag has highest priority
+	if cliProvider != "" {
+		return cliProvider
+	}
+	
+	// 2. Image-specific default if in image mode
+	if isImage && c.Image.DefaultProvider != "" {
+		return c.Image.DefaultProvider
+	}
+	
+	// 3. Environment variables for backward compatibility
+	envProvider := ""
+	if isImage {
+		envProvider = expandStringVars(os.Getenv("IMG_PROVIDER"))
+	} else {
+		envProvider = expandStringVars(os.Getenv("AI_PROVIDER"))
+	}
+	if envProvider != "" {
+		return envProvider
+	}
+	
+	// 4. Profile override (if profile is set)
+	if c.ProfileName != "" {
+		if profile, exists := c.Profiles[c.ProfileName]; exists && profile.Provider != "" {
+			return profile.Provider
+		}
+	}
+	
+	// 5. Check if any provider is marked as default
+	for name, provider := range c.Providers {
+		if provider.IsDefault {
+			return name
+		}
+	}
+	
+	// 6. Config file default
+	if c.Defaults.Provider != "" {
+		return c.Defaults.Provider
+	}
+	
+	// 7. Built-in default
+	return "phind"
+}
+
+// resolveString resolves string configuration values with precedence
+func (c *Config) resolveString(fieldName string, cliValue string, providerConfig *ProviderConfig) string {
+	// 1. CLI flag
+	if cliValue != "" {
+		return cliValue
+	}
+	
+	// 2. Environment variable
+	envKey := "TGPT_" + strings.ToUpper(strings.Replace(fieldName, "_", "_", -1))
+	if envValue := os.Getenv(envKey); envValue != "" {
+		return expandStringVars(envValue)
+	}
+	
+	// 3. Provider-specific configuration
+	if providerConfig != nil {
+		switch fieldName {
+		case "api_key":
+			if providerConfig.APIKey != "" {
+				return expandStringVars(providerConfig.APIKey)
+			}
+		case "model":
+			if providerConfig.Model != "" {
+				return providerConfig.Model
+			}
+		case "url":
+			if providerConfig.URL != "" {
+				return providerConfig.URL
+			}
+		}
+	}
+	
+	// 4. Profile override
+	if c.ProfileName != "" {
+		if profileValue := c.getProfileValue(fieldName); profileValue != nil {
+			if str, ok := profileValue.(string); ok && str != "" {
+				return str
+			}
+		}
+	}
+	
+	// 5. Config defaults and built-in defaults are not applicable for these string fields
+	return ""
+}
+
+// resolveFloat resolves float configuration values (temperature, top_p)
+func (c *Config) resolveFloat(fieldName string, cliValue string) string {
+	// 1. CLI flag
+	if cliValue != "" {
+		return cliValue
+	}
+	
+	// 2. Environment variable
+	envKey := "TGPT_" + strings.ToUpper(fieldName)
+	if envValue := os.Getenv(envKey); envValue != "" {
+		return envValue
+	}
+	
+	// 3. Profile override
+	if c.ProfileName != "" {
+		if profileValue := c.getProfileValue(fieldName); profileValue != nil {
+			if f, ok := profileValue.(float64); ok {
+				return fmt.Sprintf("%.1f", f)
+			}
+		}
+	}
+	
+	// 4. Config file value (zero is a valid value for temperature and top_p)
+	switch fieldName {
+	case "temperature":
+		return fmt.Sprintf("%.1f", c.Defaults.Temperature)
+	case "top_p":
+		return fmt.Sprintf("%.1f", c.Defaults.TopP)
+	}
+	
+	// 5. Built-in defaults
+	switch fieldName {
+	case "temperature":
+		return "0.7"
+	case "top_p":
+		return "0.9"
+	}
+	
+	return ""
+}
+
+// resolveBool resolves boolean configuration values
+func (c *Config) resolveBool(fieldName string, cliValue string) bool {
+	// 1. CLI flag (if provided, assumes true for boolean flags)
+	if cliValue == "true" || cliValue == "1" {
+		return true
+	}
+	
+	// 2. Environment variable
+	envKey := "TGPT_" + strings.ToUpper(fieldName)
+	if envValue := os.Getenv(envKey); envValue != "" {
+		return envValue == "true" || envValue == "1"
+	}
+	
+	// 3. Profile override
+	if c.ProfileName != "" {
+		if profileValue := c.getProfileValue(fieldName); profileValue != nil {
+			if b, ok := profileValue.(bool); ok {
+				return b
+			}
+		}
+	}
+	
+	// 4. Config file value
+	switch fieldName {
+	case "quiet":
+		return c.Defaults.Quiet
+	case "verbose":
+		return c.Defaults.Verbose
+	case "markdown_output":
+		return c.Defaults.MarkdownOutput
+	}
+	
+	// 5. Built-in default is false for all boolean flags
+	return false
+}
+
+// expandStringVars expands environment variables in config values like ${VAR_NAME}
+func expandStringVars(value string) string {
+	return os.ExpandEnv(value)
 }

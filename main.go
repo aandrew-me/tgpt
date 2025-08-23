@@ -31,6 +31,14 @@ var blue = color.New(color.FgBlue)
 
 var programLoop = true
 
+// getStringValue safely gets the string value from a *string, returning empty string if nil
+func getStringValue(ptr *string) string {
+	if ptr == nil {
+		return ""
+	}
+	return *ptr
+}
+
 func main() {
 	var userInput = ""
 	var lastResponse = ""
@@ -162,62 +170,25 @@ func main() {
 		}
 	}
 
-	// Resolve effective provider using precedence
-	var final_provider string
-	if *provider != "" {
-		final_provider = *provider
-	} else if *isImage && appConfig.Image.DefaultProvider != "" {
-		final_provider = appConfig.Image.DefaultProvider
-	} else if appConfig.Defaults.Provider != "" {
-		final_provider = appConfig.Defaults.Provider
-	} else {
-		// Fallback to environment variables for backward compatibility
-		if *isImage {
-			final_provider = os.Getenv("IMG_PROVIDER")
-		} else {
-			final_provider = os.Getenv("AI_PROVIDER")
-		}
-	}
-
-	// Resolve other configuration values with precedence
-	var effectiveApiKey, effectiveModel, effectiveTemperature, effectiveTopP, effectiveUrl string
-	
-	if *apiKey != "" {
-		effectiveApiKey = *apiKey
-	}
-	if *apiModel != "" {
-		effectiveModel = *apiModel
-	}
-	if *temperature != "" {
-		effectiveTemperature = *temperature
-	}
-	if *top_p != "" {
-		effectiveTopP = *top_p
-	}
-	if *url != "" {
-		effectiveUrl = *url
-	}
-
-	// Get provider-specific configuration if available
-	if providerConfig, exists := appConfig.Providers[final_provider]; exists && final_provider != "" {
-		if effectiveApiKey == "" {
-			effectiveApiKey = providerConfig.APIKey
-		}
-		if effectiveModel == "" {
-			effectiveModel = providerConfig.Model
-		}
-		if effectiveUrl == "" {
-			effectiveUrl = providerConfig.URL
-		}
+	// Resolve configuration values using centralized precedence logic
+	cliFlags := map[string]string{
+		"provider":    getStringValue(provider),
+		"key":         getStringValue(apiKey),
+		"model":       getStringValue(apiModel),
+		"temperature": getStringValue(temperature),
+		"top_p":       getStringValue(top_p),
+		"url":         getStringValue(url),
 	}
 	
-	// Apply configuration defaults if still empty
-	if effectiveTemperature == "" && appConfig.Defaults.Temperature != 0 {
-		effectiveTemperature = fmt.Sprintf("%.1f", appConfig.Defaults.Temperature)
-	}
-	if effectiveTopP == "" && appConfig.Defaults.TopP != 0 {
-		effectiveTopP = fmt.Sprintf("%.1f", appConfig.Defaults.TopP)
-	}
+	resolved := appConfig.ResolveConfig(cliFlags, *isImage)
+	
+	// Use resolved values
+	final_provider := resolved.Provider
+	effectiveApiKey := resolved.APIKey
+	effectiveModel := resolved.Model
+	effectiveTemperature := resolved.Temperature
+	effectiveTopP := resolved.TopP
+	effectiveUrl := resolved.URL
 
 	main_params := structs.Params{
 		ApiKey:       effectiveApiKey,
