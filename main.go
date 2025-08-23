@@ -107,6 +107,15 @@ func main() {
 	isInteractiveShell := flag.Bool("is", false, "Start shell interactive mode")
 	flag.BoolVar(isInteractiveShell, "interactive-shell", false, "Start shell interactive mode")
 
+	isFind := flag.Bool("f", false, "Find information using web search")
+	flag.BoolVar(isFind, "find", false, "Find information using web search")
+
+	isInteractiveFind := flag.Bool("if", false, "Interactive find mode with web search")
+	flag.BoolVar(isInteractiveFind, "interactive-find", false, "Interactive find mode with web search")
+
+	isInteractiveAlias := flag.Bool("ia", false, "Start interactive shell mode with aliases and functions")
+	flag.BoolVar(isInteractiveAlias, "interactive-alias", false, "Start interactive shell mode with aliases and functions")
+
 	isVersion := flag.Bool("v", false, "Gives response back as a whole text")
 	flag.BoolVar(isVersion, "version", false, "Gives response back as a whole text")
 
@@ -118,6 +127,9 @@ func main() {
 
 	isChangelog := flag.Bool("cl", false, "See changelog of versions")
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
+
+	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
+	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
 	flag.Parse()
 
@@ -490,7 +502,7 @@ func main() {
 					var output string
 					if *shouldExecuteCommand {
 						fmt.Println()
-						output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true)
+						output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, false)
 					} else {
 						bold.Printf("\n\nExecute shell command: `%s` ? [y/n]: ", cmd)
 						userInput := Prompt.Input("", bubbletea.HistoryCompleter,
@@ -503,10 +515,10 @@ func main() {
 						userInput = strings.TrimSpace(userInput)
 
 						if userInput == "y" || userInput == "" {
-							output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true)
+							output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, false)
 						}
 					}
-					
+
 					// Add command execution to conversation context
 					commandMsg := structs.DefaultMessage{
 						Role:    "user",
@@ -547,6 +559,177 @@ func main() {
 				)
 				cmd := getAndPrintResponse(input)
 				execCmd(cmd)
+			}
+
+		case *isFind:
+			/////////////////////
+			// Find - One-shot web search
+			/////////////////////
+
+			if len(prompt) > 1 {
+				trimmedPrompt := strings.TrimSpace(prompt)
+				if len(trimmedPrompt) < 1 {
+					utils.PrintError("You need to provide some text")
+					utils.PrintError(`Example: tgpt -f "What is the latest news about AI?"`)
+					return
+				}
+
+				extraOptions := structs.ExtraOptions{
+					IsFind:  true,
+					Verbose: *isVerbose,
+				}
+
+				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, *isQuiet, *logFile)
+			} else {
+				utils.PrintError("You need to provide some text")
+				utils.PrintError(`Example: tgpt -f "What is the latest news about AI?"`)
+			}
+
+		case *isInteractiveFind:
+			/////////////////////
+			// Interactive Find - Interactive web search session
+			/////////////////////
+
+			bold.Print("Interactive Find mode started. Press Ctrl + C or type exit to quit.\n\n")
+
+			// Set up interactive find session
+			extraOptions := structs.ExtraOptions{
+				IsInteractiveFind: true,
+				IsFind:            true,
+				Verbose:           *isVerbose,
+			}
+
+			helper.InteractiveFindSession(main_params, extraOptions, *logFile)
+
+		case *isInteractiveAlias:
+			/////////////////////
+			// Interactive Alias - Interactive shell mode with aliases and functions
+			/////////////////////
+
+			bold.Print("Interactive Shell mode with aliases started. Press Ctrl + C or type exit to quit.\n\n")
+			helper.SetShellAndOSVars()
+			promptAlias := fmt.Sprintf("You are a powerful terminal assistant. Answer the needs of the user."+
+				"You can execute command in command line if need. Always wrap the command with the xml tag `<cmd>`."+
+				"Only output command when you think user wants to execute a command. Execute only one command in one response."+
+				"The shell environment you are is %s. The operate system you are is %s."+
+				"You have access to shell aliases, functions, and environment variables."+
+				"Examples:"+
+				"User: list the files in my home dir."+
+				"Assistant: Sure. I will list the files under your home dir. <cmd>ls ~</cmd>",
+				helper.ShellName, helper.OperatingSystem,
+			)
+			var previousMessages []any
+
+			threadID := utils.RandomString(36)
+			history := []string{}
+
+			getAndPrintResponseAlias := func(input string) string {
+				input = strings.TrimSpace(input)
+				if len(input) <= 1 {
+					return ""
+				}
+				if input == "exit" {
+					bold.Println("Exiting...")
+					if runtime.GOOS != "windows" {
+						rawModeOff := exec.Command("stty", "-raw", "echo")
+						rawModeOff.Stdin = os.Stdin
+						_ = rawModeOff.Run()
+						rawModeOff.Wait()
+					}
+					os.Exit(0)
+				}
+				if len(*logFile) > 0 {
+					utils.LogToFile(input, "USER_QUERY", *logFile)
+				}
+				// Use preprompt for first message
+				if len(previousMessages) == 0 {
+					input = *preprompt + input
+				}
+
+				main_params.PrevMessages = previousMessages
+				main_params.ThreadID = threadID
+				main_params.SystemPrompt = promptAlias
+
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
+				// Regex to match complete <cmd>...</cmd>
+				commandRegex := regexp.MustCompile(`<cmd>(.*?)</cmd>`)
+				matches := commandRegex.FindStringSubmatch(responseTxt)
+				if len(matches) > 1 {
+					command := strings.TrimSpace(matches[1])
+					// execute command with aliases
+					return command
+				}
+				if len(*logFile) > 0 {
+					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
+				}
+				previousMessages = append(previousMessages, responseObjects...)
+				history = append(history, input)
+				lastResponse = responseTxt
+				return ""
+			}
+
+			execCmdAlias := func(cmd string) {
+				if cmd != "" {
+					var output string
+					if *shouldExecuteCommand {
+						fmt.Println()
+						output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, true)
+					} else {
+						bold.Printf("\n\nExecute shell command: `%s` ? [y/n]: ", cmd)
+						userInput := Prompt.Input("", bubbletea.HistoryCompleter,
+							Prompt.OptionPrefixTextColor(Prompt.Blue),
+							Prompt.OptionAddKeyBind(Prompt.KeyBind{
+								Key: Prompt.ControlC,
+								Fn:  exit,
+							}),
+						)
+						userInput = strings.TrimSpace(userInput)
+
+						if userInput == "y" || userInput == "" {
+							output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, true)
+						}
+					}
+
+					// Add command execution to conversation context
+					commandMsg := structs.DefaultMessage{
+						Role:    "user",
+						Content: fmt.Sprintf("Executed command: %s", cmd),
+					}
+					previousMessages = append(previousMessages, commandMsg)
+
+					// Add command output to conversation context only if it's not empty
+					if output != "" {
+						outputMsg := structs.DefaultMessage{
+							Role:    "assistant",
+							Content: fmt.Sprintf("Command output:\n%s", output),
+						}
+						previousMessages = append(previousMessages, outputMsg)
+					}
+				}
+			}
+
+			input := strings.TrimSpace(prompt)
+			if len(input) > 1 {
+				// if prompt is passed in interactive mode then send prompt as first message
+				blue.Println("╭─ You")
+				blue.Print("╰─> ")
+				fmt.Println(input)
+				cmd := getAndPrintResponseAlias(input)
+				execCmdAlias(cmd)
+			}
+
+			for {
+				blue.Println("╭─ You")
+				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
+					Prompt.OptionHistory(history),
+					Prompt.OptionPrefixTextColor(Prompt.Blue),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlC,
+						Fn:  exit,
+					}),
+				)
+				cmd := getAndPrintResponseAlias(input)
+				execCmdAlias(cmd)
 			}
 
 		case *isHelp:
