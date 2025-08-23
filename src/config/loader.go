@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	
+
 	"github.com/BurntSushi/toml"
 )
 
@@ -19,19 +19,19 @@ func loadConfigFromFile(configPath string) (*Config, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("config file does not exist: %s", configPath)
 	}
-	
+
 	// Read the file
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
-	
+
 	// Parse TOML
 	var config Config
 	if err := toml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
-	
+
 	// Initialize maps if they're nil
 	if config.Providers == nil {
 		config.Providers = make(map[string]ProviderConfig)
@@ -42,17 +42,17 @@ func loadConfigFromFile(configPath string) (*Config, error) {
 	if config.Profiles == nil {
 		config.Profiles = make(map[string]ProfileConfig)
 	}
-	
+
 	// Validate the configuration
 	if err := validateConfig(&config); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
-	
+
 	// Expand environment variables in the configuration
 	if err := expandEnvVars(&config); err != nil {
 		return nil, fmt.Errorf("failed to expand environment variables: %w", err)
 	}
-	
+
 	return &config, nil
 }
 
@@ -63,29 +63,29 @@ func SaveConfig(config *Config, configPath string) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
-	
+
 	// Create a temporary file first for atomic write
 	tmpPath := configPath + ".tmp"
-	
+
 	file, err := os.Create(tmpPath)
 	if err != nil {
 		return fmt.Errorf("failed to create temporary config file: %w", err)
 	}
 	defer file.Close()
-	
+
 	// Encode to TOML
 	encoder := toml.NewEncoder(file)
 	if err := encoder.Encode(config); err != nil {
 		os.Remove(tmpPath) // Clean up temp file
 		return fmt.Errorf("failed to encode config to TOML: %w", err)
 	}
-	
+
 	// Atomic rename
 	if err := os.Rename(tmpPath, configPath); err != nil {
 		os.Remove(tmpPath) // Clean up temp file
 		return fmt.Errorf("failed to save config file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -95,25 +95,25 @@ func validateConfig(config *Config) error {
 	if config.Defaults.Temperature < 0 || config.Defaults.Temperature > 2 {
 		return fmt.Errorf("temperature must be between 0 and 2, got: %f", config.Defaults.Temperature)
 	}
-	
+
 	// Validate top_p range
 	if config.Defaults.TopP < 0 || config.Defaults.TopP > 1 {
 		return fmt.Errorf("top_p must be between 0 and 1, got: %f", config.Defaults.TopP)
 	}
-	
+
 	// Validate providers
 	for name, provider := range config.Providers {
 		if provider.Type == "" {
 			return fmt.Errorf("provider '%s' must have a type", name)
 		}
-		
+
 		// Validate supported provider types
 		validTypes := []string{"openai", "gemini", "deepseek", "groq", "ollama", "phind", "kimi", "sky", "isou", "duckduckgo", "koboldai", "pollinations"}
 		if !contains(validTypes, provider.Type) {
 			return fmt.Errorf("provider '%s' has unsupported type '%s'", name, provider.Type)
 		}
 	}
-	
+
 	// Validate profiles reference valid providers
 	for profileName, profile := range config.Profiles {
 		if profile.Provider != "" {
@@ -125,7 +125,7 @@ func validateConfig(config *Config) error {
 				}
 			}
 		}
-		
+
 		// Validate profile temperature and top_p ranges
 		if profile.Temperature != nil {
 			temp := *profile.Temperature
@@ -133,7 +133,7 @@ func validateConfig(config *Config) error {
 				return fmt.Errorf("profile '%s' temperature must be between 0 and 2, got: %f", profileName, temp)
 			}
 		}
-		
+
 		if profile.TopP != nil {
 			topP := *profile.TopP
 			if topP < 0 || topP > 1 {
@@ -141,18 +141,18 @@ func validateConfig(config *Config) error {
 			}
 		}
 	}
-	
+
 	// Validate image settings
 	if config.Image.Width <= 0 || config.Image.Height <= 0 {
 		return fmt.Errorf("image dimensions must be positive")
 	}
-	
+
 	// Validate search provider
 	validSearchProviders := []string{"is-fast", "firecrawl", "google"}
 	if config.Defaults.SearchProvider != "" && !contains(validSearchProviders, config.Defaults.SearchProvider) {
 		return fmt.Errorf("invalid search provider '%s'", config.Defaults.SearchProvider)
 	}
-	
+
 	return nil
 }
 
@@ -172,10 +172,10 @@ func InitConfig(configPath string) error {
 	if _, err := os.Stat(configPath); err == nil {
 		return fmt.Errorf("configuration file already exists: %s", configPath)
 	}
-	
+
 	// Create default config
 	config := GetDefaultConfig()
-	
+
 	// Add example provider configurations
 	config.Providers = map[string]ProviderConfig{
 		"cerebras": {
@@ -202,7 +202,7 @@ func InitConfig(configPath string) error {
 			Model:  "deepseek-reasoner",
 		},
 	}
-	
+
 	// Add example profiles
 	config.Profiles = map[string]ProfileConfig{
 		"quick": {
@@ -221,7 +221,7 @@ func InitConfig(configPath string) error {
 			Temperature: floatPtr(0.2),
 		},
 	}
-	
+
 	// Save the configuration
 	return SaveConfig(config, configPath)
 }

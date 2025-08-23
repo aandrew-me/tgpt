@@ -160,14 +160,15 @@ func main() {
 		appConfig = config.GetDefaultConfig()
 	}
 
-	// Apply profile if specified
+	// Validate profile exists if specified, but don't apply it yet
+	// Let ResolveConfig handle the profile application in correct precedence order
 	if *profileName != "" {
-		if profile, exists := appConfig.Profiles[*profileName]; exists {
-			appConfig.ApplyProfile(profile)
-		} else {
+		if _, exists := appConfig.Profiles[*profileName]; !exists {
 			utils.PrintError(fmt.Sprintf("Profile '%s' not found in configuration", *profileName))
 			os.Exit(1)
 		}
+		// Store profile name for ResolveConfig to use
+		appConfig.ProfileName = *profileName
 	}
 
 	// Resolve configuration values using centralized precedence logic
@@ -179,9 +180,26 @@ func main() {
 		"top_p":       getStringValue(top_p),
 		"url":         getStringValue(url),
 	}
-	
+
+	// Use flag.Visit to detect which boolean flags were explicitly set by the user
+	visitedFlags := make(map[string]bool)
+	flag.Visit(func(f *flag.Flag) {
+		visitedFlags[f.Name] = true
+	})
+
+	// Add boolean flags to cliFlags only if they were explicitly set
+	if visitedFlags["q"] || visitedFlags["quiet"] {
+		cliFlags["quiet"] = "true"
+	}
+	if visitedFlags["vb"] || visitedFlags["verbose"] {
+		cliFlags["verbose"] = "true"
+	}
+	if visitedFlags["w"] || visitedFlags["whole"] {
+		cliFlags["markdown_output"] = "true"
+	}
+
 	resolved := appConfig.ResolveConfig(cliFlags, *isImage)
-	
+
 	// Use resolved values
 	final_provider := resolved.Provider
 	effectiveApiKey := resolved.APIKey
@@ -189,6 +207,8 @@ func main() {
 	effectiveTemperature := resolved.Temperature
 	effectiveTopP := resolved.TopP
 	effectiveUrl := resolved.URL
+	effectiveQuiet := resolved.Quiet
+	effectiveVerbose := resolved.Verbose
 
 	main_params := structs.Params{
 		ApiKey:       effectiveApiKey,
@@ -284,15 +304,15 @@ func main() {
 					return
 				}
 
-				imagegen.GenerateImg(trimmedPrompt, image_params, *isQuiet)
+				imagegen.GenerateImg(trimmedPrompt, image_params, effectiveQuiet)
 
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
-				if !*isQuiet {
+				if !effectiveQuiet {
 					fmt.Println()
 				}
 
-				imagegen.GenerateImg(formattedInput, image_params, *isQuiet)
+				imagegen.GenerateImg(formattedInput, image_params, effectiveQuiet)
 			}
 		case *isWhole:
 			if len(prompt) > 1 {
@@ -331,7 +351,7 @@ func main() {
 					structs.ExtraOptions{
 						IsGetCommand: true,
 						AutoExec:     *shouldExecuteCommand,
-						IsGetSilent:  *isQuiet,
+						IsGetSilent:  effectiveQuiet,
 					},
 				)
 			} else {
@@ -354,7 +374,7 @@ func main() {
 					main_params,
 					structs.ExtraOptions{
 						IsGetCode:   true,
-						IsGetSilent: *isQuiet,
+						IsGetSilent: effectiveQuiet,
 					},
 				)
 			} else {
@@ -403,7 +423,7 @@ func main() {
 				main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 				main_params.ThreadID = threadID
 
-				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: effectiveQuiet})
 
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
@@ -467,7 +487,7 @@ func main() {
 					main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 					main_params.ThreadID = threadID
 
-					responseObjects, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+					responseObjects, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: effectiveQuiet})
 					previousMessages = append(previousMessages, responseObjects...)
 					lastResponse = responseTxt
 
@@ -623,10 +643,10 @@ func main() {
 
 				extraOptions := structs.ExtraOptions{
 					IsFind:  true,
-					Verbose: *isVerbose,
+					Verbose: effectiveVerbose,
 				}
 
-				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, *isQuiet, *logFile)
+				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, effectiveQuiet, *logFile)
 			} else {
 				utils.PrintError("You need to provide some text")
 				utils.PrintError(`Example: tgpt -f "What is the latest news about AI?"`)
@@ -643,7 +663,7 @@ func main() {
 			extraOptions := structs.ExtraOptions{
 				IsInteractiveFind: true,
 				IsFind:            true,
-				Verbose:           *isVerbose,
+				Verbose:           effectiveVerbose,
 			}
 
 			helper.InteractiveFindSession(main_params, extraOptions, *logFile)

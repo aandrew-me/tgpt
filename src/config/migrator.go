@@ -18,46 +18,46 @@ type MigrationCandidate struct {
 // DetectMigrationCandidates finds environment variables that can be migrated to config
 func DetectMigrationCandidates() ([]MigrationCandidate, error) {
 	var candidates []MigrationCandidate
-	
+
 	// Define known environment variables and their config mappings
 	envMappings := map[string]struct {
 		configPath  string
 		description string
 	}{
 		// Provider settings
-		"AI_PROVIDER":        {"defaults.provider", "Default provider for chat"},
-		"IMG_PROVIDER":       {"image.default_provider", "Default provider for image generation"},
-		
+		"AI_PROVIDER":  {"defaults.provider", "Default provider for chat"},
+		"IMG_PROVIDER": {"image.default_provider", "Default provider for image generation"},
+
 		// Model parameters
-		"TGPT_TEMPERATURE":   {"defaults.temperature", "Default temperature setting"},
-		"TGPT_TOP_P":         {"defaults.top_p", "Default top_p setting"},
-		
+		"TGPT_TEMPERATURE": {"defaults.temperature", "Default temperature setting"},
+		"TGPT_TOP_P":       {"defaults.top_p", "Default top_p setting"},
+
 		// Provider-specific API keys
-		"AI_API_KEY":         {"providers.generic.api_key", "Generic API key"},
-		"OPENAI_API_KEY":     {"providers.openai.api_key", "OpenAI API key"},
-		"CEREBRAS_API_KEY":   {"providers.cerebras.api_key", "Cerebras API key"},
-		"DEEPSEEK_API_KEY":   {"providers.deepseek.api_key", "DeepSeek API key"},
-		"GEMINI_API_KEY":     {"providers.gemini.api_key", "Google Gemini API key"},
-		"GROQ_API_KEY":       {"providers.groq.api_key", "Groq API key"},
-		"KIMI_API_KEY":       {"providers.kimi.api_key", "Kimi API key"},
-		
+		"AI_API_KEY":       {"providers.generic.api_key", "Generic API key"},
+		"OPENAI_API_KEY":   {"providers.openai.api_key", "OpenAI API key"},
+		"CEREBRAS_API_KEY": {"providers.cerebras.api_key", "Cerebras API key"},
+		"DEEPSEEK_API_KEY": {"providers.deepseek.api_key", "DeepSeek API key"},
+		"GEMINI_API_KEY":   {"providers.gemini.api_key", "Google Gemini API key"},
+		"GROQ_API_KEY":     {"providers.groq.api_key", "Groq API key"},
+		"KIMI_API_KEY":     {"providers.kimi.api_key", "Kimi API key"},
+
 		// Provider-specific models
-		"OPENAI_MODEL":       {"providers.openai.model", "OpenAI model name"},
-		"CEREBRAS_MODEL":     {"providers.cerebras.model", "Cerebras model name"},
-		"DEEPSEEK_MODEL":     {"providers.deepseek.model", "DeepSeek model name"},
-		"GEMINI_MODEL":       {"providers.gemini.model", "Google Gemini model name"},
-		"GROQ_MODEL":         {"providers.groq.model", "Groq model name"},
-		
+		"OPENAI_MODEL":   {"providers.openai.model", "OpenAI model name"},
+		"CEREBRAS_MODEL": {"providers.cerebras.model", "Cerebras model name"},
+		"DEEPSEEK_MODEL": {"providers.deepseek.model", "DeepSeek model name"},
+		"GEMINI_MODEL":   {"providers.gemini.model", "Google Gemini model name"},
+		"GROQ_MODEL":     {"providers.groq.model", "Groq model name"},
+
 		// Provider-specific URLs
-		"OPENAI_URL":         {"providers.openai.url", "OpenAI base URL"},
-		"CEREBRAS_BASE_URL":  {"providers.cerebras.url", "Cerebras base URL"},
-		"OLLAMA_URL":         {"providers.ollama.url", "Ollama base URL"},
-		
+		"OPENAI_URL":        {"providers.openai.url", "OpenAI base URL"},
+		"CEREBRAS_BASE_URL": {"providers.cerebras.url", "Cerebras base URL"},
+		"OLLAMA_URL":        {"providers.ollama.url", "Ollama base URL"},
+
 		// Search configuration
 		"TGPT_GOOGLE_API_KEY":          {"search.google_api_key", "Google Custom Search API key"},
 		"TGPT_GOOGLE_SEARCH_ENGINE_ID": {"search.google_search_engine_id", "Google Custom Search Engine ID"},
 	}
-	
+
 	// Check each environment variable
 	for envVar, mapping := range envMappings {
 		value := os.Getenv(envVar)
@@ -70,7 +70,7 @@ func DetectMigrationCandidates() ([]MigrationCandidate, error) {
 			})
 		}
 	}
-	
+
 	return candidates, nil
 }
 
@@ -81,17 +81,17 @@ func MigrateFromEnv() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Apply migrations
 	for _, candidate := range candidates {
 		if err := applyMigration(config, candidate); err != nil {
 			return nil, fmt.Errorf("failed to migrate %s: %w", candidate.EnvVar, err)
 		}
 	}
-	
+
 	// Set up provider configurations based on available API keys
 	setupProviderConfigs(config, candidates)
-	
+
 	return config, nil
 }
 
@@ -101,10 +101,10 @@ func applyMigration(config *Config, candidate MigrationCandidate) error {
 	if len(pathParts) < 2 {
 		return fmt.Errorf("invalid config path: %s", candidate.ConfigPath)
 	}
-	
+
 	section := pathParts[0]
 	key := strings.Join(pathParts[1:], ".")
-	
+
 	switch section {
 	case "defaults":
 		return applyDefaultsMigration(config, key, candidate.Value)
@@ -147,14 +147,14 @@ func applyProviderMigration(config *Config, providerName, key, value, envVar str
 	if config.Providers == nil {
 		config.Providers = make(map[string]ProviderConfig)
 	}
-	
+
 	provider := config.Providers[providerName]
-	
+
 	// Set provider type if not already set
 	if provider.Type == "" {
 		provider.Type = getProviderType(providerName)
 	}
-	
+
 	switch key {
 	case "api_key":
 		// Keep as environment variable reference for security
@@ -166,7 +166,7 @@ func applyProviderMigration(config *Config, providerName, key, value, envVar str
 	default:
 		return fmt.Errorf("unsupported provider key: %s", key)
 	}
-	
+
 	config.Providers[providerName] = provider
 	return nil
 }
@@ -200,7 +200,7 @@ func setupProviderConfigs(config *Config, candidates []MigrationCandidate) {
 	if config.Providers == nil {
 		config.Providers = make(map[string]ProviderConfig)
 	}
-	
+
 	// Track which providers have API keys
 	providersWithKeys := make(map[string]bool)
 	for _, candidate := range candidates {
@@ -209,7 +209,7 @@ func setupProviderConfigs(config *Config, candidates []MigrationCandidate) {
 			providersWithKeys[providerName] = true
 		}
 	}
-	
+
 	// Set up complete provider configurations
 	providerDefaults := map[string]struct {
 		typ   string
@@ -242,11 +242,11 @@ func setupProviderConfigs(config *Config, candidates []MigrationCandidate) {
 			url:   "",
 		},
 	}
-	
+
 	for providerName, hasKey := range providersWithKeys {
 		if hasKey {
 			provider := config.Providers[providerName]
-			
+
 			// Set defaults if not already configured
 			if defaults, exists := providerDefaults[providerName]; exists {
 				if provider.Type == "" {
@@ -259,7 +259,7 @@ func setupProviderConfigs(config *Config, candidates []MigrationCandidate) {
 					provider.URL = defaults.url
 				}
 			}
-			
+
 			config.Providers[providerName] = provider
 		}
 	}
@@ -282,11 +282,11 @@ func getProviderType(providerName string) string {
 		"koboldai":     "koboldai",
 		"pollinations": "pollinations",
 	}
-	
+
 	if typ, exists := typeMap[providerName]; exists {
 		return typ
 	}
-	
+
 	return providerName // Default to provider name
 }
 
@@ -295,21 +295,21 @@ func GenerateMigrationReport(candidates []MigrationCandidate) string {
 	if len(candidates) == 0 {
 		return "No environment variables found that can be migrated to configuration file."
 	}
-	
+
 	var report strings.Builder
 	report.WriteString("Environment Variables Available for Migration:\n")
 	report.WriteString("========================================\n\n")
-	
+
 	// Group by category
 	categories := map[string][]MigrationCandidate{
-		"Provider Selection":     {},
-		"API Keys":              {},
-		"Model Configuration":   {},
-		"URLs":                  {},
-		"Model Parameters":      {},
-		"Search Configuration":  {},
+		"Provider Selection":   {},
+		"API Keys":             {},
+		"Model Configuration":  {},
+		"URLs":                 {},
+		"Model Parameters":     {},
+		"Search Configuration": {},
 	}
-	
+
 	for _, candidate := range candidates {
 		switch {
 		case strings.Contains(candidate.EnvVar, "PROVIDER"):
@@ -326,7 +326,7 @@ func GenerateMigrationReport(candidates []MigrationCandidate) string {
 			categories["Search Configuration"] = append(categories["Search Configuration"], candidate)
 		}
 	}
-	
+
 	for category, items := range categories {
 		if len(items) > 0 {
 			report.WriteString(fmt.Sprintf("%s:\n", category))
@@ -339,14 +339,14 @@ func GenerateMigrationReport(candidates []MigrationCandidate) string {
 			report.WriteString("\n")
 		}
 	}
-	
+
 	report.WriteString("Migration Benefits:\n")
 	report.WriteString("- Centralized configuration management\n")
 	report.WriteString("- Reduced environment variable conflicts\n")
 	report.WriteString("- Profile support for different use cases\n")
 	report.WriteString("- Environment variable expansion in config file\n")
 	report.WriteString("- Better documentation and validation\n")
-	
+
 	return report.String()
 }
 
@@ -355,15 +355,15 @@ func BackupEnvironment(candidates []MigrationCandidate) string {
 	if len(candidates) == 0 {
 		return ""
 	}
-	
+
 	var backup strings.Builder
 	backup.WriteString("#!/bin/bash\n")
 	backup.WriteString("# Backup of environment variables for TGPT\n")
 	backup.WriteString("# Generated by tgpt config migrate\n\n")
-	
+
 	for _, candidate := range candidates {
 		backup.WriteString(fmt.Sprintf("export %s=\"%s\"\n", candidate.EnvVar, candidate.Value))
 	}
-	
+
 	return backup.String()
 }

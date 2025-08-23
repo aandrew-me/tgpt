@@ -1065,7 +1065,7 @@ func handleConfigEdit() {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	
+
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("Error opening editor: %v\n", err)
 		os.Exit(1)
@@ -1118,7 +1118,11 @@ func handleConfigProfiles() {
 	fmt.Println("Available Profiles:")
 	fmt.Println("==================")
 	for name, profile := range cfg.Profiles {
-		fmt.Printf("- %s (provider: %s, temperature: %.1f)\n", name, profile.Provider, profile.Temperature)
+		temp := "default"
+		if profile.Temperature != nil {
+			temp = fmt.Sprintf("%.1f", *profile.Temperature)
+		}
+		fmt.Printf("- %s (provider: %s, temperature: %s)\n", name, profile.Provider, temp)
 	}
 }
 
@@ -1234,7 +1238,7 @@ func handleConfigProfile(args []string) {
 	}
 
 	subcommand := args[0]
-	
+
 	switch subcommand {
 	case "create":
 		if len(args) < 2 {
@@ -1245,10 +1249,10 @@ func handleConfigProfile(args []string) {
 		// Basic profile creation - can be enhanced later
 		fmt.Printf("Creating profile: %s\n", profileName)
 		// Implementation would parse additional flags and create profile
-		
+
 	case "list":
 		handleConfigProfiles()
-		
+
 	case "delete":
 		if len(args) < 2 {
 			fmt.Println("Usage: tgpt config profile delete <name>")
@@ -1257,7 +1261,7 @@ func handleConfigProfile(args []string) {
 		profileName := args[1]
 		fmt.Printf("Deleting profile: %s\n", profileName)
 		// Implementation would remove profile from config
-		
+
 	default:
 		fmt.Printf("Unknown profile subcommand: %s\n", subcommand)
 	}

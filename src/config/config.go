@@ -10,23 +10,23 @@ import (
 
 // Config represents the complete configuration for tgpt
 type Config struct {
-	Defaults  DefaultConfig                `toml:"defaults"`
-	Providers map[string]ProviderConfig    `toml:"providers"`
-	Image     ImageConfig                  `toml:"image"`
-	Search    SearchConfig                 `toml:"search"`
-	Modes     map[string]ModeConfig        `toml:"modes"`
-	Profiles  map[string]ProfileConfig     `toml:"profiles"`
-	
+	Defaults  DefaultConfig             `toml:"defaults"`
+	Providers map[string]ProviderConfig `toml:"providers"`
+	Image     ImageConfig               `toml:"image"`
+	Search    SearchConfig              `toml:"search"`
+	Modes     map[string]ModeConfig     `toml:"modes"`
+	Profiles  map[string]ProfileConfig  `toml:"profiles"`
+
 	// Internal fields (not serialized to TOML)
-	ConfigPath   string `toml:"-"`
-	ProfileName  string `toml:"-"`
+	ConfigPath   string                 `toml:"-"`
+	ProfileName  string                 `toml:"-"`
 	CliOverrides map[string]interface{} `toml:"-"`
 }
 
 // DefaultConfig contains the default settings for tgpt
 type DefaultConfig struct {
-	Provider        string  `toml:"provider"`
-	Temperature     float64 `toml:"temperature"`
+	Provider       string  `toml:"provider"`
+	Temperature    float64 `toml:"temperature"`
 	TopP           float64 `toml:"top_p"`
 	Quiet          bool    `toml:"quiet"`
 	Verbose        bool    `toml:"verbose"`
@@ -36,8 +36,8 @@ type DefaultConfig struct {
 
 // ProviderConfig contains provider-specific configuration
 type ProviderConfig struct {
-	Type      string `toml:"type"`       // Internal provider type (e.g., "openai")
-	APIKey    string `toml:"api_key"`    // Supports env var expansion like ${CEREBRAS_API_KEY}
+	Type      string `toml:"type"`    // Internal provider type (e.g., "openai")
+	APIKey    string `toml:"api_key"` // Supports env var expansion like ${CEREBRAS_API_KEY}
 	Model     string `toml:"model"`
 	URL       string `toml:"url"`
 	IsDefault bool   `toml:"is_default"`
@@ -46,11 +46,11 @@ type ProviderConfig struct {
 // ImageConfig contains image generation settings
 type ImageConfig struct {
 	DefaultProvider string `toml:"default_provider"`
-	Width          int    `toml:"width"`
-	Height         int    `toml:"height"`
-	Ratio          string `toml:"ratio"`
-	Count          string `toml:"count"`
-	Negative       string `toml:"negative_prompt"`
+	Width           int    `toml:"width"`
+	Height          int    `toml:"height"`
+	Ratio           string `toml:"ratio"`
+	Count           string `toml:"count"`
+	Negative        string `toml:"negative_prompt"`
 }
 
 // SearchConfig contains search-related configuration
@@ -70,8 +70,8 @@ type ModeConfig struct {
 
 // ProfileConfig contains profile-specific overrides
 type ProfileConfig struct {
-	Provider        string                 `toml:"provider"`
-	Temperature     *float64              `toml:"temperature,omitempty"`
+	Provider       string                `toml:"provider"`
+	Temperature    *float64              `toml:"temperature,omitempty"`
 	TopP           *float64              `toml:"top_p,omitempty"`
 	Quiet          bool                  `toml:"quiet,omitempty"`
 	Verbose        bool                  `toml:"verbose,omitempty"`
@@ -95,9 +95,9 @@ func (m *Manager) Load(configPath string) (*Config, error) {
 	if configPath == "" {
 		configPath = GetDefaultConfigPath()
 	}
-	
+
 	m.configPath = configPath
-	
+
 	// If config file doesn't exist, return default config
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		config := GetDefaultConfig()
@@ -105,13 +105,13 @@ func (m *Manager) Load(configPath string) (*Config, error) {
 		m.config = config
 		return config, nil
 	}
-	
+
 	// Load from file
 	config, err := loadConfigFromFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config file: %w", err)
 	}
-	
+
 	config.ConfigPath = configPath
 	m.config = config
 	return config, nil
@@ -124,7 +124,7 @@ func GetDefaultConfigPath() string {
 		// Fallback to current directory
 		return "tgpt-config.toml"
 	}
-	
+
 	configDir := filepath.Join(homeDir, ".config", "tgpt")
 	return filepath.Join(configDir, "config.toml")
 }
@@ -140,8 +140,8 @@ func LoadConfig(configPath string) (*Config, error) {
 func GetDefaultConfig() *Config {
 	return &Config{
 		Defaults: DefaultConfig{
-			Provider:        "phind", // Keep existing default for backward compatibility
-			Temperature:     0.7,
+			Provider:       "phind", // Keep existing default for backward compatibility
+			Temperature:    0.7,
 			TopP:           0.9,
 			Quiet:          false,
 			Verbose:        false,
@@ -151,11 +151,11 @@ func GetDefaultConfig() *Config {
 		Providers: make(map[string]ProviderConfig),
 		Image: ImageConfig{
 			DefaultProvider: "pollinations",
-			Width:          1024,
-			Height:         1024,
-			Ratio:          "1:1",
-			Count:          "1",
-			Negative:       "",
+			Width:           1024,
+			Height:          1024,
+			Ratio:           "1:1",
+			Count:           "1",
+			Negative:        "",
 		},
 		Search: SearchConfig{
 			GoogleAPIKey:         "${TGPT_GOOGLE_API_KEY}",
@@ -172,7 +172,7 @@ func GetDefaultConfig() *Config {
 			},
 			"interactive": {
 				HistorySize: 1000,
-				SaveConv:   true,
+				SaveConv:    true,
 			},
 		},
 		Profiles: make(map[string]ProfileConfig),
@@ -288,9 +288,9 @@ func (c *Config) setProviderValue(providerName, field, value string) error {
 	if c.Providers == nil {
 		c.Providers = make(map[string]ProviderConfig)
 	}
-	
+
 	provider := c.Providers[providerName]
-	
+
 	switch field {
 	case "api_key":
 		provider.APIKey = value
@@ -303,7 +303,7 @@ func (c *Config) setProviderValue(providerName, field, value string) error {
 	default:
 		return fmt.Errorf("unsupported provider field: %s", field)
 	}
-	
+
 	c.Providers[providerName] = provider
 	return nil
 }
@@ -313,7 +313,7 @@ func (c *Config) getProviderValue(providerName, field string) (string, error) {
 	if !exists {
 		return "", fmt.Errorf("provider not found: %s", providerName)
 	}
-	
+
 	switch field {
 	case "api_key":
 		return provider.APIKey, nil
@@ -396,31 +396,31 @@ func (c *Config) GetEffectiveProvider(cliProvider string, envProvider string, is
 	if cliProvider != "" {
 		return cliProvider
 	}
-	
+
 	// 2. Environment variables
 	if envProvider != "" {
 		return envProvider
 	}
-	
+
 	// 3. Profile override (if profile is set)
 	if c.ProfileName != "" {
 		if profile, exists := c.Profiles[c.ProfileName]; exists && profile.Provider != "" {
 			return profile.Provider
 		}
 	}
-	
+
 	// 4. Check if any provider is marked as default
 	for name, provider := range c.Providers {
 		if provider.IsDefault {
 			return name
 		}
 	}
-	
+
 	// 5. Config file default
 	if c.Defaults.Provider != "" {
 		return c.Defaults.Provider
 	}
-	
+
 	// 6. Built-in default
 	return "phind"
 }
@@ -431,24 +431,24 @@ func (c *Config) GetEffectiveValue(fieldName string, cliValue interface{}, envVa
 	if cliValue != nil && !isEmptyValue(cliValue, fieldName) {
 		return cliValue
 	}
-	
+
 	// 2. Environment variable
 	if envValue != "" {
 		return parseEnvValue(envValue, fieldName)
 	}
-	
+
 	// 3. Profile override
 	if c.ProfileName != "" {
 		if profileValue := c.getProfileValue(fieldName); profileValue != nil {
 			return profileValue
 		}
 	}
-	
+
 	// 4. Config file value
 	if configValue := c.getConfigValue(fieldName); configValue != nil {
 		return configValue
 	}
-	
+
 	// 5. Built-in default
 	return getBuiltinDefault(fieldName)
 }
@@ -496,12 +496,12 @@ func (c *Config) getProfileValue(fieldName string) interface{} {
 	if c.ProfileName == "" {
 		return nil
 	}
-	
+
 	profile, exists := c.Profiles[c.ProfileName]
 	if !exists {
 		return nil
 	}
-	
+
 	switch fieldName {
 	case "provider":
 		if profile.Provider != "" {
@@ -522,7 +522,7 @@ func (c *Config) getProfileValue(fieldName string) interface{} {
 	case "markdown_output":
 		return profile.MarkdownOutput
 	}
-	
+
 	return nil
 }
 
@@ -543,21 +543,21 @@ func (c *Config) getConfigValue(fieldName string) interface{} {
 	case "search_provider":
 		return c.Defaults.SearchProvider
 	}
-	
+
 	return nil
 }
 
 func getBuiltinDefault(fieldName string) interface{} {
 	defaults := map[string]interface{}{
-		"provider":         "phind",
-		"temperature":      0.7,
+		"provider":        "phind",
+		"temperature":     0.7,
 		"top_p":           0.9,
 		"quiet":           false,
 		"verbose":         false,
 		"markdown_output": false,
 		"search_provider": "is-fast",
 	}
-	
+
 	return defaults[fieldName]
 }
 
@@ -575,7 +575,7 @@ func (c *Config) ApplyProfile(profile ProfileConfig) {
 	c.Defaults.Quiet = profile.Quiet
 	c.Defaults.Verbose = profile.Verbose
 	c.Defaults.MarkdownOutput = profile.MarkdownOutput
-	
+
 	// Apply mode-specific settings from profile
 	for modeName, modeConfig := range profile.Modes {
 		if c.Modes == nil {
@@ -602,28 +602,28 @@ type ResolvedConfig struct {
 // Returns a ResolvedConfig with all values resolved according to precedence rules
 func (c *Config) ResolveConfig(cliFlags map[string]string, isImage bool) *ResolvedConfig {
 	resolved := &ResolvedConfig{}
-	
+
 	// 1. Resolve provider first as it affects other fields
 	resolved.Provider = c.resolveProvider(cliFlags["provider"], isImage)
-	
+
 	// 2. Get provider-specific config if available
 	var providerConfig *ProviderConfig
 	if pc, exists := c.Providers[resolved.Provider]; exists {
 		providerConfig = &pc
 	}
-	
+
 	// 3. Resolve other configuration values
 	resolved.APIKey = c.resolveString("api_key", cliFlags["key"], providerConfig)
 	resolved.Model = c.resolveString("model", cliFlags["model"], providerConfig)
 	resolved.Temperature = c.resolveFloat("temperature", cliFlags["temperature"])
 	resolved.TopP = c.resolveFloat("top_p", cliFlags["top_p"])
 	resolved.URL = c.resolveString("url", cliFlags["url"], providerConfig)
-	
+
 	// Boolean flags (these are handled differently as they can have profile/config defaults)
 	resolved.Quiet = c.resolveBool("quiet", cliFlags["quiet"])
 	resolved.Verbose = c.resolveBool("verbose", cliFlags["verbose"])
 	resolved.Markdown = c.resolveBool("markdown_output", cliFlags["markdown_output"])
-	
+
 	return resolved
 }
 
@@ -633,12 +633,12 @@ func (c *Config) resolveProvider(cliProvider string, isImage bool) string {
 	if cliProvider != "" {
 		return cliProvider
 	}
-	
+
 	// 2. Image-specific default if in image mode
 	if isImage && c.Image.DefaultProvider != "" {
 		return c.Image.DefaultProvider
 	}
-	
+
 	// 3. Environment variables for backward compatibility
 	envProvider := ""
 	if isImage {
@@ -649,26 +649,26 @@ func (c *Config) resolveProvider(cliProvider string, isImage bool) string {
 	if envProvider != "" {
 		return envProvider
 	}
-	
+
 	// 4. Profile override (if profile is set)
 	if c.ProfileName != "" {
 		if profile, exists := c.Profiles[c.ProfileName]; exists && profile.Provider != "" {
 			return profile.Provider
 		}
 	}
-	
+
 	// 5. Check if any provider is marked as default
 	for name, provider := range c.Providers {
 		if provider.IsDefault {
 			return name
 		}
 	}
-	
+
 	// 6. Config file default
 	if c.Defaults.Provider != "" {
 		return c.Defaults.Provider
 	}
-	
+
 	// 7. Built-in default
 	return "phind"
 }
@@ -679,13 +679,13 @@ func (c *Config) resolveString(fieldName string, cliValue string, providerConfig
 	if cliValue != "" {
 		return cliValue
 	}
-	
+
 	// 2. Environment variable
 	envKey := "TGPT_" + strings.ToUpper(strings.Replace(fieldName, "_", "_", -1))
 	if envValue := os.Getenv(envKey); envValue != "" {
 		return expandStringVars(envValue)
 	}
-	
+
 	// 3. Provider-specific configuration
 	if providerConfig != nil {
 		switch fieldName {
@@ -703,7 +703,7 @@ func (c *Config) resolveString(fieldName string, cliValue string, providerConfig
 			}
 		}
 	}
-	
+
 	// 4. Profile override
 	if c.ProfileName != "" {
 		if profileValue := c.getProfileValue(fieldName); profileValue != nil {
@@ -712,7 +712,7 @@ func (c *Config) resolveString(fieldName string, cliValue string, providerConfig
 			}
 		}
 	}
-	
+
 	// 5. Config defaults and built-in defaults are not applicable for these string fields
 	return ""
 }
@@ -723,13 +723,13 @@ func (c *Config) resolveFloat(fieldName string, cliValue string) string {
 	if cliValue != "" {
 		return cliValue
 	}
-	
+
 	// 2. Environment variable
 	envKey := "TGPT_" + strings.ToUpper(fieldName)
 	if envValue := os.Getenv(envKey); envValue != "" {
 		return envValue
 	}
-	
+
 	// 3. Profile override
 	if c.ProfileName != "" {
 		if profileValue := c.getProfileValue(fieldName); profileValue != nil {
@@ -738,7 +738,7 @@ func (c *Config) resolveFloat(fieldName string, cliValue string) string {
 			}
 		}
 	}
-	
+
 	// 4. Config file value (zero is a valid value for temperature and top_p)
 	switch fieldName {
 	case "temperature":
@@ -746,7 +746,7 @@ func (c *Config) resolveFloat(fieldName string, cliValue string) string {
 	case "top_p":
 		return fmt.Sprintf("%.1f", c.Defaults.TopP)
 	}
-	
+
 	// 5. Built-in defaults
 	switch fieldName {
 	case "temperature":
@@ -754,7 +754,7 @@ func (c *Config) resolveFloat(fieldName string, cliValue string) string {
 	case "top_p":
 		return "0.9"
 	}
-	
+
 	return ""
 }
 
@@ -764,13 +764,13 @@ func (c *Config) resolveBool(fieldName string, cliValue string) bool {
 	if cliValue == "true" || cliValue == "1" {
 		return true
 	}
-	
+
 	// 2. Environment variable
 	envKey := "TGPT_" + strings.ToUpper(fieldName)
 	if envValue := os.Getenv(envKey); envValue != "" {
 		return envValue == "true" || envValue == "1"
 	}
-	
+
 	// 3. Profile override
 	if c.ProfileName != "" {
 		if profileValue := c.getProfileValue(fieldName); profileValue != nil {
@@ -779,7 +779,7 @@ func (c *Config) resolveBool(fieldName string, cliValue string) bool {
 			}
 		}
 	}
-	
+
 	// 4. Config file value
 	switch fieldName {
 	case "quiet":
@@ -789,7 +789,7 @@ func (c *Config) resolveBool(fieldName string, cliValue string) bool {
 	case "markdown_output":
 		return c.Defaults.MarkdownOutput
 	}
-	
+
 	// 5. Built-in default is false for all boolean flags
 	return false
 }
