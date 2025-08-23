@@ -2,6 +2,7 @@ package search
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,11 +12,21 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	http "github.com/bogdanfinn/fhttp"
+)
+
+const (
+	maxContentPerURL         = 8000             // Maximum content per search result
+	maxTotalContent          = 100000           // Maximum total content for AI processing
+	extractionTimeout        = 15 * time.Second // Timeout for content extraction
+	maxConcurrentExtractions = 5                // Maximum concurrent content extractions
 )
 
 // SearchParams represents the parameters extracted by AI for search
@@ -154,22 +165,34 @@ func googleSearch(params SearchParams, apiKey, searchEngineID string, verbose bo
 
 // extractContent extracts the main content from a web page using is-fast
 func extractContent(pageURL string) (string, error) {
+	// Check if is-fast binary exists
+	if _, err := exec.LookPath("is-fast"); err != nil {
+		return "", fmt.Errorf("is-fast binary not found in PATH. Please install it from https://github.com/aandrew-me/is-fast")
+	}
+
 	// Convert Reddit URLs to old.reddit.com for better parsing
 	pageURL = strings.Replace(pageURL, "www.reddit.com", "old.reddit.com", 1)
 
+	// Add timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), extractionTimeout)
+	defer cancel()
+
 	// Use is-fast to extract content
-	cmd := exec.Command("is-fast", "--direct", pageURL, "--piped")
+	cmd := exec.CommandContext(ctx, "is-fast", "--direct", pageURL, "--piped")
 
 	output, err := cmd.Output()
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("content extraction timed out for %s", pageURL)
+		}
 		return "", fmt.Errorf("is-fast extraction failed: %v", err)
 	}
 
 	content := strings.TrimSpace(string(output))
 
-	// Limit content length for AI processing (increased from 3000 to 8000 for better quality)
-	if len(content) > 8000 {
-		content = content[:8000] + "..."
+	// Limit content length for AI processing
+	if len(content) > maxContentPerURL {
+		content = content[:maxContentPerURL] + "..."
 	}
 
 	return content, nil
@@ -198,9 +221,9 @@ func formatResultsForAI(results []SearchResult, originalQuery string) string {
 
 	result := formatted.String()
 
-	// Limit total length to avoid input limits (increased for better quality)
-	if len(result) > 100000 {
-		result = result[:100000] + "\n\n[Content truncated due to length...]"
+	// Limit total length to avoid input limits
+	if len(result) > maxTotalContent {
+		result = result[:maxTotalContent] + "\n\n[Content truncated due to length...]"
 	}
 
 	return result
@@ -217,68 +240,79 @@ func ExtractSearchParams(userInput string, aiParams structs.Params, verbose bool
 		fmt.Printf("DEBUG: Attempting LLM-based query optimization\n")
 	}
 
-	maxAttempts := 2
-	
+	return extractWithRetry(userInput, aiParams, verbose, 2)
+}
+
+// extractWithRetry attempts to extract search parameters with retry logic
+func extractWithRetry(userInput string, aiParams structs.Params, verbose bool, maxAttempts int) (SearchParams, error) {
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		// Build prompt with structured delimiters
-		prompt := buildOptimizationPrompt(userInput, attempt)
-		
-		if verbose {
-			fmt.Printf("DEBUG: LLM Prompt (attempt %d):\n", attempt)
-			fmt.Printf("---START PROMPT---\n%s\n---END PROMPT---\n", prompt)
+		if params, err := attemptLLMExtraction(userInput, aiParams, verbose, attempt); err == nil {
+			return params, nil
 		}
-		
-		response, err := callLLMForOptimization(prompt, aiParams)
-		if err != nil {
-			if verbose {
-				fmt.Printf("DEBUG: LLM call failed on attempt %d (%v)\n", attempt, err)
-			}
-			if attempt < maxAttempts {
-				continue // Try again
-			}
-			return fallbackToSimple(userInput, verbose), nil
-		}
-		
-		if verbose {
-			fmt.Printf("DEBUG: LLM Response (attempt %d):\n", attempt)
-			fmt.Printf("---START RESPONSE---\n%s\n---END RESPONSE---\n", response)
-		}
-		
-		// Strategy 1: Look for structured delimiters
-		if params, err := parseStructuredResponse(response, verbose); err == nil {
-			if verbose {
-				fmt.Printf("DEBUG: ✓ Parsed via structured delimiters on attempt %d\n", attempt)
-			}
-			return validateAndNormalizeParams(params), nil
-		}
-		
-		// Strategy 2: Forgiving field extraction
-		if params, err := parseForgivingResponse(response, verbose); err == nil {
-			if verbose {
-				fmt.Printf("DEBUG: ✓ Parsed via field extraction on attempt %d\n", attempt)
-			}
-			return validateAndNormalizeParams(params), nil
-		}
-		
-		// If we're here, parsing failed completely
-		if verbose {
-			fmt.Printf("DEBUG: ✗ All parsing strategies failed on attempt %d\n", attempt)
-		}
-		
-		// Strategy 3: Retry with stronger instructions
-		if attempt < maxAttempts {
-			if verbose {
-				fmt.Printf("DEBUG: → Retrying with enhanced prompt\n")
-			}
-			continue
+
+		if attempt < maxAttempts && verbose {
+			fmt.Printf("DEBUG: → Retrying with enhanced prompt\n")
 		}
 	}
-	
+
 	// All strategies failed, use simple fallback
 	if verbose {
 		fmt.Printf("DEBUG: ✗ All LLM parsing strategies failed, using simple optimization\n")
 	}
 	return fallbackToSimple(userInput, verbose), nil
+}
+
+// attemptLLMExtraction performs a single attempt to extract search parameters via LLM
+func attemptLLMExtraction(userInput string, aiParams structs.Params, verbose bool, attempt int) (SearchParams, error) {
+	// Build prompt with structured delimiters
+	prompt := buildOptimizationPrompt(userInput, attempt)
+
+	if verbose {
+		fmt.Printf("DEBUG: LLM Prompt (attempt %d):\n", attempt)
+		fmt.Printf("---START PROMPT---\n%s\n---END PROMPT---\n", prompt)
+	}
+
+	response, err := callLLMForOptimization(prompt, aiParams)
+	if err != nil {
+		if verbose {
+			fmt.Printf("DEBUG: LLM call failed on attempt %d (%v)\n", attempt, err)
+		}
+		return SearchParams{}, err
+	}
+
+	if verbose {
+		fmt.Printf("DEBUG: LLM Response (attempt %d):\n", attempt)
+		fmt.Printf("---START RESPONSE---\n%s\n---END RESPONSE---\n", response)
+	}
+
+	// Try multiple parsing strategies
+	return parseResponseWithStrategies(response, verbose, attempt)
+}
+
+// parseResponseWithStrategies tries multiple parsing strategies in order
+func parseResponseWithStrategies(response string, verbose bool, attempt int) (SearchParams, error) {
+	// Strategy 1: Look for structured delimiters
+	if params, err := parseStructuredResponse(response, verbose); err == nil {
+		if verbose {
+			fmt.Printf("DEBUG: ✓ Parsed via structured delimiters on attempt %d\n", attempt)
+		}
+		return validateAndNormalizeParams(params), nil
+	}
+
+	// Strategy 2: Forgiving field extraction
+	if params, err := parseForgivingResponse(response, verbose); err == nil {
+		if verbose {
+			fmt.Printf("DEBUG: ✓ Parsed via field extraction on attempt %d\n", attempt)
+		}
+		return validateAndNormalizeParams(params), nil
+	}
+
+	// All parsing strategies failed
+	if verbose {
+		fmt.Printf("DEBUG: ✗ All parsing strategies failed on attempt %d\n", attempt)
+	}
+
+	return SearchParams{}, fmt.Errorf("failed to parse LLM response")
 }
 
 // optimizeQuerySimple provides basic query optimization until full LLM integration
@@ -392,23 +426,63 @@ func PerformSearchWithParams(params SearchParams, verbose bool) (string, error) 
 		return "", fmt.Errorf("search failed: %v", err)
 	}
 
-	// Extract content from each result
+	// Extract content from each result concurrently
+	type contentResult struct {
+		index   int
+		content string
+		err     error
+	}
+
+	// Limit concurrent extractions to prevent overwhelming the system
+	sem := make(chan struct{}, maxConcurrentExtractions)
+	var wg sync.WaitGroup
+	resultChan := make(chan contentResult)
+
+	var failedCount int64
+
 	for i := range results {
-		if verbose {
-			fmt.Printf("Extracting content from result %d: %s\n", i+1, results[i].URL)
-		}
-		content, err := extractContent(results[i].URL)
-		if err != nil {
-			// Log error but continue with other results
+		wg.Add(1)
+		go func(idx int, url string) {
+			defer wg.Done()
+
+			// Acquire semaphore
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
 			if verbose {
-				fmt.Fprintf(os.Stderr, "Failed to extract content from %s: %v\n", results[i].URL, err)
+				fmt.Printf("Extracting content from result %d: %s\n", idx+1, url)
+			}
+
+			content, err := extractContent(url)
+			resultChan <- contentResult{index: idx, content: content, err: err}
+		}(i, results[i].URL)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Collect results
+	for result := range resultChan {
+		if result.err != nil {
+			atomic.AddInt64(&failedCount, 1)
+			// Always provide user feedback for failures
+			fmt.Fprintf(os.Stderr, "Warning: Failed to extract content from result %d\n", result.index+1)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Details: %v\n", result.err)
 			}
 			continue
 		}
 		if verbose {
-			fmt.Printf("Successfully extracted %d characters from result %d\n", len(content), i+1)
+			fmt.Printf("Successfully extracted %d characters from result %d\n", len(result.content), result.index+1)
 		}
-		results[i].Content = content
+		results[result.index].Content = result.content
+	}
+
+	// Report summary if there were failures
+	if finalFailedCount := atomic.LoadInt64(&failedCount); finalFailedCount > 0 {
+		fmt.Fprintf(os.Stderr, "Note: Failed to extract content from %d out of %d results\n", finalFailedCount, len(results))
 	}
 
 	// Format results for AI synthesis
@@ -427,10 +501,14 @@ func callLLMForOptimization(prompt string, aiParams structs.Params) (string, err
 	if err != nil {
 		return "", fmt.Errorf("failed to call LLM: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(io.Discard, resp.Body) // Drain body before closing
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 {
-		return "", fmt.Errorf("LLM API returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body) // Read body for error details
+		return "", fmt.Errorf("LLM API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	// Process the response body
@@ -497,7 +575,7 @@ User request: %s`
 
 IMPORTANT: Previous response was not parseable. Follow the EXACT format above with SEARCH_JSON_START and SEARCH_JSON_END delimiters.`
 	}
-	
+
 	return fmt.Sprintf(basePrompt, userInput)
 }
 
@@ -505,16 +583,16 @@ IMPORTANT: Previous response was not parseable. Follow the EXACT format above wi
 func parseStructuredResponse(response string, verbose bool) (SearchParams, error) {
 	start := strings.Index(response, "SEARCH_JSON_START")
 	end := strings.Index(response, "SEARCH_JSON_END")
-	
+
 	if start == -1 || end == -1 {
 		if verbose {
 			fmt.Printf("DEBUG: Structured delimiters not found in response\n")
 		}
 		return SearchParams{}, fmt.Errorf("structured delimiters not found")
 	}
-	
-	jsonText := strings.TrimSpace(response[start+len("SEARCH_JSON_START"):end])
-	
+
+	jsonText := strings.TrimSpace(response[start+len("SEARCH_JSON_START") : end])
+
 	var params SearchParams
 	if err := json.Unmarshal([]byte(jsonText), &params); err != nil {
 		if verbose {
@@ -522,7 +600,7 @@ func parseStructuredResponse(response string, verbose bool) (SearchParams, error
 		}
 		return SearchParams{}, fmt.Errorf("JSON parsing failed: %v", err)
 	}
-	
+
 	return params, nil
 }
 
@@ -531,9 +609,9 @@ func parseForgivingResponse(response string, verbose bool) (SearchParams, error)
 	queryRe := regexp.MustCompile(`"query"\s*:\s*"([^"]*)"`)
 	numRe := regexp.MustCompile(`"num_results"\s*:\s*(\d+)`)
 	siteRe := regexp.MustCompile(`"site_filter"\s*:\s*"([^"]*)"`)
-	
+
 	params := SearchParams{NumResults: 5}
-	
+
 	if match := queryRe.FindStringSubmatch(response); len(match) > 1 {
 		params.Query = match[1]
 	} else {
@@ -542,22 +620,22 @@ func parseForgivingResponse(response string, verbose bool) (SearchParams, error)
 		}
 		return SearchParams{}, fmt.Errorf("could not extract query")
 	}
-	
+
 	if match := numRe.FindStringSubmatch(response); len(match) > 1 {
 		if num, err := strconv.Atoi(match[1]); err == nil {
 			params.NumResults = num
 		}
 	}
-	
+
 	if match := siteRe.FindStringSubmatch(response); len(match) > 1 {
 		params.SiteFilter = match[1]
 	}
-	
+
 	if verbose {
-		fmt.Printf("DEBUG: Extracted fields: query='%s', num_results=%d, site_filter='%s'\n", 
+		fmt.Printf("DEBUG: Extracted fields: query='%s', num_results=%d, site_filter='%s'\n",
 			params.Query, params.NumResults, params.SiteFilter)
 	}
-	
+
 	return params, nil
 }
 
@@ -570,7 +648,7 @@ func validateAndNormalizeParams(params SearchParams) SearchParams {
 	if params.NumResults > 10 {
 		params.NumResults = 10
 	}
-	
+
 	return params
 }
 
@@ -579,7 +657,7 @@ func fallbackToSimple(userInput string, verbose bool) SearchParams {
 	if verbose {
 		fmt.Printf("DEBUG: Using simple query optimization fallback\n")
 	}
-	
+
 	params := SearchParams{
 		Query:      optimizeQuerySimple(userInput),
 		NumResults: 5,
