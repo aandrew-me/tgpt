@@ -7,3 +7,6 @@ CLAUDE.md
 .mcp.json
 .claude
 
+# Test outputs - can be regenerated
+tools/content-extraction-test/test_outputs/
+tools/content-extraction-test/test_extraction
