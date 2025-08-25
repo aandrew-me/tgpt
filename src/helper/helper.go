@@ -40,6 +40,7 @@ var (
 	OperatingSystem string
 	ShellName       string
 	ShellOptions    []string
+	ShellConfigFile string
 )
 
 var bold = color.New(color.Bold)
@@ -168,9 +169,11 @@ func SetShellAndOSVars() {
 		if len(os.Getenv("PSModulePath")) > 0 {
 			ShellName = "powershell.exe"
 			ShellOptions = []string{"-Command"}
+			ShellConfigFile = ""
 		} else {
 			ShellName = "cmd.exe"
 			ShellOptions = []string{"/C"}
+			ShellConfigFile = ""
 		}
 		return
 	case "darwin":
@@ -186,16 +189,30 @@ func SetShellAndOSVars() {
 		OperatingSystem = runtime.GOOS
 	}
 
-	// Identify shell
+	// Identify shell and config file
 	shellEnv := os.Getenv("SHELL")
+	homeDir := os.Getenv("HOME")
+
 	if shellEnv != "" {
 		ShellName = shellEnv
+		// Determine config file based on shell type
+		if strings.Contains(shellEnv, "zsh") {
+			ShellConfigFile = homeDir + "/.zshrc"
+		} else if strings.Contains(shellEnv, "bash") {
+			ShellConfigFile = homeDir + "/.bashrc"
+		} else if strings.Contains(shellEnv, "fish") {
+			ShellConfigFile = homeDir + "/.config/fish/config.fish"
+		} else {
+			ShellConfigFile = homeDir + "/.bashrc"
+		}
 	} else {
 		_, err := exec.LookPath("bash")
 		if err != nil {
 			ShellName = "/bin/sh"
+			ShellConfigFile = homeDir + "/.profile"
 		} else {
 			ShellName = "bash"
+			ShellConfigFile = homeDir + "/.bashrc"
 		}
 	}
 	ShellOptions = []string{"-c"}
@@ -609,19 +626,37 @@ func handleStatus400(resp *http.Response) {
 }
 
 func ExecuteCommand(shellName string, shellOptions []string, fullLine string) string {
-	return ExecuteCommandWithCapture(shellName, shellOptions, fullLine, false)
+	return ExecuteCommandWithCapture(shellName, shellOptions, fullLine, false, false)
+}
+
+func ExecuteCommandWithAlias(shellName string, shellOptions []string, fullLine string) string {
+	return ExecuteCommandWithCapture(shellName, shellOptions, fullLine, false, true)
 }
 
 // ExecuteCommandWithCapture executes a command and optionally captures its output
-func ExecuteCommandWithCapture(shellName string, shellOptions []string, fullLine string, captureOutput bool) string {
+func ExecuteCommandWithCapture(shellName string, shellOptions []string, fullLine string, captureOutput bool, useAliases bool) string {
 	if runtime.GOOS != "windows" {
 		rawModeOff := exec.Command("stty", "-raw", "echo")
 		rawModeOff.Stdin = os.Stdin
 		_ = rawModeOff.Run()
 		rawModeOff.Wait()
 	}
-	// Directly use the shellName variable set by setShellAndOSVars()
-	cmd := exec.Command(shellName, append(shellOptions, fullLine)...)
+
+	var cmd *exec.Cmd
+	if useAliases && runtime.GOOS != "windows" && ShellConfigFile != "" {
+		// Check if config file exists
+		if _, err := os.Stat(ShellConfigFile); err == nil {
+			// Source the config file before executing the command
+			sourceCmd := fmt.Sprintf("source %s && %s", ShellConfigFile, fullLine)
+			cmd = exec.Command(shellName, shellOptions[0], sourceCmd)
+		} else {
+			// Fallback to regular execution if config file doesn't exist
+			cmd = exec.Command(shellName, append(shellOptions, fullLine)...)
+		}
+	} else {
+		// Regular execution without aliases
+		cmd = exec.Command(shellName, append(shellOptions, fullLine)...)
+	}
 
 	var result string
 	if captureOutput {
@@ -648,7 +683,7 @@ func ExecuteCommandWithCapture(shellName string, shellOptions []string, fullLine
 		}
 		result = ""
 	}
-	
+
 	AddToShellHistory(fullLine)
 	return result
 }
@@ -824,6 +859,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
 	fmt.Printf("%-50v Start interactive shell mode. (Doesn't work with all providers) \n", "-is, --interactive-shell")
+	fmt.Printf("%-50v Start interactive shell mode with aliases and functions \n", "-a, --alias")
 	fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
 
 	if runtime.GOOS != "windows" {
