@@ -2,9 +2,29 @@
 
 The search functionality provides two modes:
 - `-f` (find) - One-shot search with query optimization and confirmation
-- `-if` (interactive find) - Interactive search session (coming soon)
+- `-if` (interactive find) - Interactive search session
 
 This integrates Google Custom Search API with AI-powered content synthesis and query optimization.
+
+## Prerequisites
+
+### 1. is-fast Binary (Required)
+The search functionality requires the `is-fast` binary for high-quality web content extraction. Install it from:
+[https://github.com/Magic-JD/is-fast](https://github.com/Magic-JD/is-fast)
+
+```bash
+# Verify installation
+is-fast --help
+```
+
+### Why is-fast?
+After testing multiple content extraction methods (see `tools/content-extraction-test/README.md`), `is-fast` was chosen because:
+- **Best Quality**: Extracts 9,637 words vs alternatives (497-6,436 words)
+- **Fast Performance**: 609ms extraction time
+- **Superior Formatting**: Maintains proper text structure and readability
+- **No API Costs**: Local binary vs paid API services
+
+Alternative methods tested included Colly+Goquery, go-readability, Jina.ai, Tavily, Firecrawl, and ScrapingBee. Full comparison results are available in the testing directory.
 
 ## Required Environment Variables
 
@@ -67,9 +87,9 @@ tgpt -f --verbose "latest AI news"
 # Shows detailed search process and content extraction
 ```
 
-### Interactive Search (`-if`) - Coming Soon
+### Interactive Search (`-if`)
 ```bash
-# Interactive search session (planned)
+# Interactive search session
 tgpt -if
 # Interactive Find mode started. Press Ctrl + C or type exit to quit.
 # You: What's the weather like today?

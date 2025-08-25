@@ -167,7 +167,7 @@ func googleSearch(params SearchParams, apiKey, searchEngineID string, verbose bo
 func extractContent(pageURL string) (string, error) {
 	// Check if is-fast binary exists
 	if _, err := exec.LookPath("is-fast"); err != nil {
-		return "", fmt.Errorf("is-fast binary not found in PATH. Please install it from https://github.com/aandrew-me/is-fast")
+		return "", fmt.Errorf("is-fast binary not found in PATH. Please install it from https://github.com/Magic-JD/is-fast")
 	}
 
 	// Convert Reddit URLs to old.reddit.com for better parsing
