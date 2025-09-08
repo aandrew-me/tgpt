@@ -60,7 +60,7 @@ func PerformSearch(userQuery string, verbose bool) (string, error) {
 	searchEngineID := os.Getenv("TGPT_GOOGLE_SEARCH_ENGINE_ID")
 
 	if apiKey == "" || searchEngineID == "" {
-		return "", fmt.Errorf("missing required environment variables: TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID must be set")
+		return "", fmt.Errorf("missing required environment variables: TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID must be set. Please check SEARCH_SETUP.md for configuration instructions")
 	}
 
 	// Extract search parameters using AI (this would be called from helper.go)
@@ -153,6 +153,13 @@ func googleSearch(params SearchParams, apiKey, searchEngineID string, verbose bo
 	// Convert to our format
 	var results []SearchResult
 	for _, item := range searchResp.Items {
+		// Validate URL format
+		if _, err := url.ParseRequestURI(item.Link); err != nil {
+			if verbose {
+				fmt.Printf("Warning: Skipping invalid URL: %s\n", item.Link)
+			}
+			continue
+		}
 		results = append(results, SearchResult{
 			Title:   item.Title,
 			URL:     item.Link,
@@ -417,7 +424,7 @@ func PerformSearchWithParams(params SearchParams, verbose bool) (string, error) 
 	searchEngineID := os.Getenv("TGPT_GOOGLE_SEARCH_ENGINE_ID")
 
 	if apiKey == "" || searchEngineID == "" {
-		return "", fmt.Errorf("missing required environment variables: TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID must be set")
+		return "", fmt.Errorf("missing required environment variables: TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID must be set. Please check SEARCH_SETUP.md for configuration instructions")
 	}
 
 	// Perform Google search

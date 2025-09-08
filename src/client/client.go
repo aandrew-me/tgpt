@@ -13,7 +13,17 @@ import (
 func NewClient() (tls_client.HttpClient, error) {
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(600),
-		tls_client.WithClientProfile(profiles.Firefox_117),
+		// Allow overriding TLS fingerprint via env; default stays Firefox_117.
+		tls_client.WithClientProfile(func() profiles.ClientProfile {
+			p := profiles.Firefox_117
+			switch strings.ToLower(os.Getenv("TLS_CLIENT_PROFILE")) {
+			case "firefox_133", "ff133":
+				p = profiles.Firefox_133
+			case "firefox_117", "ff117", "":
+				// keep default
+			}
+			return p
+		}()),
 		tls_client.WithNotFollowRedirects(),
 		tls_client.WithCookieJar(tls_client.NewCookieJar()),
 		// tls_client.WithInsecureSkipVerify(),
@@ -23,6 +33,18 @@ func NewClient() (tls_client.HttpClient, error) {
 	proxyAddr := os.Getenv("HTTP_PROXY")
 	if proxyAddr == "" {
 		proxyAddr = os.Getenv("http_proxy")
+	}
+	if proxyAddr == "" {
+		proxyAddr = os.Getenv("HTTPS_PROXY")
+		if proxyAddr == "" {
+			proxyAddr = os.Getenv("https_proxy")
+		}
+	}
+	if proxyAddr == "" {
+		proxyAddr = os.Getenv("ALL_PROXY")
+		if proxyAddr == "" {
+			proxyAddr = os.Getenv("all_proxy")
+		}
 	}
 
 	// No Proxy in env, try to load from configuration
@@ -43,11 +65,11 @@ func NewClient() (tls_client.HttpClient, error) {
 
 	// Set proxy options if valid proxy detected.
 	if proxyAddr != "" {
-		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") {
+		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") || strings.HasPrefix(proxyAddr, "socks5h://") {
 			options = append(options, tls_client.WithProxyUrl(proxyAddr))
 		} else {
 			if !strings.HasPrefix(proxyAddr, "#") {
-				fmt.Fprintln(os.Stderr, "Warning: Invalid proxy format, must start with http:// or socks5://")
+				fmt.Fprintf(os.Stderr, "Warning: Invalid proxy format %q, must start with http://, socks5://, or socks5h://\n", proxyAddr)
 			}
 		}
 	}

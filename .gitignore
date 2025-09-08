@@ -10,3 +10,4 @@ CLAUDE.md
 # Test outputs - can be regenerated
 tools/content-extraction-test/test_outputs/
 tools/content-extraction-test/test_extraction
+tools/content-extraction-test/test_extraction.exe

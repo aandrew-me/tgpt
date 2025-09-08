@@ -1,8 +1,9 @@
 # Web Search Setup for TGPT
 
-The search functionality provides two modes:
+The search functionality provides three modes:
 - `-f` (find) - One-shot search with query optimization and confirmation
 - `-if` (interactive find) - Interactive search session
+- `-ia` (interactive alias) - Interactive shell mode with aliases and functions
 
 This integrates Google Custom Search API with AI-powered content synthesis and query optimization.
 
@@ -96,6 +97,16 @@ tgpt -if
 # Bot: Execute search query: 'current weather forecast [location]' [y/n]: y
 ```
 
+### Interactive Alias Search (`-ia`)
+```bash
+# Interactive search session with shell aliases and functions
+tgpt -ia
+# Interactive Shell mode with aliases started. Press Ctrl + C or type exit to quit.
+# You: What files are in my home directory?
+# Bot: <search>list files in home directory</search>
+# Bot: Execute shell command: `ls ~` ? [y/n]: y
+```
+
 ## Features
 
 ### Search Query Optimization
@@ -113,6 +124,7 @@ tgpt -if
 - **Reddit URL Optimization**: Automatically converts to old.reddit.com for better parsing  
 - **AI Synthesis**: Combines search results with markdown formatting
 - **Verbose Mode**: Optional detailed debugging with --verbose flag
+- **Interactive Alias Mode**: Execute shell commands with access to aliases and functions
 
 ## Architecture Flow
 
