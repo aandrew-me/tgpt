@@ -1076,7 +1076,6 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 
 	// Interactive loop using simple input (avoiding import cycles)
 	for {
-		fmt.Print("🔍 ")
 		boldBlue.Println("╭─ You")
 		fmt.Print("╰─> ")
 		scanner := bufio.NewScanner(os.Stdin)
