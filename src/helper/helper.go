@@ -976,7 +976,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 }
 
 // InteractiveFindSession handles the interactive web search conversation mode
-func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOptions, logFile string) {
+func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOptions, logFile string) func(string) {
 	var previousMessages []any
 
 	threadID := utils.RandomString(36)
@@ -1074,18 +1074,5 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 		}
 	}
 
-	// Interactive loop using simple input (avoiding import cycles)
-	for {
-		boldBlue.Println("╭─ You")
-		fmt.Print("╰─> ")
-		scanner := bufio.NewScanner(os.Stdin)
-		if !scanner.Scan() {
-			break
-		}
-
-		userInput := scanner.Text()
-		if len(userInput) > 0 {
-			getAndPrintFindResponse(userInput)
-		}
-	}
+	return getAndPrintFindResponse
 }

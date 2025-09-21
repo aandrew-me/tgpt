@@ -599,7 +599,34 @@ func main() {
 				Verbose:           *isVerbose,
 			}
 
-			helper.InteractiveFindSession(main_params, extraOptions, *logFile)
+			// Get the response handler function from helper
+			getAndPrintFindResponse := helper.InteractiveFindSession(main_params, extraOptions, *logFile)
+			history := []string{}
+
+			input := strings.TrimSpace(prompt)
+			if len(input) > 1 {
+				// if prompt is passed in interactive mode then send prompt as first message
+				blue.Println("╭─ You")
+				blue.Print("╰─> ")
+				fmt.Println(input)
+				getAndPrintFindResponse(input)
+			}
+
+			for {
+				blue.Println("╭─ You")
+				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
+					Prompt.OptionHistory(history),
+					Prompt.OptionPrefixTextColor(Prompt.DarkBlue),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlC,
+						Fn:  exit,
+					}),
+				)
+				if len(input) > 0 {
+					getAndPrintFindResponse(input)
+					history = append(history, input)
+				}
+			}
 
 		case *isInteractiveAlias:
 			/////////////////////
