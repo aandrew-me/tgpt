@@ -942,7 +942,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 	// Perform web search with optimization and confirmation
 	// For one-shot find mode (-f), skip confirmation. For interactive find mode (-if), show confirmation
 	skipConfirmation := extraOptions.IsFind && !extraOptions.IsInteractiveFind
-	searchResults, err := search.ProcessSearchWithConfirmation(input, params, extraOptions.Verbose, skipConfirmation, isQuiet)
+	searchResults, err := search.ProcessSearchWithConfirmation(input, params, extraOptions.Verbose, skipConfirmation, isQuiet, nil)
 	if err != nil {
 		fmt.Printf("Search failed: %v\n", err)
 		return
@@ -976,7 +976,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 }
 
 // InteractiveFindSession handles the interactive web search conversation mode
-func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOptions, logFile string) func(string) {
+func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOptions, logFile string, inputReader func() (string, error)) func(string) {
 	var previousMessages []any
 
 	threadID := utils.RandomString(36)
@@ -1033,7 +1033,7 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 			}
 
 			// Perform the search with confirmation (interactive find mode always shows confirmation)
-			searchResults, err := search.ProcessSearchWithConfirmation(searchQuery, params, extraOptions.Verbose, false, false)
+			searchResults, err := search.ProcessSearchWithConfirmation(searchQuery, params, extraOptions.Verbose, false, false, inputReader)
 			if err != nil {
 				fmt.Printf("Search failed: %v\n", err)
 				return

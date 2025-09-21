@@ -349,7 +349,8 @@ func optimizeQuerySimple(userInput string) string {
 }
 
 // ConfirmSearchExecution asks user to confirm the search query or auto-confirms for one-shot mode
-func ConfirmSearchExecution(params SearchParams, autoConfirm bool, isQuiet bool) bool {
+// inputReader is an optional function to get user input. If nil, uses default bufio.NewReader(os.Stdin)
+func ConfirmSearchExecution(params SearchParams, autoConfirm bool, isQuiet bool, inputReader func() (string, error)) bool {
 	if autoConfirm {
 		// One-shot mode: show informational message unless quiet
 		if !isQuiet {
@@ -379,9 +380,17 @@ func ConfirmSearchExecution(params SearchParams, autoConfirm bool, isQuiet bool)
 
 	fmt.Print(" [y/n]: ")
 
-	// Read user response
-	reader := bufio.NewReader(os.Stdin)
-	response, err := reader.ReadString('\n')
+	// Read user response using custom inputReader or default
+	var response string
+	var err error
+
+	if inputReader != nil {
+		response, err = inputReader()
+	} else {
+		reader := bufio.NewReader(os.Stdin)
+		response, err = reader.ReadString('\n')
+	}
+
 	if err != nil {
 		return false
 	}
@@ -392,7 +401,8 @@ func ConfirmSearchExecution(params SearchParams, autoConfirm bool, isQuiet bool)
 }
 
 // ProcessSearchWithConfirmation handles the full search flow with optimization and confirmation
-func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, verbose bool, skipConfirmation bool, isQuiet bool) (string, error) {
+// inputReader is an optional function to get user input for confirmation. If nil, uses default bufio.NewReader(os.Stdin)
+func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, verbose bool, skipConfirmation bool, isQuiet bool, inputReader func() (string, error)) (string, error) {
 	if verbose {
 		fmt.Printf("DEBUG: Starting search optimization for: '%s'\n", userInput)
 	}
@@ -409,7 +419,7 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 	}
 
 	// Ask for user confirmation (or auto-confirm for one-shot mode)
-	if !ConfirmSearchExecution(searchParams, skipConfirmation, isQuiet) {
+	if !ConfirmSearchExecution(searchParams, skipConfirmation, isQuiet, inputReader) {
 		return "Search cancelled by user.", nil
 	}
 

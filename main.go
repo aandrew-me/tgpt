@@ -599,8 +599,19 @@ func main() {
 				Verbose:           *isVerbose,
 			}
 
+			// Create a prompt-compatible input reader function for confirmations
+			promptInputReader := func() (string, error) {
+				return Prompt.Input("", bubbletea.HistoryCompleter,
+					Prompt.OptionPrefixTextColor(Prompt.Blue),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlC,
+						Fn:  exit,
+					}),
+				), nil
+			}
+
 			// Get the response handler function from helper
-			getAndPrintFindResponse := helper.InteractiveFindSession(main_params, extraOptions, *logFile)
+			getAndPrintFindResponse := helper.InteractiveFindSession(main_params, extraOptions, *logFile, promptInputReader)
 			history := []string{}
 
 			input := strings.TrimSpace(prompt)
