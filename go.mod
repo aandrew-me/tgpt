@@ -5,6 +5,7 @@ go 1.24
 toolchain go1.24.2
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/atotto/clipboard v0.1.4
 	github.com/bogdanfinn/fhttp v0.5.32
 	github.com/bogdanfinn/tls-client v1.7.11
@@ -18,30 +19,9 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/PuerkitoBio/goquery v1.10.2 // indirect
-	github.com/andybalholm/cascadia v1.3.3 // indirect
-	github.com/antchfx/htmlquery v1.3.4 // indirect
-	github.com/antchfx/xmlquery v1.4.4 // indirect
-	github.com/antchfx/xpath v1.3.3 // indirect
-	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
-	github.com/bits-and-blooms/bitset v1.22.0 // indirect
-	github.com/go-shiori/dom v0.0.0-20230515143342-73569d674e1c // indirect
-	github.com/go-shiori/go-readability v0.0.0-20250217085726-9f5bf5ca7612 // indirect
-	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/gocolly/colly/v2 v2.2.0 // indirect
-	github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f // indirect
-	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/kennygrant/sanitize v1.2.4 // indirect
-	github.com/nlnwa/whatwg-url v0.6.1 // indirect
-	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
-	github.com/temoto/robotstxt v1.1.2 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250606033433-dcc06ee1d476 // indirect
 	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
-	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
 )
 
 require (
