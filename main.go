@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
+	"github.com/aandrew-me/tgpt/v2/src/config"
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -29,6 +30,14 @@ var bold = color.New(color.Bold)
 var blue = color.New(color.FgBlue)
 
 var programLoop = true
+
+// getStringValue safely gets the string value from a *string, returning empty string if nil
+func getStringValue(ptr *string) string {
+	if ptr == nil {
+		return ""
+	}
+	return *ptr
+}
 
 func main() {
 	var userInput = ""
@@ -131,27 +140,85 @@ func main() {
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
-	flag.Parse()
+	profileName := flag.String("profile", "", "Use a configuration profile")
 
-	final_provider := *provider
-
-	if *provider == "" {
-		if *isImage {
-			final_provider = os.Getenv("IMG_PROVIDER")
-		} else {
-			final_provider = os.Getenv("AI_PROVIDER")
-		}
+	// Add config CLI subcommand handling before flag parsing
+	if len(os.Args) > 1 && os.Args[1] == "config" {
+		helper.HandleConfigCommand(os.Args[2:])
+		return
 	}
 
+	flag.Parse()
+
+	// Load configuration system
+	appConfig, err := config.LoadConfig("")
+	if err != nil {
+		// Non-critical error - continue with defaults if config fails to load
+		if *isVerbose {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to load configuration: %v\n", err)
+		}
+		appConfig = config.GetDefaultConfig()
+	}
+
+	// Validate profile exists if specified, but don't apply it yet
+	// Let ResolveConfig handle the profile application in correct precedence order
+	if *profileName != "" {
+		if _, exists := appConfig.Profiles[*profileName]; !exists {
+			utils.PrintError(fmt.Sprintf("Profile '%s' not found in configuration", *profileName))
+			os.Exit(1)
+		}
+		// Store profile name for ResolveConfig to use
+		appConfig.ProfileName = *profileName
+	}
+
+	// Resolve configuration values using centralized precedence logic
+	cliFlags := map[string]string{
+		"provider":    getStringValue(provider),
+		"key":         getStringValue(apiKey),
+		"model":       getStringValue(apiModel),
+		"temperature": getStringValue(temperature),
+		"top_p":       getStringValue(top_p),
+		"url":         getStringValue(url),
+	}
+
+	// Use flag.Visit to detect which boolean flags were explicitly set by the user
+	visitedFlags := make(map[string]bool)
+	flag.Visit(func(f *flag.Flag) {
+		visitedFlags[f.Name] = true
+	})
+
+	// Add boolean flags to cliFlags only if they were explicitly set
+	if visitedFlags["q"] || visitedFlags["quiet"] {
+		cliFlags["quiet"] = "true"
+	}
+	if visitedFlags["vb"] || visitedFlags["verbose"] {
+		cliFlags["verbose"] = "true"
+	}
+	if visitedFlags["w"] || visitedFlags["whole"] {
+		cliFlags["markdown_output"] = "true"
+	}
+
+	resolved := appConfig.ResolveConfig(cliFlags, *isImage)
+
+	// Use resolved values
+	final_provider := resolved.Provider
+	effectiveApiKey := resolved.APIKey
+	effectiveModel := resolved.Model
+	effectiveTemperature := resolved.Temperature
+	effectiveTopP := resolved.TopP
+	effectiveUrl := resolved.URL
+	effectiveQuiet := resolved.Quiet
+	effectiveVerbose := resolved.Verbose
+
 	main_params := structs.Params{
-		ApiKey:       *apiKey,
-		ApiModel:     *apiModel,
+		ApiKey:       effectiveApiKey,
+		ApiModel:     effectiveModel,
 		Provider:     final_provider,
-		Temperature:  *temperature,
-		Top_p:        *top_p,
+		Temperature:  effectiveTemperature,
+		Top_p:        effectiveTopP,
 		Preprompt:    *preprompt,
 		ThreadID:     "",
-		Url:          *url,
+		Url:          effectiveUrl,
 		PrevMessages: []any{},
 	}
 
@@ -237,15 +304,15 @@ func main() {
 					return
 				}
 
-				imagegen.GenerateImg(trimmedPrompt, image_params, *isQuiet)
+				imagegen.GenerateImg(trimmedPrompt, image_params, effectiveQuiet)
 
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
-				if !*isQuiet {
+				if !effectiveQuiet {
 					fmt.Println()
 				}
 
-				imagegen.GenerateImg(formattedInput, image_params, *isQuiet)
+				imagegen.GenerateImg(formattedInput, image_params, effectiveQuiet)
 			}
 		case *isWhole:
 			if len(prompt) > 1 {
@@ -284,7 +351,7 @@ func main() {
 					structs.ExtraOptions{
 						IsGetCommand: true,
 						AutoExec:     *shouldExecuteCommand,
-						IsGetSilent:  *isQuiet,
+						IsGetSilent:  effectiveQuiet,
 					},
 				)
 			} else {
@@ -307,7 +374,7 @@ func main() {
 					main_params,
 					structs.ExtraOptions{
 						IsGetCode:   true,
-						IsGetSilent: *isQuiet,
+						IsGetSilent: effectiveQuiet,
 					},
 				)
 			} else {
@@ -356,7 +423,7 @@ func main() {
 				main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 				main_params.ThreadID = threadID
 
-				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: effectiveQuiet})
 
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
@@ -420,7 +487,7 @@ func main() {
 					main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 					main_params.ThreadID = threadID
 
-					responseObjects, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+					responseObjects, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: effectiveQuiet})
 					previousMessages = append(previousMessages, responseObjects...)
 					lastResponse = responseTxt
 
@@ -576,10 +643,10 @@ func main() {
 
 				extraOptions := structs.ExtraOptions{
 					IsFind:  true,
-					Verbose: *isVerbose,
+					Verbose: effectiveVerbose,
 				}
 
-				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, *isQuiet, *logFile)
+				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, effectiveQuiet, *logFile)
 			} else {
 				utils.PrintError("You need to provide some text")
 				utils.PrintError(`Example: tgpt -f "What is the latest news about AI?"`)
@@ -596,7 +663,7 @@ func main() {
 			extraOptions := structs.ExtraOptions{
 				IsInteractiveFind: true,
 				IsFind:            true,
-				Verbose:           *isVerbose,
+				Verbose:           effectiveVerbose,
 			}
 
 			// Create a prompt-compatible input reader function for confirmations

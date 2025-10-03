@@ -75,7 +75,7 @@ func GenerateImagePollinations(prompt string, params structs.ImageParams) string
 	res, err := client.Do(req)
 
 	if err != nil {
-		log.Fatal(os.Stderr, err)
+		log.Fatal(err)
 	}
 
 	defer res.Body.Close()
@@ -89,7 +89,7 @@ func GenerateImagePollinations(prompt string, params structs.ImageParams) string
 
 	file, err := os.Create(filepath)
 	if err != nil {
-		log.Fatal(os.Stderr, "Error: %v", err)
+		log.Fatalf("Error: %v", err)
 	}
 	defer file.Close()
 
@@ -97,7 +97,7 @@ func GenerateImagePollinations(prompt string, params structs.ImageParams) string
 	_, err = io.Copy(file, res.Body)
 
 	if err != nil {
-		log.Fatal(os.Stderr, "Error: %v", err)
+		log.Fatalf("Error: %v", err)
 	}
 
 	return filepath
