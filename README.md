@@ -14,6 +14,8 @@
 
 <img src="https://github.com/user-attachments/assets/1b554b99-79ca-45b7-87ff-7713b7fd9437" alt="Demo" width="500" height="330">
 
+### [Usage](./md/usage.md)
+
 ### [Currently available providers](./md/providers.md)
 
 ## Installation ⏬
