@@ -34,7 +34,10 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		model = envModel
 	}
 
-	apiKey := params.ApiKey
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if params.ApiKey != "" {
+		apiKey = params.ApiKey
+	}
 
 	url := params.Url
 
