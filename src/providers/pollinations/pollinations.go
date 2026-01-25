@@ -16,11 +16,9 @@ import (
 
 type RequestBody struct {
 	Model       string `json:"model"`
-	Referrer    string `json:"referrer"`
 	Stream      bool   `json:"stream"`
 	Messages    []any  `json:"messages"`
-	Temperature string `json:"temperature"`
-	Top_p       string `json:"top_p"`
+
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -33,9 +31,6 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	requestInfo := RequestBody{
 		Model:       "openai",
 		Stream:      true,
-		Referrer:    "tgpt",
-		Temperature: "1",
-		Top_p:       "1",
 	}
 
 	apiKey := params.ApiKey
@@ -44,13 +39,13 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		requestInfo.Model = params.ApiModel
 	}
 
-	if params.Temperature != "" {
-		requestInfo.Temperature = params.Temperature
-	}
+	// if params.Temperature != "" {
+	// 	requestInfo.Temperature = params.Temperature
+	// }
 
-	if params.Top_p != "" {
-		requestInfo.Top_p = params.Top_p
-	}
+	// if params.Top_p != "" {
+	// 	requestInfo.Top_p = params.Top_p
+	// }
 
 	systemMessage := structs.DefaultMessage{
 		Role:    "system",
@@ -79,7 +74,13 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	}
 
-	req, err := http.NewRequest("POST", "https://text.pollinations.ai/openai", bytes.NewBuffer(jsonRequest))
+	apiUrl := "https://text.pollinations.ai/openai"
+
+	if apiKey != "" {
+		apiUrl = "https://gen.pollinations.ai/v1/chat/completions"
+	}
+
+	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(jsonRequest))
 
 	if err != nil {
 		log.Fatal("Some error has occured.\nError:", err)
