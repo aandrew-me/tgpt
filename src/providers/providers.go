@@ -12,7 +12,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
-	"github.com/aandrew-me/tgpt/v2/src/providers/phind"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/providers/sky"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -20,7 +19,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "ollama", "openai", "phind", "pollinations", "sky",
+	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "ollama", "openai", "pollinations", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -46,7 +45,7 @@ func GetMainText(line string, provider string, input string) string {
 	case "sky":
 		return sky.GetMainText(line)
 	default:
-		return phind.GetMainText(line)
+		return pollinations.GetMainText(line)
 	}
 }
 
@@ -85,7 +84,7 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	case "sky":
 		return sky.NewRequest(input, params)
 	default:
-		return phind.NewRequest(input, params)
+		return pollinations.NewRequest(input, params)
 	}
 
 }
