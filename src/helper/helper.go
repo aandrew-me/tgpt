@@ -877,8 +877,8 @@ func ShowHelpMessage() {
 	}
 
 	boldBlue.Println("\nProviders:")
-	fmt.Println("The default provider is phind. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, pollinations and phind")
+	fmt.Println("The default provider is pollinations. The AI_PROVIDER environment variable can be used to specify a different provider.")
+	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, sky and pollinations")
 
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
@@ -892,9 +892,6 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")
 
-	bold.Println("\nProvider: kimi")
-	fmt.Println("Free provider with web search, limited context")
-
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
@@ -904,11 +901,8 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url")
 
-	bold.Println("\nProvider: phind")
-	fmt.Println("Uses Phind Model. Great for developers")
-
 	bold.Println("\nProvider: pollinations")
-	fmt.Println("Completely free, default model is gpt-4o. Supported models: https://text.pollinations.ai/models")
+	fmt.Println("Works without an API key. Works better with free api key from https://enter.pollinations.ai/")
 
 	bold.Println("\nProvider: sky")
 	fmt.Println("Free, uses gpt-4.1-mini model")
