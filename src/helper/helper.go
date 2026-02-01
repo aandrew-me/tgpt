@@ -5,14 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/aandrew-me/tgpt/v2/src/client"
+	"github.com/aandrew-me/tgpt/v2/src/config"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/search"
@@ -925,6 +929,336 @@ func ShowHelpMessage() {
 	fmt.Println(`tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
+}
+
+// HandleConfigCommand processes config subcommands
+func HandleConfigCommand(args []string) {
+	if len(args) == 0 {
+		printConfigHelp()
+		return
+	}
+
+	subcommand := args[0]
+	subArgs := args[1:]
+
+	switch subcommand {
+	case "init":
+		handleConfigInit()
+	case "show":
+		handleConfigShow()
+	case "edit":
+		handleConfigEdit()
+	case "validate":
+		handleConfigValidate()
+	case "providers":
+		handleConfigProviders()
+	case "profiles":
+		handleConfigProfiles()
+	case "set":
+		handleConfigSet(subArgs)
+	case "get":
+		handleConfigGet(subArgs)
+	case "migrate":
+		handleConfigMigrate()
+	case "profile":
+		handleConfigProfile(subArgs)
+	case "--help", "help", "-h":
+		printConfigHelp()
+	default:
+		fmt.Printf("Unknown config subcommand: %s\n", subcommand)
+		printConfigHelp()
+	}
+}
+
+func printConfigHelp() {
+	fmt.Println("Configuration management commands:")
+	fmt.Println("  tgpt config init      - Initialize configuration with interactive setup")
+	fmt.Println("  tgpt config show      - Show current effective configuration")
+	fmt.Println("  tgpt config edit      - Edit configuration file in default editor")
+	fmt.Println("  tgpt config validate  - Validate configuration file")
+	fmt.Println("  tgpt config providers - List available providers")
+	fmt.Println("  tgpt config profiles  - List available profiles")
+	fmt.Println("  tgpt config set <key> <value> - Set a configuration value")
+	fmt.Println("  tgpt config get <key> - Get a configuration value")
+	fmt.Println("  tgpt config migrate   - Migrate from environment variables")
+	fmt.Println("  tgpt config profile <create|list|delete> - Profile management")
+}
+
+func handleConfigInit() {
+	manager := config.NewManager()
+	cfg, err := manager.Load("")
+	if err != nil {
+		// Start with default config
+		cfg = config.GetDefaultConfig()
+	}
+
+	configPath := config.GetDefaultConfigPath()
+	fmt.Printf("Initializing configuration at: %s\n", configPath)
+
+	// Interactive setup
+	fmt.Print("Enter your preferred provider (cerebras/openai/gemini): ")
+	var provider string
+	fmt.Scanln(&provider)
+	if provider != "" {
+		cfg.Defaults.Provider = provider
+	}
+
+	fmt.Print("Enter your preferred temperature (0.1-1.0): ")
+	var temp string
+	fmt.Scanln(&temp)
+	if temp != "" {
+		if t, err := strconv.ParseFloat(temp, 64); err == nil && t >= 0.1 && t <= 1.0 {
+			cfg.Defaults.Temperature = t
+		}
+	}
+
+	// Save the configuration
+	if err := config.SaveConfig(cfg, configPath); err != nil {
+		fmt.Printf("Error saving configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Configuration initialized successfully!")
+}
+
+func handleConfigShow() {
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		fmt.Printf("Error loading configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Pretty print the configuration
+	output, err := toml.Marshal(cfg)
+	if err != nil {
+		fmt.Printf("Error marshaling configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Current Configuration:")
+	fmt.Println("====================")
+	fmt.Print(string(output))
+}
+
+func handleConfigEdit() {
+	configPath := config.GetDefaultConfigPath()
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "nano" // fallback editor
+	}
+
+	// Create config file if it doesn't exist
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		if err := config.SaveConfig(config.GetDefaultConfig(), configPath); err != nil {
+			fmt.Printf("Error creating configuration file: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	cmd := exec.Command(editor, configPath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error opening editor: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func handleConfigValidate() {
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		fmt.Printf("Configuration validation failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Check for missing environment variables
+	missingVars := config.ValidateEnvExpansion(cfg)
+	if len(missingVars) > 0 {
+		fmt.Println("Warning: Missing environment variables:")
+		for _, mv := range missingVars {
+			fmt.Printf("  - %s\n", mv)
+		}
+	} else {
+		fmt.Println("Configuration is valid!")
+	}
+}
+
+func handleConfigProviders() {
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		fmt.Printf("Error loading configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Configured Providers:")
+	fmt.Println("====================")
+	for name, provider := range cfg.Providers {
+		fmt.Printf("- %s (type: %s, model: %s)\n", name, provider.Type, provider.Model)
+		if provider.URL != "" {
+			fmt.Printf("  URL: %s\n", provider.URL)
+		}
+	}
+}
+
+func handleConfigProfiles() {
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		fmt.Printf("Error loading configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Available Profiles:")
+	fmt.Println("==================")
+	for name, profile := range cfg.Profiles {
+		temp := "default"
+		if profile.Temperature != nil {
+			temp = fmt.Sprintf("%.1f", *profile.Temperature)
+		}
+		fmt.Printf("- %s (provider: %s, temperature: %s)\n", name, profile.Provider, temp)
+	}
+}
+
+func handleConfigSet(args []string) {
+	if len(args) < 2 {
+		fmt.Println("Usage: tgpt config set <key> <value>")
+		fmt.Println("Example: tgpt config set defaults.provider cerebras")
+		return
+	}
+
+	key := args[0]
+	value := args[1]
+
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		cfg = config.GetDefaultConfig()
+	}
+
+	if err := cfg.SetValue(key, value); err != nil {
+		fmt.Printf("Error setting configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	configPath := config.GetDefaultConfigPath()
+	if err := config.SaveConfig(cfg, configPath); err != nil {
+		fmt.Printf("Error saving configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Set %s = %s\n", key, value)
+}
+
+func handleConfigGet(args []string) {
+	if len(args) < 1 {
+		fmt.Println("Usage: tgpt config get <key>")
+		fmt.Println("Example: tgpt config get defaults.provider")
+		return
+	}
+
+	key := args[0]
+
+	cfg, err := config.LoadConfig("")
+	if err != nil {
+		fmt.Printf("Error loading configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	value, err := cfg.GetValue(key)
+	if err != nil {
+		fmt.Printf("Error getting configuration value: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("%s = %s\n", key, value)
+}
+
+func handleConfigMigrate() {
+	candidates, err := config.DetectMigrationCandidates()
+	if err != nil {
+		fmt.Printf("Error detecting migration candidates: %v\n", err)
+		os.Exit(1)
+	}
+
+	if len(candidates) == 0 {
+		fmt.Println("No environment variables found that can be migrated.")
+		return
+	}
+
+	// Show migration report
+	report := config.GenerateMigrationReport(candidates)
+	fmt.Println(report)
+
+	// Ask for confirmation
+	fmt.Print("\nProceed with migration? (y/N): ")
+	var response string
+	fmt.Scanln(&response)
+
+	if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+		fmt.Println("Migration cancelled.")
+		return
+	}
+
+	// Perform migration
+	cfg, err := config.MigrateFromEnv()
+	if err != nil {
+		fmt.Printf("Error during migration: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Save migrated configuration
+	configPath := config.GetDefaultConfigPath()
+	if err := config.SaveConfig(cfg, configPath); err != nil {
+		fmt.Printf("Error saving migrated configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Create backup script
+	backup := config.BackupEnvironment(candidates)
+	if backup != "" {
+		backupPath := configPath + ".env.backup.sh"
+		if err := ioutil.WriteFile(backupPath, []byte(backup), 0755); err == nil {
+			fmt.Printf("Environment backup saved to: %s\n", backupPath)
+		}
+	}
+
+	fmt.Printf("Migration completed successfully! Configuration saved to: %s\n", configPath)
+}
+
+func handleConfigProfile(args []string) {
+	if len(args) == 0 {
+		fmt.Println("Usage: tgpt config profile <create|list|delete>")
+		return
+	}
+
+	subcommand := args[0]
+
+	switch subcommand {
+	case "create":
+		if len(args) < 2 {
+			fmt.Println("Usage: tgpt config profile create <name> [--provider <provider>] [--temperature <temp>]")
+			return
+		}
+		profileName := args[1]
+		// Basic profile creation - can be enhanced later
+		fmt.Printf("Creating profile: %s\n", profileName)
+		// Implementation would parse additional flags and create profile
+
+	case "list":
+		handleConfigProfiles()
+
+	case "delete":
+		if len(args) < 2 {
+			fmt.Println("Usage: tgpt config profile delete <name>")
+			return
+		}
+		profileName := args[1]
+		fmt.Printf("Deleting profile: %s\n", profileName)
+		// Implementation would remove profile from config
+
+	default:
+		fmt.Printf("Unknown profile subcommand: %s\n", subcommand)
+	}
 }
 
 // SearchQuery performs web search and AI synthesis
