@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
+	"github.com/aandrew-me/tgpt/v2/src/clipboard"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/search"
@@ -20,7 +21,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/fatih/color"
-	"golang.design/x/clipboard"
 
 	"github.com/olekukonko/ts"
 
@@ -817,13 +817,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 				if userInput == "y" || userInput == "" {
 					ExecuteCommand(ShellName, ShellOptions, fullText)
 				} else {
-					err := clipboard.Init()
-
-					if err == nil {
-						clipboard.Write(clipboard.FmtText, []byte(fullText))
-
-						fmt.Println("Copied command to clipboard")
-					}
+					clipboard.CopyToClipboard(fullText)
 				}
 			}
 		}
