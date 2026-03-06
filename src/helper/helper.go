@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -331,6 +330,17 @@ func isThinkingTag(text string) string {
 	return ""
 }
 
+func findThinkingTag(text string) (tag string, index int) {
+	lowerText := strings.ToLower(text)
+	for _, tag := range thinkingTagPatterns {
+		idx := strings.Index(lowerText, tag)
+		if idx != -1 {
+			return tag, idx
+		}
+	}
+	return "", -1
+}
+
 func isThinkingCloser(text string) string {
 	lowerText := strings.ToLower(text)
 	for _, tag := range thinkingTagClosers {
@@ -343,10 +353,12 @@ func isThinkingCloser(text string) string {
 
 var thinkSpinnerDone chan bool
 var thinkSpinnerStop chan bool
-var thinkMutex sync.Mutex
 var thinkingSpinnerActive int32
 
 func startThinkingSpinner() {
+	if atomic.LoadInt32(&thinkingSpinnerActive) == 1 {
+		return
+	}
 	atomic.StoreInt32(&thinkingSpinnerActive, 1)
 	thinkSpinnerDone = make(chan bool)
 	thinkSpinnerStop = make(chan bool)
@@ -407,8 +419,15 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 		}
 
 		trimmedText := strings.TrimLeft(mainText, " \t\n\r")
-		if tag := isThinkingTag(trimmedText); tag != "" {
-			if !inThinking {
+
+		tag, tagIdx := findThinkingTag(trimmedText)
+		if tag != "" {
+			preTag := trimmedText[:tagIdx]
+			postTag := trimmedText[tagIdx:]
+
+			isClosingTag := strings.HasPrefix(strings.ToLower(postTag), "</")
+
+			if !inThinking && !isClosingTag {
 				inThinking = true
 				currentThinkTag = tag
 
@@ -416,12 +435,24 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 					startThinkingSpinner()
 				}
 			}
-			thinkBuffer.Reset()
-			tagLen := len(tag)
-			afterTag := trimmedText[tagLen:]
-			thinkBuffer.WriteString(afterTag)
+
+			if preTag != "" && !inThinking {
+				mainText = preTag
+			} else {
+				thinkBuffer.Reset()
+				if extraOptions.IsThink {
+					thinkBuffer.WriteString(trimmedText)
+				} else {
+					tagLen := len(tag)
+					if tagLen < len(postTag) {
+						thinkBuffer.WriteString(postTag[tagLen:])
+					}
+				}
+			}
 		} else if inThinking {
 			thinkBuffer.WriteString(mainText)
+		} else {
+			mainText = mainText
 		}
 
 		bufferedText := thinkBuffer.String()
@@ -618,8 +649,15 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 		}
 
 		trimmedText := strings.TrimLeft(mainText, " \t\n\r")
-		if tag := isThinkingTag(trimmedText); tag != "" {
-			if !inThinking {
+
+		tag, tagIdx := findThinkingTag(trimmedText)
+		if tag != "" {
+			preTag := trimmedText[:tagIdx]
+			postTag := trimmedText[tagIdx:]
+
+			isClosingTag := strings.HasPrefix(strings.ToLower(postTag), "</")
+
+			if !inThinking && !isClosingTag {
 				inThinking = true
 				currentThinkTag = tag
 
@@ -627,12 +665,24 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 					startThinkingSpinner()
 				}
 			}
-			thinkBuffer.Reset()
-			tagLen := len(tag)
-			afterTag := trimmedText[tagLen:]
-			thinkBuffer.WriteString(afterTag)
+
+			if preTag != "" && !inThinking {
+				mainText = preTag
+			} else {
+				thinkBuffer.Reset()
+				if extraOptions.IsThink {
+					thinkBuffer.WriteString(trimmedText)
+				} else {
+					tagLen := len(tag)
+					if tagLen < len(postTag) {
+						thinkBuffer.WriteString(postTag[tagLen:])
+					}
+				}
+			}
 		} else if inThinking {
 			thinkBuffer.WriteString(mainText)
+		} else {
+			mainText = mainText
 		}
 
 		bufferedText := thinkBuffer.String()
@@ -687,8 +737,7 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 					(strings.HasPrefix(currentBuffer, "<search>") && strings.HasSuffix(currentBuffer, "</search>"))
 				isThinkingTag := strings.HasPrefix(currentBuffer, "<think>") ||
 					strings.HasPrefix(currentBuffer, "<thinking>") ||
-					strings.HasPrefix(currentBuffer, "</thinking>") ||
-					strings.HasPrefix(currentBuffer, "</reason")
+					strings.HasPrefix(currentBuffer, "</thinking>")
 				if isSearchOrCmdTag || (isThinkingTag && !extraOptions.IsThink) {
 					xmlBuffer.Reset()
 					inXMLTag = false
@@ -983,8 +1032,15 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		}
 
 		trimmedText := strings.TrimLeft(mainText, " \t\n\r")
-		if tag := isThinkingTag(trimmedText); tag != "" {
-			if !inThinking {
+
+		tag, tagIdx := findThinkingTag(trimmedText)
+		if tag != "" {
+			preTag := trimmedText[:tagIdx]
+			postTag := trimmedText[tagIdx:]
+
+			isClosingTag := strings.HasPrefix(strings.ToLower(postTag), "</")
+
+			if !inThinking && !isClosingTag {
 				inThinking = true
 				currentThinkTag = tag
 
@@ -992,12 +1048,24 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 					startThinkingSpinner()
 				}
 			}
-			thinkBuffer.Reset()
-			tagLen := len(tag)
-			afterTag := trimmedText[tagLen:]
-			thinkBuffer.WriteString(afterTag)
+
+			if preTag != "" && !inThinking {
+				mainText = preTag
+			} else {
+				thinkBuffer.Reset()
+				if extraOptions.IsThink {
+					thinkBuffer.WriteString(trimmedText)
+				} else {
+					tagLen := len(tag)
+					if tagLen < len(postTag) {
+						thinkBuffer.WriteString(postTag[tagLen:])
+					}
+				}
+			}
 		} else if inThinking {
 			thinkBuffer.WriteString(mainText)
+		} else {
+			mainText = mainText
 		}
 
 		bufferedText := thinkBuffer.String()
@@ -1013,14 +1081,22 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 					stopThinkingSpinner()
 				}
 
-				parts := strings.Split(bufferedText, closer)
-				if len(parts) > 1 {
-					mainText = parts[1]
+				if extraOptions.IsThink {
+					mainText = bufferedText
+				} else {
+					parts := strings.Split(bufferedText, closer)
+					if len(parts) > 1 {
+						mainText = parts[1]
+					} else {
+						mainText = ""
+					}
+				}
+			} else {
+				if extraOptions.IsThink {
+					mainText = bufferedText
 				} else {
 					mainText = ""
 				}
-			} else {
-				mainText = ""
 			}
 		}
 
