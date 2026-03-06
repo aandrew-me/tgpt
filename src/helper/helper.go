@@ -406,20 +406,25 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 			continue
 		}
 
-		thinkBuffer.WriteString(mainText)
-		bufferedText := thinkBuffer.String()
-
-		if !inThinking {
-			if tag := isThinkingTag(bufferedText); tag != "" {
+		trimmedText := strings.TrimLeft(mainText, " \t\n\r")
+		if tag := isThinkingTag(trimmedText); tag != "" {
+			if !inThinking {
 				inThinking = true
 				currentThinkTag = tag
-				thinkBuffer.Reset()
 
 				if !extraOptions.IsThink {
 					startThinkingSpinner()
 				}
 			}
+			thinkBuffer.Reset()
+			tagLen := len(tag)
+			afterTag := trimmedText[tagLen:]
+			thinkBuffer.WriteString(afterTag)
+		} else if inThinking {
+			thinkBuffer.WriteString(mainText)
 		}
+
+		bufferedText := thinkBuffer.String()
 
 		if inThinking {
 			closer := strings.ToLower(currentThinkTag)
@@ -612,20 +617,25 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 			continue
 		}
 
-		thinkBuffer.WriteString(mainText)
-		bufferedText := thinkBuffer.String()
-
-		if !inThinking {
-			if tag := isThinkingTag(bufferedText); tag != "" {
+		trimmedText := strings.TrimLeft(mainText, " \t\n\r")
+		if tag := isThinkingTag(trimmedText); tag != "" {
+			if !inThinking {
 				inThinking = true
 				currentThinkTag = tag
-				thinkBuffer.Reset()
 
 				if !extraOptions.IsThink {
 					startThinkingSpinner()
 				}
 			}
+			thinkBuffer.Reset()
+			tagLen := len(tag)
+			afterTag := trimmedText[tagLen:]
+			thinkBuffer.WriteString(afterTag)
+		} else if inThinking {
+			thinkBuffer.WriteString(mainText)
 		}
+
+		bufferedText := thinkBuffer.String()
 
 		if inThinking {
 			closer := strings.ToLower(currentThinkTag)
@@ -972,20 +982,25 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			continue
 		}
 
-		thinkBuffer.WriteString(mainText)
-		bufferedText := thinkBuffer.String()
-
-		if !inThinking {
-			if tag := isThinkingTag(bufferedText); tag != "" {
+		trimmedText := strings.TrimLeft(mainText, " \t\n\r")
+		if tag := isThinkingTag(trimmedText); tag != "" {
+			if !inThinking {
 				inThinking = true
 				currentThinkTag = tag
-				thinkBuffer.Reset()
 
 				if !extraOptions.IsThink {
 					startThinkingSpinner()
 				}
 			}
+			thinkBuffer.Reset()
+			tagLen := len(tag)
+			afterTag := trimmedText[tagLen:]
+			thinkBuffer.WriteString(afterTag)
+		} else if inThinking {
+			thinkBuffer.WriteString(mainText)
 		}
+
+		bufferedText := thinkBuffer.String()
 
 		if inThinking {
 			closer := strings.ToLower(currentThinkTag)
