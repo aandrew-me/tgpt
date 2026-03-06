@@ -451,8 +451,6 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 			}
 		} else if inThinking {
 			thinkBuffer.WriteString(mainText)
-		} else {
-			mainText = mainText
 		}
 
 		bufferedText := thinkBuffer.String()
@@ -479,11 +477,8 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 					}
 				}
 			} else {
-				if extraOptions.IsThink {
-					mainText = bufferedText
-				} else {
-					mainText = ""
-				}
+				// Still accumulating thinking content, don't output yet
+				mainText = ""
 			}
 		}
 
@@ -681,8 +676,6 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 			}
 		} else if inThinking {
 			thinkBuffer.WriteString(mainText)
-		} else {
-			mainText = mainText
 		}
 
 		bufferedText := thinkBuffer.String()
@@ -709,11 +702,8 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 					}
 				}
 			} else {
-				if extraOptions.IsThink {
-					mainText = bufferedText
-				} else {
-					mainText = ""
-				}
+				// Still accumulating thinking content, don't output yet
+				mainText = ""
 			}
 		}
 
@@ -737,7 +727,8 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 					(strings.HasPrefix(currentBuffer, "<search>") && strings.HasSuffix(currentBuffer, "</search>"))
 				isThinkingTag := strings.HasPrefix(currentBuffer, "<think>") ||
 					strings.HasPrefix(currentBuffer, "<thinking>") ||
-					strings.HasPrefix(currentBuffer, "</thinking>")
+					strings.HasPrefix(currentBuffer, "</thinking>") ||
+					strings.HasSuffix(currentBuffer, "</think>")
 				if isSearchOrCmdTag || (isThinkingTag && !extraOptions.IsThink) {
 					xmlBuffer.Reset()
 					inXMLTag = false
@@ -1064,8 +1055,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			}
 		} else if inThinking {
 			thinkBuffer.WriteString(mainText)
-		} else {
-			mainText = mainText
 		}
 
 		bufferedText := thinkBuffer.String()
@@ -1092,11 +1081,8 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 					}
 				}
 			} else {
-				if extraOptions.IsThink {
-					mainText = bufferedText
-				} else {
-					mainText = ""
-				}
+				// Still accumulating thinking content, don't output yet
+				mainText = ""
 			}
 		}
 
@@ -1112,9 +1098,12 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 	}
 
 	if err := scanner.Err(); err != nil {
+		stopThinkingSpinner()
 		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
 		os.Exit(1)
 	}
+
+	stopThinkingSpinner()
 
 	if extraOptions.IsGetWhole {
 		fmt.Println(fullText)
