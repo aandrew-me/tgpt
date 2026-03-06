@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
@@ -309,7 +310,75 @@ func GetLastCodeBlock(markdown string) string {
 	return strings.Join(codeBlock, "\n")
 }
 
-func HandleEachPart(resp *http.Response, input string, params structs.Params) string {
+var thinkingTagPatterns = []string{
+	"<think>",
+	"<thinking>",
+	"<reason>",
+	"<reasoning>",
+	"<step>",
+}
+
+var thinkingTagClosers = []string{
+	"</think>",
+	"</thinking>",
+	"</reason>",
+	"</reasoning>",
+	"</step>",
+}
+
+func isThinkingTag(text string) string {
+	lowerText := strings.ToLower(text)
+	for _, tag := range thinkingTagPatterns {
+		if strings.HasPrefix(lowerText, tag) {
+			return tag
+		}
+	}
+	return ""
+}
+
+func isThinkingCloser(text string) string {
+	lowerText := strings.ToLower(text)
+	for _, tag := range thinkingTagClosers {
+		if strings.HasSuffix(lowerText, tag) {
+			return tag
+		}
+	}
+	return ""
+}
+
+var thinkSpinnerDone chan bool
+var thinkSpinnerStop chan bool
+var thinkMutex sync.Mutex
+
+func startThinkingSpinner() {
+	thinkSpinnerDone = make(chan bool)
+	thinkSpinnerStop = make(chan bool)
+	go func() {
+		spinnerChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		i := 0
+		for {
+			select {
+			case <-thinkSpinnerStop:
+				thinkSpinnerDone <- true
+				return
+			default:
+				fmt.Printf("\r\033[36m%s Thinking...\033[0m", spinnerChars[i])
+				i = (i + 1) % len(spinnerChars)
+				time.Sleep(80 * time.Millisecond)
+			}
+		}
+	}()
+}
+
+func stopThinkingSpinner() {
+	if thinkSpinnerStop != nil {
+		thinkSpinnerStop <- true
+		<-thinkSpinnerDone
+		fmt.Printf("\r\033[2K\r")
+	}
+}
+
+func HandleEachPart(resp *http.Response, input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables
@@ -327,11 +396,57 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 
 	fullText := ""
 
+	var thinkBuffer strings.Builder
+	inThinking := false
+	var currentThinkTag string
+
 	for scanner.Scan() {
 		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
 		if len(mainText) < 1 {
 			continue
 		}
+
+		thinkBuffer.WriteString(mainText)
+		bufferedText := thinkBuffer.String()
+
+		if !inThinking {
+			if tag := isThinkingTag(bufferedText); tag != "" {
+				inThinking = true
+				currentThinkTag = tag
+				thinkBuffer.Reset()
+
+				if !extraOptions.IsThink {
+					startThinkingSpinner()
+				}
+			}
+		}
+
+		if inThinking {
+			closer := strings.ToLower(currentThinkTag)
+			closer = strings.Replace(closer, "<", "</", 1)
+			if strings.Contains(bufferedText, closer) {
+				inThinking = false
+				thinkBuffer.Reset()
+
+				if !extraOptions.IsThink {
+					stopThinkingSpinner()
+				}
+
+				parts := strings.Split(bufferedText, closer)
+				if len(parts) > 1 {
+					mainText = parts[1]
+				} else {
+					mainText = ""
+				}
+			} else {
+				mainText = ""
+			}
+		}
+
+		if mainText == "" {
+			continue
+		}
+
 		fullText += mainText
 
 		if count <= 0 {
@@ -455,7 +570,7 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 }
 
 // handle response for interactive shell mode
-func HandleEachPartInteractiveShell(resp *http.Response, input string, params structs.Params) string {
+func HandleEachPartInteractiveShell(resp *http.Response, input string, params structs.Params, extraOptions structs.ExtraOptions) string {
 	scanner := bufio.NewScanner(resp.Body)
 
 	// Variables for formatting
@@ -472,6 +587,10 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 	termWidth := size.Col()
 
 	fullText := ""
+	var thinkBuffer strings.Builder
+	inThinking := false
+	var currentThinkTag string
+
 	// Buffer for incomplete XML tags
 	var xmlBuffer strings.Builder
 	// Track if inside XML tag
@@ -480,6 +599,47 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 	for scanner.Scan() {
 		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
 		if len(mainText) < 1 {
+			continue
+		}
+
+		thinkBuffer.WriteString(mainText)
+		bufferedText := thinkBuffer.String()
+
+		if !inThinking {
+			if tag := isThinkingTag(bufferedText); tag != "" {
+				inThinking = true
+				currentThinkTag = tag
+				thinkBuffer.Reset()
+
+				if !extraOptions.IsThink {
+					startThinkingSpinner()
+				}
+			}
+		}
+
+		if inThinking {
+			closer := strings.ToLower(currentThinkTag)
+			closer = strings.Replace(closer, "<", "</", 1)
+			if strings.Contains(bufferedText, closer) {
+				inThinking = false
+				thinkBuffer.Reset()
+
+				if !extraOptions.IsThink {
+					stopThinkingSpinner()
+				}
+
+				parts := strings.Split(bufferedText, closer)
+				if len(parts) > 1 {
+					mainText = parts[1]
+				} else {
+					mainText = ""
+				}
+			} else {
+				mainText = ""
+			}
+		}
+
+		if mainText == "" {
 			continue
 		}
 
@@ -759,12 +919,12 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 		// Handling each part
 		if extraOptions.IsInteractiveShell {
-			return HandleEachPartInteractiveShell(resp, input, params)
+			return HandleEachPartInteractiveShell(resp, input, params, extraOptions)
 		}
 		if extraOptions.IsInteractiveFind {
-			return HandleEachPartInteractiveShell(resp, input, params) // Use same formatting as interactive shell
+			return HandleEachPartInteractiveShell(resp, input, params, extraOptions) // Use same formatting as interactive shell
 		}
-		return HandleEachPart(resp, input, params)
+		return HandleEachPart(resp, input, params, extraOptions)
 	}
 
 	if extraOptions.IsGetCommand {
@@ -775,12 +935,57 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 	// Handling each part
 	fullText := ""
+	var thinkBuffer strings.Builder
+	inThinking := false
+	var currentThinkTag string
 
 	for scanner.Scan() {
 		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
 		if len(mainText) < 1 {
 			continue
 		}
+
+		thinkBuffer.WriteString(mainText)
+		bufferedText := thinkBuffer.String()
+
+		if !inThinking {
+			if tag := isThinkingTag(bufferedText); tag != "" {
+				inThinking = true
+				currentThinkTag = tag
+				thinkBuffer.Reset()
+
+				if !extraOptions.IsThink {
+					startThinkingSpinner()
+				}
+			}
+		}
+
+		if inThinking {
+			closer := strings.ToLower(currentThinkTag)
+			closer = strings.Replace(closer, "<", "</", 1)
+			if strings.Contains(bufferedText, closer) {
+				inThinking = false
+				thinkBuffer.Reset()
+
+				if !extraOptions.IsThink {
+					stopThinkingSpinner()
+				}
+
+				parts := strings.Split(bufferedText, closer)
+				if len(parts) > 1 {
+					mainText = parts[1]
+				} else {
+					mainText = ""
+				}
+			} else {
+				mainText = ""
+			}
+		}
+
+		if mainText == "" {
+			continue
+		}
+
 		fullText += mainText
 
 		if !extraOptions.IsGetWhole {
@@ -858,6 +1063,7 @@ func ShowHelpMessage() {
 	boldBlue.Println("\nOptions:")
 	fmt.Printf("%-50v Print version \n", "-v, --version")
 	fmt.Printf("%-50v Print help message \n", "-h, --help")
+	fmt.Printf("%-50v Show thinking process from the AI \n", "-t, --think")
 	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
 	fmt.Printf("%-50v Start interactive shell mode. (Doesn't work with all providers) \n", "-is, --interactive-shell")

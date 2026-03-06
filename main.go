@@ -131,6 +131,9 @@ func main() {
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
+	isThink := flag.Bool("t", false, "Show thinking process from the AI")
+	flag.BoolVar(isThink, "think", false, "Show thinking process from the AI")
+
 	flag.Parse()
 
 	final_provider := *provider
@@ -258,14 +261,14 @@ func main() {
 				}
 				helper.GetWholeText(
 					*preprompt+trimmedPrompt+contextText+pipedInput,
-					structs.ExtraOptions{IsGetWhole: *isWhole},
+					structs.ExtraOptions{IsGetWhole: *isWhole, IsThink: *isThink},
 					main_params,
 				)
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				helper.GetWholeText(
 					*preprompt+formattedInput+cleanPipedInput,
-					structs.ExtraOptions{IsGetWhole: *isWhole},
+					structs.ExtraOptions{IsGetWhole: *isWhole, IsThink: *isThink},
 					main_params,
 				)
 			}
@@ -285,6 +288,7 @@ func main() {
 						IsGetCommand: true,
 						AutoExec:     *shouldExecuteCommand,
 						IsGetSilent:  *isQuiet,
+						IsThink:      *isThink,
 					},
 				)
 			} else {
@@ -308,6 +312,7 @@ func main() {
 					structs.ExtraOptions{
 						IsGetCode:   true,
 						IsGetSilent: *isQuiet,
+						IsThink:     *isThink,
 					},
 				)
 			} else {
@@ -356,7 +361,7 @@ func main() {
 				main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 				main_params.ThreadID = threadID
 
-				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet, IsThink: *isThink})
 
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
@@ -420,7 +425,7 @@ func main() {
 					main_params.PrevMessages = append(main_params.PrevMessages, previousMessages...)
 					main_params.ThreadID = threadID
 
-					responseObjects, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+					responseObjects, responseTxt := helper.GetData(userInput, main_params, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet, IsThink: *isThink})
 					previousMessages = append(previousMessages, responseObjects...)
 					lastResponse = responseTxt
 
@@ -479,7 +484,7 @@ func main() {
 				main_params.ThreadID = threadID
 				main_params.SystemPrompt = promptIs
 
-				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true, IsThink: *isThink})
 				// Regex to match complete <cmd>...</cmd>
 				commandRegex := regexp.MustCompile(`<cmd>(.*?)</cmd>`)
 				matches := commandRegex.FindStringSubmatch(responseTxt)
@@ -577,6 +582,7 @@ func main() {
 				extraOptions := structs.ExtraOptions{
 					IsFind:  true,
 					Verbose: *isVerbose,
+					IsThink: *isThink,
 				}
 
 				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, *isQuiet, *logFile)
@@ -597,6 +603,7 @@ func main() {
 				IsInteractiveFind: true,
 				IsFind:            true,
 				Verbose:           *isVerbose,
+				IsThink:           *isThink,
 			}
 
 			// Create a prompt-compatible input reader function for confirmations
@@ -688,7 +695,7 @@ func main() {
 				main_params.ThreadID = threadID
 				main_params.SystemPrompt = promptAlias
 
-				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
+				responseObjects, responseTxt := helper.GetData(input, main_params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true, IsThink: *isThink})
 				// Regex to match complete <cmd>...</cmd>
 				commandRegex := regexp.MustCompile(`<cmd>(.*?)</cmd>`)
 				matches := commandRegex.FindStringSubmatch(responseTxt)
@@ -781,11 +788,11 @@ func main() {
 
 					return
 				}
-				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true, IsThink: *isThink})
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true, IsThink: *isThink})
 			}
 		default:
 			formattedInput := strings.TrimSpace(prompt)
@@ -800,7 +807,7 @@ func main() {
 				*preprompt+formattedInput+contextText+pipedInput,
 				main_params,
 				structs.ExtraOptions{
-					IsNormal: true, IsInteractive: false,
+					IsNormal: true, IsInteractive: false, IsThink: *isThink,
 				})
 		}
 
@@ -809,7 +816,7 @@ func main() {
 		scanner.Scan()
 		input := scanner.Text()
 		formattedInput := strings.TrimSpace(input)
-		helper.GetData(*preprompt+formattedInput+pipedInput, main_params, structs.ExtraOptions{IsInteractive: false})
+		helper.GetData(*preprompt+formattedInput+pipedInput, main_params, structs.ExtraOptions{IsInteractive: false, IsThink: *isThink})
 	}
 }
 
