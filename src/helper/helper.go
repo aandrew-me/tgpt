@@ -311,13 +311,13 @@ func GetLastCodeBlock(markdown string) string {
 }
 
 var thinkingTagPatterns = []string{
-	"<think>",
 	"<thinking>",
+	"<think>",
 }
 
 var thinkingTagClosers = []string{
-	"</think>",
 	"</thinking>",
+	"</think>",
 }
 
 func isThinkingTag(text string) string {
@@ -727,8 +727,8 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 					(strings.HasPrefix(currentBuffer, "<search>") && strings.HasSuffix(currentBuffer, "</search>"))
 				isThinkingTag := strings.HasPrefix(currentBuffer, "<think>") ||
 					strings.HasPrefix(currentBuffer, "<thinking>") ||
-					strings.HasPrefix(currentBuffer, "</thinking>") ||
-					strings.HasSuffix(currentBuffer, "</think>")
+					strings.HasPrefix(currentBuffer, "</think>") ||
+					strings.HasPrefix(currentBuffer, "</thinking>")
 				if isSearchOrCmdTag || (isThinkingTag && !extraOptions.IsThink) {
 					xmlBuffer.Reset()
 					inXMLTag = false
