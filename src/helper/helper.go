@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
@@ -313,17 +314,11 @@ func GetLastCodeBlock(markdown string) string {
 var thinkingTagPatterns = []string{
 	"<think>",
 	"<thinking>",
-	"<reason>",
-	"<reasoning>",
-	"<step>",
 }
 
 var thinkingTagClosers = []string{
 	"</think>",
 	"</thinking>",
-	"</reason>",
-	"</reasoning>",
-	"</step>",
 }
 
 func isThinkingTag(text string) string {
@@ -349,8 +344,10 @@ func isThinkingCloser(text string) string {
 var thinkSpinnerDone chan bool
 var thinkSpinnerStop chan bool
 var thinkMutex sync.Mutex
+var thinkingSpinnerActive int32
 
 func startThinkingSpinner() {
+	atomic.StoreInt32(&thinkingSpinnerActive, 1)
 	thinkSpinnerDone = make(chan bool)
 	thinkSpinnerStop = make(chan bool)
 	go func() {
@@ -371,10 +368,13 @@ func startThinkingSpinner() {
 }
 
 func stopThinkingSpinner() {
-	if thinkSpinnerStop != nil {
-		thinkSpinnerStop <- true
-		<-thinkSpinnerDone
-		fmt.Printf("\r\033[2K\r")
+	if atomic.LoadInt32(&thinkingSpinnerActive) == 1 {
+		atomic.StoreInt32(&thinkingSpinnerActive, 0)
+		if thinkSpinnerStop != nil {
+			thinkSpinnerStop <- true
+			<-thinkSpinnerDone
+			fmt.Printf("\r\033[2K\r")
+		}
 	}
 }
 
@@ -432,14 +432,22 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 					stopThinkingSpinner()
 				}
 
-				parts := strings.Split(bufferedText, closer)
-				if len(parts) > 1 {
-					mainText = parts[1]
+				if extraOptions.IsThink {
+					mainText = bufferedText
+				} else {
+					parts := strings.Split(bufferedText, closer)
+					if len(parts) > 1 {
+						mainText = parts[1]
+					} else {
+						mainText = ""
+					}
+				}
+			} else {
+				if extraOptions.IsThink {
+					mainText = bufferedText
 				} else {
 					mainText = ""
 				}
-			} else {
-				mainText = ""
 			}
 		}
 
@@ -565,6 +573,8 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 		os.Exit(1)
 	}
 
+	stopThinkingSpinner()
+
 	return fullText
 
 }
@@ -628,14 +638,22 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 					stopThinkingSpinner()
 				}
 
-				parts := strings.Split(bufferedText, closer)
-				if len(parts) > 1 {
-					mainText = parts[1]
+				if extraOptions.IsThink {
+					mainText = bufferedText
+				} else {
+					parts := strings.Split(bufferedText, closer)
+					if len(parts) > 1 {
+						mainText = parts[1]
+					} else {
+						mainText = ""
+					}
+				}
+			} else {
+				if extraOptions.IsThink {
+					mainText = bufferedText
 				} else {
 					mainText = ""
 				}
-			} else {
-				mainText = ""
 			}
 		}
 
@@ -655,11 +673,18 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 				// Possibly end tag part
 				xmlBuffer.WriteRune(char)
 				currentBuffer := xmlBuffer.String()
-				if (strings.HasPrefix(currentBuffer, "<cmd>") && strings.HasSuffix(currentBuffer, "</cmd>")) ||
-					(strings.HasPrefix(currentBuffer, "<search>") && strings.HasSuffix(currentBuffer, "</search>")) {
+				isSearchOrCmdTag := (strings.HasPrefix(currentBuffer, "<cmd>") && strings.HasSuffix(currentBuffer, "</cmd>")) ||
+					(strings.HasPrefix(currentBuffer, "<search>") && strings.HasSuffix(currentBuffer, "</search>"))
+				isThinkingTag := strings.HasPrefix(currentBuffer, "<think>") ||
+					strings.HasPrefix(currentBuffer, "<thinking>") ||
+					strings.HasPrefix(currentBuffer, "</thinking>") ||
+					strings.HasPrefix(currentBuffer, "</reason")
+				if isSearchOrCmdTag || (isThinkingTag && !extraOptions.IsThink) {
 					xmlBuffer.Reset()
 					inXMLTag = false
-					// Don't print XML tags - they are processed separately
+					if !isThinkingTag {
+						// Don't print XML tags - they are processed separately
+					}
 				}
 			} else if inXMLTag {
 				// Inside XML tag, continue buffering
@@ -773,6 +798,8 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 		fmt.Fprintln(os.Stderr, "Error occurred:", err)
 		os.Exit(1)
 	}
+
+	stopThinkingSpinner()
 
 	return fullText
 }
@@ -1157,6 +1184,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 	searchOptions := structs.ExtraOptions{
 		IsGetSilent: isQuiet,
 		IsGetWhole:  false,
+		IsThink:     extraOptions.IsThink,
 	}
 
 	// Get AI response
@@ -1213,7 +1241,7 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 		params.SystemPrompt = promptFind
 
 		// Get AI response (this will print with Bot label)
-		responseObjects, responseTxt := GetData(input, params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true})
+		responseObjects, responseTxt := GetData(input, params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true, IsThink: extraOptions.IsThink})
 
 		// Check if response contains search intent
 		searchRegex := regexp.MustCompile(`<search>(.*?)</search>`)
@@ -1248,7 +1276,7 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 
 			// Update conversation with search context and get final response (this will print with Bot label)
 			params.PrevMessages = previousMessages
-			finalResponseObjects, finalResponseTxt := GetData(fmt.Sprintf("Based on these search results, answer the user's question: %s", input), params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true})
+			finalResponseObjects, finalResponseTxt := GetData(fmt.Sprintf("Based on these search results, answer the user's question: %s", input), params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true, IsThink: extraOptions.IsThink})
 
 			if len(logFile) > 0 {
 				utils.LogToFile(finalResponseTxt, "ASSISTANT_RESPONSE", logFile)
