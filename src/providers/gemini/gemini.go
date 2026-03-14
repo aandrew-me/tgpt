@@ -34,7 +34,14 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		model = envModel
 	}
 
-	apiKey := params.ApiKey
+	apiKey := ""
+	if params.ApiKey != "" {
+		apiKey = params.ApiKey
+	} else if envKey := os.Getenv("GEMINI_API_KEY"); envKey != "" {
+		apiKey = envKey
+	} else if envKey := os.Getenv("AI_API_KEY"); envKey != "" {
+		apiKey = envKey
+	}
 
 	url := params.Url
 
@@ -82,7 +89,6 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	return client.Do(req)
 }
-
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
 	if len(line) > 1 {
