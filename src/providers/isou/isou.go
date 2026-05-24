@@ -14,6 +14,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
 
+// NewRequest sends a chat request to the isou.chat API and returns the streaming HTTP response.
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	client, err := client.NewClient()
 
@@ -63,6 +64,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	return (client.Do(req))
 }
 
+// GetMainText parses a server-sent event line from the isou API and returns the text content or formatted source citations.
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
 
