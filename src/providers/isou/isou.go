@@ -4,7 +4,6 @@ import (
 	// "encoding/json"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 
@@ -30,22 +29,18 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	var data = strings.NewReader(fmt.Sprintf(`{
-		"stream": true,
 		"model": "%v",
-		"provider": "siliconflow",
-		"mode": "deep",
+		"provider": "openai",
 		"language": "all",
 		"categories": [
 			"science"
 		],
 		"engine": "SEARXNG",
-		"locally": false,
-		"reload": false
+		"messages": [{"role": "user", "content": "%s"}]
 	}
-	`, model))
+	`, model, input))
 
-	query := url.QueryEscape(input)
-	link := fmt.Sprintf("https://isou.chat/api/search?q=%v", query)
+	link := "https://isou.chat/api/chat"
 
 	req, err := http.NewRequest("POST", link, data)
 
@@ -59,7 +54,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Accept", "*/*")
 	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Add("Referer", "https://isou.chat/search")
+	req.Header.Add("Referer", "https://isou.chat/chat")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Origin", "https://isou.chat")
 	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
@@ -79,19 +74,19 @@ func GetMainText(line string) (mainText string) {
 	}
 
 	type Context struct {
-		Name   string `json:"name"`
-		Source string `json:"url"`
-		Id     int    `json:"id"`
+		Id      int    `json:"id"`
+		Name    string `json:"name"`
+		Source  string `json:"url"`
 	}
 
 	type InnerData struct {
-		Content          string   `json:"content"`
-		ReasoningContent string   `json:"reasoningContent"`
-		Context          *Context `json:"context"`
+		Content  string    `json:"content"`
+		Role     string    `json:"role"`
+		Contexts []Context `json:"contexts"`
 	}
 
 	type OuterData struct {
-		Data string `json:"data"`
+		Data InnerData `json:"data"`
 	}
 
 	var outer OuterData
@@ -100,24 +95,14 @@ func GetMainText(line string) (mainText string) {
 		return ""
 	}
 
-	var inner InnerData
+	inner := outer.Data
 
-	if err := json.Unmarshal([]byte(outer.Data), &inner); err != nil {
-		return ""
-	}
-
-	italic := color.New(color.Italic)
 	yellow := color.New(color.FgHiYellow)
 
-	if inner.Context != nil {
-		mainText := yellow.Sprintf("%v. Name: %v, Source: %v\n", inner.Context.Id, inner.Context.Name, inner.Context.Source)
-
-		return mainText
-	}
-
-	if inner.ReasoningContent != "" {
-		mainText = italic.Sprint(inner.ReasoningContent)
-
+	if len(inner.Contexts) > 0 {
+		for _, ctx := range inner.Contexts {
+			mainText += yellow.Sprintf("%v. Name: %v, Source: %v\n", ctx.Id, ctx.Name, ctx.Source)
+		}
 		return mainText
 	}
 
