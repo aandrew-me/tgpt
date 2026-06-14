@@ -315,21 +315,6 @@ var thinkingTagPatterns = []string{
 	"<think>",
 }
 
-var thinkingTagClosers = []string{
-	"</thinking>",
-	"</think>",
-}
-
-func isThinkingTag(text string) string {
-	lowerText := strings.ToLower(text)
-	for _, tag := range thinkingTagPatterns {
-		if strings.HasPrefix(lowerText, tag) {
-			return tag
-		}
-	}
-	return ""
-}
-
 func findThinkingTag(text string) (tag string, index int) {
 	lowerText := strings.ToLower(text)
 	for _, tag := range thinkingTagPatterns {
@@ -339,16 +324,6 @@ func findThinkingTag(text string) (tag string, index int) {
 		}
 	}
 	return "", -1
-}
-
-func isThinkingCloser(text string) string {
-	lowerText := strings.ToLower(text)
-	for _, tag := range thinkingTagClosers {
-		if strings.HasSuffix(lowerText, tag) {
-			return tag
-		}
-	}
-	return ""
 }
 
 var thinkSpinnerDone chan bool
