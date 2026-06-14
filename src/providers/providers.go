@@ -10,6 +10,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/isou"
 	"github.com/aandrew-me/tgpt/v2/src/providers/kimi"
 	"github.com/aandrew-me/tgpt/v2/src/providers/koboldai"
+	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
@@ -19,7 +20,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "ollama", "openai", "pollinations", "sky",
+	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "openai", "pollinations", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -36,6 +37,8 @@ func GetMainText(line string, provider string, input string) string {
 		return kimi.GetMainText(line)
 	case "koboldai":
 		return koboldai.GetMainText(line)
+	case "minimax":
+		return minimax.GetMainText(line)
 	case "ollama":
 		return ollama.GetMainText(line)
 	case "openai":
@@ -75,6 +78,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return kimi.NewRequest(input, params)
 	case "koboldai":
 		return koboldai.NewRequest(input, params)
+	case "minimax":
+		return minimax.NewRequest(input, params)
 	case "ollama":
 		return ollama.NewRequest(input, params)
 	case "openai":

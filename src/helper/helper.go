@@ -1185,7 +1185,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is pollinations. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, koboldai, ollama, openai, sky and pollinations")
+	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, koboldai, minimax, ollama, openai, sky and pollinations")
 
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
@@ -1201,6 +1201,9 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
+
+	bold.Println("\nProvider: minimax")
+	fmt.Println("Requires API key. Uses MiniMax-M2.7 model by default. Recognizes the MINIMAX_API_KEY and MINIMAX_MODEL environment variables. https://platform.minimaxi.com")
 
 	bold.Println("\nProvider: ollama")
 	fmt.Println("Needs to be run locally. Supports many models")

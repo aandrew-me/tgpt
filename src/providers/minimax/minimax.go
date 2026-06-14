@@ -1,4 +1,4 @@
-package gemini
+package minimax
 
 import (
 	"bytes"
@@ -27,27 +27,19 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "gemini-2.0-flash"
+	model := "MiniMax-M2.7"
 	if params.ApiModel != "" {
 		model = params.ApiModel
-	} else if envModel := os.Getenv("GEMINI_MODEL"); envModel != "" {
+	} else if envModel := os.Getenv("MINIMAX_MODEL"); envModel != "" {
 		model = envModel
 	}
 
-	apiKey := ""
+	apiKey := os.Getenv("MINIMAX_API_KEY")
 	if params.ApiKey != "" {
 		apiKey = params.ApiKey
-	} else if envKey := os.Getenv("GEMINI_API_KEY"); envKey != "" {
-		apiKey = envKey
-	} else if envKey := os.Getenv("AI_API_KEY"); envKey != "" {
-		apiKey = envKey
 	}
 
-	url := params.Url
-
-	if url == "" {
-		url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-	}
+	url := "https://api.minimax.io/v1/chat/completions"
 
 	requestInfo := RequestBody{
 		Model:  model,
@@ -89,6 +81,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	return client.Do(req)
 }
+
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
 	if len(line) > 1 {
