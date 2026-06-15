@@ -37,6 +37,10 @@ type CommonResponse struct {
 	} `json:"choices"`
 }
 
+type PowerBrainResponse struct {
+	Data string `json:"data"`
+}
+
 type ImageParams struct {
 	Params
 	Height            int

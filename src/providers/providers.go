@@ -14,13 +14,14 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
+	"github.com/aandrew-me/tgpt/v2/src/providers/powerbrain"
 	"github.com/aandrew-me/tgpt/v2/src/providers/sky"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	http "github.com/bogdanfinn/fhttp"
 )
 
 var availableProviders = []string{
-	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "openai", "pollinations", "sky",
+	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "openai", "pollinations", "powerbrain", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -45,6 +46,8 @@ func GetMainText(line string, provider string, input string) string {
 		return openai.GetMainText(line)
 	case "pollinations":
 		return pollinations.GetMainText(line)
+	case "powerbrain":
+		return powerbrain.GetMainText(line)
 	case "sky":
 		return sky.GetMainText(line)
 	default:
@@ -86,6 +89,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return openai.NewRequest(input, params)
 	case "pollinations":
 		return pollinations.NewRequest(input, params)
+	case "powerbrain":
+		return powerbrain.NewRequest(input, params)
 	case "sky":
 		return sky.NewRequest(input, params)
 	default:
