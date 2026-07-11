@@ -65,7 +65,7 @@ func main() {
 
 	apiModel = flag.String("model", "", "Choose which model to use")
 	provider = flag.String("provider", "", "Choose which provider to use")
-	apiKey = flag.String("key", "", "Use personal API Key")
+	apiKey = flag.String("key", os.Getenv("AI_API_KEY"), "Use personal API Key")
 	temperature = flag.String("temperature", os.Getenv("TGPT_TEMPERATURE"), "Set temperature")
 	top_p = flag.String("top_p", os.Getenv("TGPT_TOP_P"), "Set top_p")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
