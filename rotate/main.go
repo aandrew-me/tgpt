@@ -41,6 +41,8 @@ func main() {
 		}
 	}
 
+	tgptPath := findTgpt()
+
 	for i, provider := range providers {
 		provider = strings.TrimSpace(provider)
 		if provider == "" {
@@ -56,7 +58,6 @@ func main() {
 
 		args = append(args, prompt)
 
-		tgptPath := findTgpt()
 		cmd := exec.Command(tgptPath, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -70,7 +71,7 @@ func main() {
 			return
 		}
 
-		fmt.Fprintf(os.Stderr, "\rProvider %s failed, trying next...\n", provider)
+		fmt.Fprintf(os.Stderr, "\rProvider %s failed: %v\n", provider, err)
 	}
 
 	fmt.Fprintln(os.Stderr, "All providers failed")
@@ -100,11 +101,13 @@ func loadAliases(path string) map[string]string {
 
 	data, err := os.ReadFile(absPath)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not read alias file %s: %v\n", absPath, err)
 		return nil
 	}
 
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not parse alias file %s: %v\n", absPath, err)
 		return nil
 	}
 
@@ -112,10 +115,6 @@ func loadAliases(path string) map[string]string {
 }
 
 func providerModelName(provider, model string, aliases map[string]string) string {
-	if model == "" {
-		return ""
-	}
-
 	key := strings.ToUpper(provider)
 	if env := os.Getenv("MODEL_ALIAS_" + key); env != "" {
 		return env
