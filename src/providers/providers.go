@@ -22,8 +22,17 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 )
 
-var availableProviders = []string{
-	"", "anyapi", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
+var AvailableProviders = []string{
+	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
+}
+
+func IsValidProvider(name string) bool {
+	for _, ap := range AvailableProviders {
+		if name == ap {
+			return true
+		}
+	}
+	return false
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -65,7 +74,7 @@ func GetMainText(line string, provider string, input string) string {
 
 func NewRequest(input string, params structs.Params, extraOptions structs.ExtraOptions) (*http.Response, error) {
 	validProvider := false
-	for _, str := range availableProviders {
+	for _, str := range AvailableProviders {
 		if str == params.Provider {
 			validProvider = true
 			break

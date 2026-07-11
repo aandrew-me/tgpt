@@ -714,116 +714,159 @@ func AddToShellHistory(command string) {
 }
 
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
-	stopSpin := false
+	providersToTry := providersForRotation(params)
 
-	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
-		go Loading(&stopSpin)
-	}
+	for i, provider := range providersToTry {
+		params.Provider = provider
 
-	resp, err := providers.NewRequest(input, params, extraOptions)
+		key := strings.ToUpper(provider)
+		if alias := os.Getenv("MODEL_ALIAS_" + key); alias != "" {
+			params.ApiModel = alias
+		}
 
-	if err != nil {
-		stopSpin = true
-		printConnectionErrorMsg(err)
-	}
+		stopSpin := false
 
-	defer resp.Body.Close()
+		if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
+			go Loading(&stopSpin)
+		}
 
-	code := resp.StatusCode
+		resp, err := providers.NewRequest(input, params, extraOptions)
 
-	if code >= 400 {
+		if err != nil {
+			stopSpin = true
+			if i < len(providersToTry)-1 {
+				fmt.Fprintf(os.Stderr, "\rProvider %s failed: %v\n", provider, err)
+				continue
+			}
+			printConnectionErrorMsg(err)
+		}
+
+		defer resp.Body.Close()
+
+		code := resp.StatusCode
+
+		if code >= 400 {
+			stopSpin = true
+			fmt.Print("\r")
+			if i < len(providersToTry)-1 {
+				respBody, _ := io.ReadAll(resp.Body)
+				fmt.Fprintf(os.Stderr, "\rProvider %s failed (status %d): %s\n", provider, code, strings.TrimSpace(string(respBody)))
+				continue
+			}
+			if !extraOptions.IsInteractive {
+				handleStatus400(resp)
+			}
+			respBody, _ := io.ReadAll(resp.Body)
+			fmt.Println("Some error has occurred, try again")
+			fmt.Println(string(respBody))
+			return ""
+		}
+
 		stopSpin = true
 		fmt.Print("\r")
-		if !extraOptions.IsInteractive {
-			handleStatus400(resp)
-		}
-		respBody, _ := io.ReadAll(resp.Body)
-		fmt.Println("Some error has occurred, try again")
-		fmt.Println(string(respBody))
-		return ""
-	}
 
-	stopSpin = true
-	fmt.Print("\r")
-
-	if extraOptions.IsNormal {
-		// Print the Question
-		if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
-			fmt.Print("\r          \r")
-			// bold.Printf("\r%v\n\n", input)
-			bold.Println()
-		} else {
-			fmt.Println()
-			boldViolet.Println("╭─ Bot")
+		if i > 0 {
+			fmt.Printf("Fell back to \033[1m%s\033[0m\n", provider)
 		}
 
-		// Handling each part
-		if extraOptions.IsInteractiveShell {
-			return HandleEachPartInteractiveShell(resp, input, params)
-		}
-		if extraOptions.IsInteractiveFind {
-			return HandleEachPartInteractiveShell(resp, input, params) // Use same formatting as interactive shell
-		}
-		return HandleEachPart(resp, input, params)
-	}
-
-	if extraOptions.IsGetCommand {
-		fmt.Print("\r          \r")
-	}
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	// Handling each part
-	fullText := ""
-
-	for scanner.Scan() {
-		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
-		if len(mainText) < 1 {
-			continue
-		}
-		fullText += mainText
-
-		if !extraOptions.IsGetWhole {
-			fmt.Print(mainText)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-		os.Exit(1)
-	}
-
-	if extraOptions.IsGetWhole {
-		fmt.Println(fullText)
-	}
-
-	if extraOptions.IsGetSilent || extraOptions.IsGetCode {
-		fmt.Println()
-	}
-
-	if extraOptions.IsGetCommand {
-		lineCount := strings.Count(fullText, "\n") + 1
-
-		if lineCount == 1 {
-			if extraOptions.AutoExec {
-				fmt.Println()
-				ExecuteCommand(ShellName, ShellOptions, fullText)
+		if extraOptions.IsNormal {
+			if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
+				fmt.Print("\r          \r")
+				bold.Println()
 			} else {
-				bold.Print("\n\nExecute shell command? [y/n]: ")
-				reader := bufio.NewReader(os.Stdin)
-				userInput, _ := reader.ReadString('\n')
-				userInput = strings.TrimSpace(userInput)
+				fmt.Println()
+				boldViolet.Println("╭─ Bot")
+			}
 
-				if userInput == "y" || userInput == "" {
+			if extraOptions.IsInteractiveShell {
+				return HandleEachPartInteractiveShell(resp, input, params)
+			}
+			if extraOptions.IsInteractiveFind {
+				return HandleEachPartInteractiveShell(resp, input, params)
+			}
+			return HandleEachPart(resp, input, params)
+		}
+
+		if extraOptions.IsGetCommand {
+			fmt.Print("\r          \r")
+		}
+
+		scanner := bufio.NewScanner(resp.Body)
+
+		fullText := ""
+
+		for scanner.Scan() {
+			mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
+			if len(mainText) < 1 {
+				continue
+			}
+			fullText += mainText
+
+			if !extraOptions.IsGetWhole {
+				fmt.Print(mainText)
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+			os.Exit(1)
+		}
+
+		if extraOptions.IsGetWhole {
+			fmt.Println(fullText)
+		}
+
+		if extraOptions.IsGetSilent || extraOptions.IsGetCode {
+			fmt.Println()
+		}
+
+		if extraOptions.IsGetCommand {
+			lineCount := strings.Count(fullText, "\n") + 1
+
+			if lineCount == 1 {
+				if extraOptions.AutoExec {
+					fmt.Println()
 					ExecuteCommand(ShellName, ShellOptions, fullText)
 				} else {
-					clipboard.CopyToClipboard(fullText)
+					bold.Print("\n\nExecute shell command? [y/n]: ")
+					reader := bufio.NewReader(os.Stdin)
+					userInput, _ := reader.ReadString('\n')
+					userInput = strings.TrimSpace(userInput)
+
+					if userInput == "y" || userInput == "" {
+						ExecuteCommand(ShellName, ShellOptions, fullText)
+					} else {
+						clipboard.CopyToClipboard(fullText)
+					}
 				}
 			}
 		}
+
+		return ""
 	}
 
 	return ""
+}
+
+func providersForRotation(params structs.Params) []string {
+	if params.RotateProviders == "" {
+		return []string{params.Provider}
+	}
+	raw := strings.Split(params.RotateProviders, ",")
+	list := make([]string, 0, len(raw))
+	for _, p := range raw {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if providers.IsValidProvider(p) {
+			list = append(list, p)
+		}
+	}
+	if len(list) == 0 {
+		list = []string{params.Provider}
+	}
+	return list
 }
 
 func ShowHelpMessage() {
@@ -845,6 +888,7 @@ func ShowHelpMessage() {
 	// fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
+	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
 	boldBlue.Println("\nOptions supported for image generation (with -image flag)")

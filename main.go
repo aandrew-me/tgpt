@@ -43,6 +43,7 @@ func main() {
 	var url *string
 	var logFile *string
 	var shouldExecuteCommand *bool
+	var rotateProviders *string
 	var out *string
 	var height *int
 	var width *int
@@ -81,6 +82,7 @@ func main() {
 	url = flag.String("url", "", "url for openai providers")
 
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
+	rotateProviders = flag.String("rotate", "", "Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)")
 	shouldExecuteCommand = flag.Bool(("y"), false, "Instantly execute the shell command")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
@@ -143,16 +145,22 @@ func main() {
 		}
 	}
 
+	rotateStr := *rotateProviders
+	if rotateStr == "" {
+		rotateStr = os.Getenv("AI_ROTATE_PROVIDERS")
+	}
+
 	main_params := structs.Params{
-		ApiKey:       *apiKey,
-		ApiModel:     *apiModel,
-		Provider:     final_provider,
-		Temperature:  *temperature,
-		Top_p:        *top_p,
-		Preprompt:    *preprompt,
-		ThreadID:     "",
-		Url:          *url,
-		PrevMessages: []any{},
+		ApiKey:          *apiKey,
+		ApiModel:        *apiModel,
+		Provider:        final_provider,
+		Temperature:     *temperature,
+		Top_p:           *top_p,
+		Preprompt:       *preprompt,
+		ThreadID:        "",
+		Url:             *url,
+		PrevMessages:    []any{},
+		RotateProviders: rotateStr,
 	}
 
 	image_params := structs.ImageParams{

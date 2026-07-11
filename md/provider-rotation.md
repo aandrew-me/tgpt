@@ -1,71 +1,40 @@
 ### Provider Rotation
 
-Standalone tool that tries multiple providers in order — if one fails, the next is tried automatically. Does **not** modify tgpt itself; runs it as a subprocess.
-
-#### Build
-
-```bash
-go build -o rotate/rotate ./rotate/
-```
-
-#### Env Vars
-
-| Var | Required | Description |
-|-----|----------|-------------|
-| `ROTATE_PROVIDERS` | ✅ | Comma-separated provider list, tried in order |
-| `ROTATE_MODEL` | ❌ | Logical model name (e.g. `deepseek-v4-flash`) |
-| `ROTATE_ALIAS_FILE` | ❌ | Path to JSON alias file |
-| `ROTATE_ALIAS_JSON` | ❌ | Inline JSON alias string |
-| `MODEL_ALIAS_<PROVIDER>` | ❌ | Per-provider model override (highest priority) |
+Built into tgpt. Tries multiple providers in order — if one fails, the next is tried automatically.
 
 #### Usage
 
 ```bash
-# Basic: try opencode, fallback to anyapi
-ROTATE_PROVIDERS="opencode,anyapi" ./rotate/rotate "your prompt"
+# Via --rotate flag
+tgpt --rotate "anyapi,opencode,deepseek" "your prompt"
 
-# With logical model name
-ROTATE_PROVIDERS="opencode,anyapi" ROTATE_MODEL="deepseek-v4-flash" ./rotate/rotate "your prompt"
+# Via env var
+AI_ROTATE_PROVIDERS="anyapi,opencode,deepseek" tgpt "your prompt"
+```
 
-# With alias JSON file
-ROTATE_ALIAS_FILE="md/deepseek.json" ROTATE_PROVIDERS="opencode,anyapi" ./rotate/rotate "your prompt"
+If all providers fail, the last error is shown and the program exits.
 
-# With inline alias JSON
-ROTATE_ALIAS_JSON='{"model_alias":{"opencode":"deepseek-v4-flash-free","anyapi":"deepseek/deepseek-v4-flash"}}' \
-  ROTATE_PROVIDERS="opencode,anyapi" ./rotate/rotate "your prompt"
+#### Model Aliases
 
-# With per-provider env alias (highest priority)
+Same model, different names across providers. Set `MODEL_ALIAS_<PROVIDER>` (uppercase) to map:
+
+```bash
+MODEL_ALIAS_ANYAPI="deepseek/deepseek-v4-flash" \
 MODEL_ALIAS_OPENCODE="deepseek-v4-flash-free" \
-  ROTATE_PROVIDERS="opencode,anyapi" \
-  ROTATE_MODEL="deepseek-v4-flash" \
-  ./rotate/rotate "your prompt"
+tgpt --rotate "anyapi,opencode" "your prompt"
 ```
 
-#### Alias Precedence
+When a provider in the rotation is tried, tgpt checks for `MODEL_ALIAS_<PROVIDER>` and overrides `--model` with it.
 
-`MODEL_ALIAS_<PROVIDER>` env > `ROTATE_ALIAS_JSON` > `ROTATE_ALIAS_FILE` > `ROTATE_MODEL`
+#### Model Mapping Reference
 
-#### Alias JSON Format
-
-```json
-{
-  "model_alias": {
-    "anyapi": "deepseek/deepseek-v4-flash",
-    "opencode": "deepseek-v4-flash-free"
-  }
-}
-```
+See [`deepseek.json`](./deepseek.json) for an alias example.
 
 #### How It Works
 
-1. `ROTATE_PROVIDERS` is split by comma into a provider list
-2. For each provider, `tgpt --provider <name> --model <model> <prompt>` is spawned
-3. If `tgpt` exits with non-zero, the error is logged and the next provider is tried
-4. If `tgpt` exits zero, output is printed and the tool exits successfully
-5. If all providers fail, the tool exits with code 1
-
-#### Reference
-
-- [`deepseek.json`](./deepseek.json) — alias mapping for deepseek models across providers
-- [`anyapi` provider](../src/providers/anyapi/) — multi-model API with 100k free tokens/day
-- [`opencode` provider](../src/providers/opencode/) — free OpenAI-compatible API
+1. `--rotate` flag or `AI_ROTATE_PROVIDERS` env var lists providers
+2. Invalid/unregistered providers are silently skipped
+3. Each provider is tried in order
+4. On connection error or HTTP 4xx/5xx, logs the error and tries the next
+5. On success, prints normally (shows "Fell back to <provider>" after fallback)
+6. If all fail, exits with the last error
