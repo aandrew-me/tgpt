@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aandrew-me/tgpt/v2/src/providers/anyapi"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/providers/groq"
@@ -22,11 +23,13 @@ import (
 )
 
 var availableProviders = []string{
-	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
+	"", "anyapi", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {
 	switch provider {
+	case "anyapi":
+		return anyapi.GetMainText(line)
 	case "deepseek":
 		return deepseek.GetMainText(line)
 	case "isou":
@@ -74,6 +77,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	}
 
 	switch params.Provider {
+	case "anyapi":
+		return anyapi.NewRequest(input, params)
 	case "deepseek":
 		return deepseek.NewRequest(input, params)
 	case "gemini":

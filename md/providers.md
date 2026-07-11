@@ -1,5 +1,6 @@
 ### Currently available providers
 
+- [AnyAPI](https://docs.anyapi.ai/) (Multi-model API, 100k free anytokens/day, supports chat and image gen, many providers including deepseek, google, openai)
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
 - [Isou](https://isou.chat/) (Free) (Deepseek-chat with SEARXNG)

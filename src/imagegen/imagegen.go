@@ -2,6 +2,7 @@ package imagegen
 
 import (
 	"fmt"
+	"github.com/aandrew-me/tgpt/v2/src/imagegen/anyapi"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	pollinations_img "github.com/aandrew-me/tgpt/v2/src/imagegen/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -29,6 +30,18 @@ func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 			bold.Println("Generating image with arta...")
 		}
 		arta.Main(prompt, params, isQuite)
+
+	case "anyapi":
+		if !isQuite {
+			bold.Println("Generating image with anyapi.ai...")
+		}
+		filename := anyapi.GenerateImage(prompt, params)
+		if !isQuite {
+			fmt.Printf("Saved image as %v\n", filename)
+		} else {
+			fmt.Println(filename)
+		}
+
 	default:
 		utils.PrintError("Such a provider doesn't exist")
 

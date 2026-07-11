@@ -872,7 +872,10 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is pollinations. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, kimi, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain and sky")
+	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, kimi, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain and sky")
+
+	bold.Println("\nProvider: anyapi")
+	fmt.Println("Multi-model API with 100k free anytokens per day. Requires API key via ANYAPI_API_KEY env var or --key flag. Default model: openai/gpt-4o-mini. Recognizes ANYAPI_MODEL env var. Supports chat and image generation. Supports many models including deepseek, google, openai and more. Docs: https://docs.anyapi.ai/")
 
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
