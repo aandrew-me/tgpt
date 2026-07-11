@@ -1,5 +1,6 @@
 ### Currently available providers
 
+- [AnyAPI](https://docs.anyapi.ai/) (Multi-model API, 100k free anytokens/day, supports chat and image gen, many providers including deepseek, google, openai)
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
 - [Isou](https://isou.chat/) (Free) (Deepseek-chat with SEARXNG)
@@ -13,5 +14,6 @@
 - [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-2.0-flash`)
 
 **Image Generation Models**: 
+- AnyAPI (Requires API key, 100k anytokens/day)
 - Arta (Free)
 - Pollinations (Free) ([Models](https://image.pollinations.ai/models))
