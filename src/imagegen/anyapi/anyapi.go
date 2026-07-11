@@ -45,6 +45,10 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 	if apiKey == "" {
 		apiKey = os.Getenv("ANYAPI_API_KEY")
 	}
+	if apiKey == "" {
+		fmt.Fprintln(os.Stderr, "AnyAPI requires an API key. Set ANYAPI_API_KEY env var or use --key")
+		os.Exit(1)
+	}
 
 	requestInfo := ImageRequest{
 		Model:  model,
@@ -92,7 +96,7 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 		os.Exit(1)
 	}
 
-	if len(result.Data) == 0 {
+	if len(result.Data) == 0 || result.Data[0].B64JSON == "" {
 		fmt.Fprintln(os.Stderr, "No image data in response")
 		os.Exit(1)
 	}

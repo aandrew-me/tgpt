@@ -38,6 +38,10 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	if apiKey == "" {
 		apiKey = os.Getenv("ANYAPI_API_KEY")
 	}
+	if apiKey == "" {
+		fmt.Fprintln(os.Stderr, "AnyAPI requires an API key. Set ANYAPI_API_KEY env var or use --key")
+		os.Exit(1)
+	}
 
 	requestInfo := RequestBody{
 		Model:  model,
