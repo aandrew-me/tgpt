@@ -12,6 +12,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
+	"github.com/aandrew-me/tgpt/v2/src/providers/opencode"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/providers/powerbrain"
@@ -21,7 +22,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "openai", "pollinations", "powerbrain", "sky",
+	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "opencode", "openai", "pollinations", "powerbrain", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -42,6 +43,8 @@ func GetMainText(line string, provider string, input string) string {
 		return minimax.GetMainText(line)
 	case "ollama":
 		return ollama.GetMainText(line)
+	case "opencode":
+		return opencode.GetMainText(line)
 	case "openai":
 		return openai.GetMainText(line)
 	case "pollinations":
@@ -85,6 +88,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return minimax.NewRequest(input, params)
 	case "ollama":
 		return ollama.NewRequest(input, params)
+	case "opencode":
+		return opencode.NewRequest(input, params)
 	case "openai":
 		return openai.NewRequest(input, params)
 	case "pollinations":

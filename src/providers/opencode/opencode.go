@@ -1,4 +1,4 @@
-package sky
+package opencode
 
 import (
 	"bytes"
@@ -15,7 +15,9 @@ import (
 )
 
 type RequestBody struct {
-	Messages []any `json:"messages"`
+	Model    string `json:"model"`
+	Stream   bool   `json:"stream"`
+	Messages []any  `json:"messages"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -25,17 +27,40 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	url := "https://api.sky.foresko.com/v1/create-chat-completion"
-
-	requestInfo := RequestBody{
-		Messages: []any{},
+	model := "deepseek-v4-flash-free"
+	if params.ApiModel != "" {
+		model = params.ApiModel
+	} else if envModel := os.Getenv("OPENCODE_MODEL"); envModel != "" {
+		model = envModel
 	}
 
-	if len(params.SystemPrompt) > 0 {
-		requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
-			Content: params.SystemPrompt,
-			Role:    "system",
-		})
+	apiKey := "public"
+	if params.ApiKey != "" {
+		apiKey = params.ApiKey
+	} else if envKey := os.Getenv("OPENCODE_API_KEY"); envKey != "" {
+		apiKey = envKey
+	}
+
+	url := params.Url
+	if url == "" {
+		if envUrl := os.Getenv("OPENCODE_URL"); envUrl != "" {
+			url = envUrl + "/v1/chat/completions"
+		}
+	}
+
+	if url == "" {
+		url = "https://opencode.ai/zen/v1/chat/completions"
+	}
+
+	requestInfo := RequestBody{
+		Model:  model,
+		Stream: true,
+		Messages: []any{
+			structs.DefaultMessage{
+				Content: params.SystemPrompt,
+				Role:    "system",
+			},
+		},
 	}
 
 	if len(params.PrevMessages) > 0 {
@@ -59,12 +84,11 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		log.Fatal("Some error has occured.\nError:", err)
 	}
 
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("accept-charset", "UTF-8")
-	req.Header.Add("accept-encoding", "gzip")
-	req.Header.Add("connection", "Keep-Alive")
-	req.Header.Add("content-type", "application/json")
-	req.Header.Add("user-agent", "ktor-client")
+	req.Header.Set("Content-Type", "application/json")
+
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
 
 	return client.Do(req)
 }
