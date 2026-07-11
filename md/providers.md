@@ -7,6 +7,7 @@
 - [MiniMax](https://platform.minimaxi.com/) (Requires API key, default model `MiniMax-M2.7`)
 - [Ollama](https://www.ollama.com/) (Local models) (Supports many models)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
+- [OpenCode](https://opencode.ai) (Free, uses opencode.ai/zen API, default model deepseek-v4-flash-free, default API key `public`, supports OPENCODE_API_KEY / OPENCODE_MODEL / OPENCODE_URL env vars)
 - [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))
 - [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-2.0-flash`)
 
