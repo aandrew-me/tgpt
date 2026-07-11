@@ -76,14 +76,7 @@ func GetMainText(line string, provider string, input string) string {
 }
 
 func NewRequest(input string, params structs.Params, extraOptions structs.ExtraOptions) (*http.Response, error) {
-	validProvider := false
-	for _, str := range AvailableProviders {
-		if str == params.Provider {
-			validProvider = true
-			break
-		}
-	}
-	if !validProvider {
+	if !IsValidProvider(params.Provider) {
 		fmt.Fprintln(os.Stderr, "Invalid provider")
 		os.Exit(1)
 	}

@@ -718,10 +718,13 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 	for i, provider := range providersToTry {
 		params.Provider = provider
+		initialModel := params.ApiModel
 
 		key := strings.ToUpper(provider)
 		if alias := os.Getenv("MODEL_ALIAS_" + key); alias != "" {
 			params.ApiModel = alias
+		} else {
+			params.ApiModel = initialModel
 		}
 
 		stopSpin := false
@@ -741,7 +744,9 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			printConnectionErrorMsg(err)
 		}
 
-		defer resp.Body.Close()
+		if resp == nil {
+			continue
+		}
 
 		code := resp.StatusCode
 
@@ -749,14 +754,15 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			stopSpin = true
 			fmt.Print("\r")
 			if i < len(providersToTry)-1 {
-				respBody, _ := io.ReadAll(resp.Body)
-				fmt.Fprintf(os.Stderr, "\rProvider %s failed (status %d): %s\n", provider, code, strings.TrimSpace(string(respBody)))
+				resp.Body.Close()
+				fmt.Fprintf(os.Stderr, "\rProvider %s failed (status %d)\n", provider, code)
 				continue
 			}
 			if !extraOptions.IsInteractive {
 				handleStatus400(resp)
 			}
 			respBody, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
 			fmt.Println("Some error has occurred, try again")
 			fmt.Println(string(respBody))
 			return ""
@@ -768,6 +774,8 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		if i > 0 {
 			fmt.Printf("Fell back to \033[1m%s\033[0m\n", provider)
 		}
+
+		defer resp.Body.Close()
 
 		if extraOptions.IsNormal {
 			if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
