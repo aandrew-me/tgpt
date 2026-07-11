@@ -11,6 +11,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/isou"
 	"github.com/aandrew-me/tgpt/v2/src/providers/kimi"
 	"github.com/aandrew-me/tgpt/v2/src/providers/koboldai"
+	"github.com/aandrew-me/tgpt/v2/src/providers/litellm"
 	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/src/providers/opencode"
@@ -23,7 +24,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "anyapi", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
+	"", "anyapi", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -42,6 +43,8 @@ func GetMainText(line string, provider string, input string) string {
 		return kimi.GetMainText(line)
 	case "koboldai":
 		return koboldai.GetMainText(line)
+	case "litellm":
+		return litellm.GetMainText(line)
 	case "minimax":
 		return minimax.GetMainText(line)
 	case "ollama":
@@ -91,6 +94,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return kimi.NewRequest(input, params)
 	case "koboldai":
 		return koboldai.NewRequest(input, params)
+	case "litellm":
+		return litellm.NewRequest(input, params)
 	case "minimax":
 		return minimax.NewRequest(input, params)
 	case "ollama":
