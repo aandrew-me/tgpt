@@ -6,6 +6,7 @@
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/) (Free) (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [MiniMax](https://platform.minimaxi.com/) (Requires API key, default model `MiniMax-M2.7`)
 - [Ollama](https://www.ollama.com/) (Local models) (Supports many models)
+- [OllamaCloud](https://ollama.com/) (Cloud API) (Requires OLLAMA_API_KEY, default model `gpt-oss:120b`)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [OpenCode](https://opencode.ai) (Free, uses opencode.ai/zen API, default model deepseek-v4-flash-free, default API key `public`, supports OPENCODE_API_KEY / OPENCODE_MODEL / OPENCODE_URL env vars)
 - [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))

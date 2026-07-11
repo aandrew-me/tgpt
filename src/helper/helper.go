@@ -872,7 +872,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is pollinations. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, kimi, koboldai, minimax, ollama, openai, opencode, pollinations, powerbrain and sky")
+	fmt.Println("Available providers to use: deepseek, gemini, groq, isou, kimi, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain and sky")
 
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
@@ -894,6 +894,9 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: ollama")
 	fmt.Println("Needs to be run locally. Supports many models")
+
+	bold.Println("\nProvider: ollamacloud")
+	fmt.Println("Uses Ollama Cloud API. Requires API key via OLLAMA_API_KEY env var or --key flag. Default model: gpt-oss:120b")
 
 	bold.Println("\nProvider: opencode")
 	fmt.Println("Free provider using opencode.ai/zen API. Uses deepseek-v4-flash-free model by default. API key defaults to 'public'. Recognizes the OPENCODE_API_KEY, OPENCODE_MODEL and OPENCODE_URL environment variables.")

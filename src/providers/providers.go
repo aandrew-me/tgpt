@@ -22,7 +22,7 @@ import (
 )
 
 var availableProviders = []string{
-	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "opencode", "openai", "pollinations", "powerbrain", "sky",
+	"", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
 }
 
 func GetMainText(line string, provider string, input string) string {
@@ -43,6 +43,8 @@ func GetMainText(line string, provider string, input string) string {
 		return minimax.GetMainText(line)
 	case "ollama":
 		return ollama.GetMainText(line)
+	case "ollamacloud":
+		return ollama.GetCloudMainText(line)
 	case "opencode":
 		return opencode.GetMainText(line)
 	case "openai":
@@ -88,6 +90,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return minimax.NewRequest(input, params)
 	case "ollama":
 		return ollama.NewRequest(input, params)
+	case "ollamacloud":
+		return ollama.NewCloudRequest(input, params)
 	case "opencode":
 		return opencode.NewRequest(input, params)
 	case "openai":
