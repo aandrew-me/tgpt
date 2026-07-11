@@ -1,17 +1,18 @@
 package structs
 
 type Params struct {
-	ApiModel     string
-	ApiKey       string
-	Provider     string
-	Temperature  string
-	Top_p        string
-	Max_length   string
-	Preprompt    string
-	ThreadID     string
-	Url          string
-	PrevMessages []any
-	SystemPrompt string
+	ApiModel        string
+	ApiKey          string
+	Provider        string
+	Temperature     string
+	Top_p           string
+	Max_length      string
+	Preprompt       string
+	ThreadID        string
+	Url             string
+	PrevMessages    []any
+	SystemPrompt    string
+	RotateProviders string
 }
 
 type ExtraOptions struct {
