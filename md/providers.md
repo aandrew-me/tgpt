@@ -5,7 +5,7 @@
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
 - [Isou](https://isou.chat/) (Free) (Deepseek-chat with SEARXNG)
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/) (Free) (koboldcpp/HF_SPACE_Tiefighter-13B)
-- [LiteLLM](https://docs.litellm.ai/) (AI gateway proxy, access 100+ LLM providers via unified OpenAI-compatible API, default endpoint `http://localhost:4000`)
+- [LiteLLM](https://docs.litellm.ai/) (AI gateway proxy, access 100+ LLM providers via unified OpenAI-compatible API, default endpoint `http://localhost:4000/v1/chat/completions`, requires `--model` flag or `LITELLM_MODEL` env var)
 - [MiniMax](https://platform.minimaxi.com/) (Requires API key, default model `MiniMax-M2.7`)
 - [Ollama](https://www.ollama.com/) (Local models) (Supports many models)
 - [OllamaCloud](https://ollama.com/) (Cloud API) (Requires OLLAMA_API_KEY, default model `gpt-oss:120b`)

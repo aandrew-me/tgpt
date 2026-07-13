@@ -27,11 +27,16 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(1)
 	}
 
-	model := "gpt-4.1"
-	if params.ApiModel != "" {
-		model = params.ApiModel
-	} else if envModel := os.Getenv("LITELLM_MODEL"); envModel != "" {
-		model = envModel
+	model := params.ApiModel
+	if model == "" {
+		model = os.Getenv("LITELLM_MODEL")
+	}
+	if model == "" {
+		fmt.Println("Error: LiteLLM requires a model to be specified.")
+		fmt.Println("LiteLLM is a gateway proxy — the available models depend on your proxy configuration.")
+		fmt.Println("Set it via --model flag or LITELLM_MODEL environment variable.")
+		fmt.Println("Examples: gpt-4o, anthropic/claude-sonnet-4-6, bedrock/anthropic.claude-3-haiku")
+		os.Exit(1)
 	}
 
 	apiKey := params.ApiKey

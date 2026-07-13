@@ -75,11 +75,12 @@ func TestNewRequestBodyFormat(t *testing.T) {
 	input := "What is 1+1?"
 	params := structs.Params{
 		Provider:     "litellm",
+		ApiModel:     "openai/gpt-4o-mini",
 		SystemPrompt: "You are a helpful assistant",
 	}
 
 	requestInfo := RequestBody{
-		Model:  "gpt-4.1",
+		Model:  params.ApiModel,
 		Stream: true,
 		Messages: []any{
 			structs.DefaultMessage{
@@ -101,7 +102,7 @@ func TestNewRequestBodyFormat(t *testing.T) {
 	err = json.Unmarshal(jsonBytes, &decoded)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "gpt-4.1", decoded["model"])
+	assert.Equal(t, "openai/gpt-4o-mini", decoded["model"])
 	assert.Equal(t, true, decoded["stream"])
 
 	messages := decoded["messages"].([]interface{})
@@ -130,7 +131,7 @@ func TestNewRequestWithPrevMessages(t *testing.T) {
 	}
 
 	requestInfo := RequestBody{
-		Model:  "gpt-4.1",
+		Model:  "anthropic/claude-haiku-4-5",
 		Stream: true,
 		Messages: []any{
 			structs.DefaultMessage{
@@ -187,23 +188,32 @@ func TestNewRequestCustomModel(t *testing.T) {
 	assert.Equal(t, "anthropic/claude-sonnet-4-6", decoded["model"])
 }
 
-func TestModelEnvVar(t *testing.T) {
-	model := "gpt-4.1"
+func TestModelFromParams(t *testing.T) {
+	params := structs.Params{ApiModel: "anthropic/claude-sonnet-4-6"}
+	model := params.ApiModel
+	if model == "" {
+		model = os.Getenv("LITELLM_MODEL")
+	}
+	assert.Equal(t, "anthropic/claude-sonnet-4-6", model)
+}
+
+func TestModelFromEnv(t *testing.T) {
+	t.Setenv("LITELLM_MODEL", "azure/gpt-4o")
 	params := structs.Params{}
-
-	if params.ApiModel != "" {
-		model = params.ApiModel
-	} else if envModel := os.Getenv("LITELLM_MODEL"); envModel != "" {
-		model = envModel
+	model := params.ApiModel
+	if model == "" {
+		model = os.Getenv("LITELLM_MODEL")
 	}
-	assert.Equal(t, "gpt-4.1", model)
+	assert.Equal(t, "azure/gpt-4o", model)
+}
 
-	model = "gpt-4.1"
-	params = structs.Params{ApiModel: "custom-model"}
-	if params.ApiModel != "" {
-		model = params.ApiModel
+func TestModelRequiredWhenEmpty(t *testing.T) {
+	params := structs.Params{}
+	model := params.ApiModel
+	if model == "" {
+		model = os.Getenv("LITELLM_MODEL")
 	}
-	assert.Equal(t, "custom-model", model)
+	assert.Equal(t, "", model, "model should be empty when neither flag nor env var is set")
 }
 
 func TestApiKeyFromParams(t *testing.T) {
