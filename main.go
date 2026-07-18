@@ -199,6 +199,13 @@ func main() {
 
 	flag.Parse()
 
+	var rotateProvidersSet bool
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "rotate" {
+			rotateProvidersSet = true
+		}
+	})
+
 	final_provider := *provider
 
 	if *provider == "" {
@@ -210,7 +217,7 @@ func main() {
 	}
 
 	rotateStr := *rotateProviders
-	if rotateStr == "" {
+	if !rotateProvidersSet && rotateStr == "" {
 		rotateStr = os.Getenv("AI_ROTATE_PROVIDERS")
 	}
 
