@@ -52,7 +52,7 @@ var boldViolet = color.New(color.Bold, color.FgMagenta)
 var codeText = color.New(color.FgGreen, color.Bold)
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
-	responseTxt := MakeRequestAndGetData(input, params, extraOptions)
+	responseTxt, _ := MakeRequestAndGetData(input, params, extraOptions)
 
 	fmt.Print("\n\n")
 
@@ -161,7 +161,7 @@ func Update(localVersion string, executablePath string) {
 func CodeGenerate(input string, params structs.Params, extraOptions structs.ExtraOptions) {
 	codePrompt := fmt.Sprintf("Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:", input)
 
-	MakeRequestAndGetData(codePrompt, params, extraOptions)
+	_, _ = MakeRequestAndGetData(codePrompt, params, extraOptions)
 }
 
 func SetShellAndOSVars() {
@@ -230,7 +230,7 @@ func ShellCommand(input string, params structs.Params, extraOptions structs.Extr
 
 // getCommand will make a request to an AI model, then it will run the response using an appropriate handler (bash, sh OR powershell, cmd)
 func GetCommand(shellPrompt string, params structs.Params, extraOptions structs.ExtraOptions) {
-	MakeRequestAndGetData(shellPrompt, params, extraOptions)
+	_, _ = MakeRequestAndGetData(shellPrompt, params, extraOptions)
 }
 
 type RESPONSE struct {
@@ -278,7 +278,7 @@ func GetVersionHistory() {
 }
 
 func GetWholeText(input string, extraOptions structs.ExtraOptions, params structs.Params) {
-	MakeRequestAndGetData(input, params, extraOptions)
+	_, _ = MakeRequestAndGetData(input, params, extraOptions)
 }
 
 func GetLastCodeBlock(markdown string) string {
@@ -610,8 +610,8 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error occurred:", err)
-		os.Exit(1)
+		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+		return ""
 	}
 
 	return fullText
@@ -714,7 +714,7 @@ func AddToShellHistory(command string) {
 	}
 }
 
-func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) string {
+func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, error) {
 	stopSpin := false
 
 	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
@@ -741,7 +741,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		respBody, _ := io.ReadAll(resp.Body)
 		fmt.Println("Some error has occurred, try again")
 		fmt.Println(string(respBody))
-		return ""
+		return "", nil
 	}
 
 	stopSpin = true
@@ -760,12 +760,12 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 		// Handling each part
 		if extraOptions.IsInteractiveShell {
-			return HandleEachPartInteractiveShell(resp, input, params)
+			return HandleEachPartInteractiveShell(resp, input, params), nil
 		}
 		if extraOptions.IsInteractiveFind {
-			return HandleEachPartInteractiveShell(resp, input, params) // Use same formatting as interactive shell
+			return HandleEachPartInteractiveShell(resp, input, params), nil // Use same formatting as interactive shell
 		}
-		return HandleEachPart(resp, input, params)
+		return HandleEachPart(resp, input, params), nil
 	}
 
 	if extraOptions.IsGetCommand {
@@ -791,7 +791,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-		os.Exit(1)
+		return "", err
 	}
 
 	if extraOptions.IsGetWhole {
@@ -824,7 +824,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		}
 	}
 
-	return ""
+	return "", nil
 }
 
 func ShowHelpMessage() {
@@ -970,7 +970,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 	}
 
 	// Get AI response
-	response := MakeRequestAndGetData(searchResults, params, searchOptions)
+	response, _ := MakeRequestAndGetData(searchResults, params, searchOptions)
 
 	if len(logFile) > 0 {
 		utils.LogToFile(response, "SEARCH_RESPONSE", logFile)
