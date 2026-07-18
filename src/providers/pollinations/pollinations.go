@@ -34,9 +34,17 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	apiKey := params.ApiKey
+	if apiKey == "" {
+		apiKey = os.Getenv("POLLINATIONS_API_KEY")
+	}
+	if apiKey == "" {
+		apiKey = os.Getenv("AI_API_KEY")
+	}
 
 	if params.ApiModel != "" {
 		requestInfo.Model = params.ApiModel
+	} else if envModel := os.Getenv("POLLINATIONS_MODEL"); envModel != "" {
+		requestInfo.Model = envModel
 	}
 
 	// if params.Temperature != "" {

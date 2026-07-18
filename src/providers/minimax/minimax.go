@@ -34,9 +34,12 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		model = envModel
 	}
 
-	apiKey := os.Getenv("MINIMAX_API_KEY")
-	if params.ApiKey != "" {
-		apiKey = params.ApiKey
+	apiKey := params.ApiKey
+	if apiKey == "" {
+		apiKey = os.Getenv("MINIMAX_API_KEY")
+	}
+	if apiKey == "" {
+		apiKey = os.Getenv("AI_API_KEY")
 	}
 
 	url := "https://api.minimax.io/v1/chat/completions"

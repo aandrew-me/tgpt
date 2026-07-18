@@ -39,6 +39,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		apiKey = params.ApiKey
 	} else if envKey := os.Getenv("OPENCODE_API_KEY"); envKey != "" {
 		apiKey = envKey
+	} else if envKey := os.Getenv("AI_API_KEY"); envKey != "" {
+		apiKey = envKey
 	}
 
 	url := params.Url

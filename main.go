@@ -68,7 +68,7 @@ func loadConfig(configPath string) {
 				key := strings.TrimSpace(parts[0])
 				val := strings.TrimSpace(parts[1])
 				val = strings.Trim(val, `"'`)
-				
+
 				if os.Getenv(key) == "" {
 					os.Setenv(key, val)
 				}
@@ -853,11 +853,17 @@ func main() {
 
 					return
 				}
-				helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+				_, err := helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+				if err != nil {
+					return
+				}
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+				_, err := helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, main_params, structs.ExtraOptions{IsGetSilent: true})
+				if err != nil {
+					return
+				}
 			}
 		default:
 			formattedInput := strings.TrimSpace(prompt)
