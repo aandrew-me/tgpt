@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -30,6 +31,52 @@ var blue = color.New(color.FgBlue)
 
 var programLoop = true
 
+func loadConfig(configPath string) {
+	explicitConfig := configPath != ""
+
+	if configPath == "" {
+		defaultPaths := []string{
+			"config.txt",
+		}
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			defaultPaths = append(defaultPaths, filepath.Join(homeDir, ".config", "tgpt", "config.txt"))
+		}
+		for _, p := range defaultPaths {
+			if _, err := os.Stat(p); err == nil {
+				configPath = p
+				break
+			}
+		}
+	}
+
+	if configPath != "" {
+		content, err := os.ReadFile(configPath)
+		if err != nil {
+			if explicitConfig {
+				fmt.Fprintf(os.Stderr, "Warning: could not read config file %q: %v\n", configPath, err)
+			}
+			return
+		}
+		lines := strings.Split(string(content), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				val := strings.TrimSpace(parts[1])
+				val = strings.Trim(val, `"'`)
+				
+				if os.Getenv(key) == "" {
+					os.Setenv(key, val)
+				}
+			}
+		}
+	}
+}
+
 func main() {
 	var userInput = ""
 	var lastResponse = ""
@@ -50,6 +97,22 @@ func main() {
 	var imgCount *string
 	var imgRatio *string
 
+	// Load config file
+	var configPath string
+	for i := 0; i < len(os.Args); i++ {
+		if os.Args[i] == "--config" || os.Args[i] == "-config" {
+			if i+1 < len(os.Args) {
+				configPath = os.Args[i+1]
+			}
+		} else if strings.HasPrefix(os.Args[i], "--config=") {
+			configPath = strings.TrimPrefix(os.Args[i], "--config=")
+		} else if strings.HasPrefix(os.Args[i], "-config=") {
+			configPath = strings.TrimPrefix(os.Args[i], "-config=")
+		}
+	}
+
+	loadConfig(configPath)
+
 	execPath, err := os.Executable()
 	if err == nil {
 		executablePath = execPath
@@ -69,6 +132,7 @@ func main() {
 	temperature = flag.String("temperature", os.Getenv("TGPT_TEMPERATURE"), "Set temperature")
 	top_p = flag.String("top_p", os.Getenv("TGPT_TOP_P"), "Set top_p")
 	preprompt = flag.String("preprompt", "", "Set preprompt")
+	flag.String("config", "", "Path to the configuration file")
 
 	out = flag.String("out", "", "Output file path")
 	width = flag.Int("width", 1024, "Output image width")
