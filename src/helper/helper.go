@@ -875,40 +875,49 @@ func ShowHelpMessage() {
 	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, kimi, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain and sky")
 
 	bold.Println("\nProvider: anyapi")
-	fmt.Println("Multi-model API with 100k free anytokens per day. Requires API key via ANYAPI_API_KEY env var or --key flag. Default model: openai/gpt-4o-mini. Recognizes ANYAPI_MODEL env var. Supports chat and image generation. Supports many models including deepseek, google, openai and more. Docs: https://docs.anyapi.ai/")
+	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
 
 	bold.Println("\nProvider: deepseek")
-	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes the DEEPSEEK_API_KEY and DEEPSEEK_MODEL environment variables")
+	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes DEEPSEEK_API_KEY and DEEPSEEK_MODEL env vars.")
 
 	bold.Println("\nProvider: groq")
-	fmt.Println("Requires a free API Key. Supported models: https://console.groq.com/docs/models")
+	fmt.Println("Requires a free API key. Recognizes GROQ_API_KEY and GROQ_MODEL env vars. Models: https://console.groq.com/docs/models")
 
 	bold.Println("\nProvider: gemini")
-	fmt.Println("Requires a free API key. Recognizes the GEMINI_MODEL environment variable. https://aistudio.google.com/apikey")
+	fmt.Println("Requires a free API key. Recognizes GEMINI_API_KEY and GEMINI_MODEL env vars. https://aistudio.google.com/apikey")
 
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")
 
+	bold.Println("\nProvider: kimi")
+	fmt.Println("Free provider using kimi.com API. Uses k2 model by default. Auto-registers a device token, no API key required. Recognizes KIMI_MODEL env var.")
+
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
 
+	bold.Println("\nProvider: litellm")
+	fmt.Println("Proxy/gateway provider. Recognizes LITELLM_API_KEY and LITELLM_MODEL env vars. Requires --model flag or LITELLM_MODEL env var. Supports custom URLs via LITELLM_URL or --url.")
+
 	bold.Println("\nProvider: minimax")
-	fmt.Println("Requires API key. Uses MiniMax-M2.7 model by default. Recognizes the MINIMAX_API_KEY and MINIMAX_MODEL environment variables. https://platform.minimaxi.com")
+	fmt.Println("Requires API key. Uses MiniMax-M2.7 model by default. Recognizes MINIMAX_API_KEY and MINIMAX_MODEL env vars. https://platform.minimaxi.com")
 
 	bold.Println("\nProvider: ollama")
 	fmt.Println("Needs to be run locally. Supports many models")
 
 	bold.Println("\nProvider: ollamacloud")
-	fmt.Println("Uses Ollama Cloud API. Requires API key via OLLAMA_API_KEY env var or --key flag. Default model: gpt-oss:120b")
+	fmt.Println("Uses Ollama Cloud API. Recognizes OLLAMA_API_KEY and OLLAMA_MODEL env vars. Default model: gpt-oss:120b")
 
 	bold.Println("\nProvider: opencode")
-	fmt.Println("Free provider using opencode.ai/zen API. Uses deepseek-v4-flash-free model by default. API key defaults to 'public'. Recognizes the OPENCODE_API_KEY, OPENCODE_MODEL and OPENCODE_URL environment variables.")
+	fmt.Println("Free provider using opencode.ai/zen API. Uses deepseek-v4-flash-free model by default. API key defaults to 'public'. Recognizes OPENCODE_API_KEY, OPENCODE_MODEL and OPENCODE_URL env vars.")
 
 	bold.Println("\nProvider: openai")
-	fmt.Println("Needs API key to work and supports various models. Recognizes the OPENAI_API_KEY and OPENAI_MODEL environment variables. Supports custom urls with --url")
+	fmt.Println("Needs API key to work and supports various models. Recognizes OPENAI_API_KEY, CEREBRAS_API_KEY and OPENAI_MODEL env vars. Supports custom urls with --url")
 
 	bold.Println("\nProvider: pollinations")
-	fmt.Println("Works without an API key. Works better with free api key from https://enter.pollinations.ai/")
+	fmt.Println("Works without an API key. Recognizes POLLINATIONS_API_KEY and POLLINATIONS_MODEL env vars. Free API key: https://enter.pollinations.ai/")
+
+	bold.Println("\nProvider: powerbrain")
+	fmt.Println("Free provider using powerbrainai.com API. Uses gpt-5 model by default. No API key required.")
 
 	bold.Println("\nProvider: sky")
 	fmt.Println("Free, uses gpt-4.1-mini model")

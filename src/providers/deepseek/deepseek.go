@@ -28,14 +28,18 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	model := "deepseek-reasoner"
-
 	if params.ApiModel != "" {
 		model = params.ApiModel
+	} else if envModel := os.Getenv("DEEPSEEK_MODEL"); envModel != "" {
+		model = envModel
 	}
 
-	apiKey := os.Getenv("DEEPSEEK_API_KEY")
-	if params.ApiKey != "" {
-		apiKey = params.ApiKey
+	apiKey := params.ApiKey
+	if apiKey == "" {
+		apiKey = os.Getenv("DEEPSEEK_API_KEY")
+	}
+	if apiKey == "" {
+		apiKey = os.Getenv("AI_API_KEY")
 	}
 
 	url := "https://api.deepseek.com/chat/completions"

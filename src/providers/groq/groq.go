@@ -28,12 +28,19 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	model := "meta-llama/llama-4-scout-17b-16e-instruct"
-
 	if params.ApiModel != "" {
 		model = params.ApiModel
+	} else if envModel := os.Getenv("GROQ_MODEL"); envModel != "" {
+		model = envModel
 	}
 
 	apiKey := params.ApiKey
+	if apiKey == "" {
+		apiKey = os.Getenv("GROQ_API_KEY")
+	}
+	if apiKey == "" {
+		apiKey = os.Getenv("AI_API_KEY")
+	}
 
 	url := params.Url
 

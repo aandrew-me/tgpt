@@ -23,12 +23,18 @@ func NewCloudRequest(input string, params structs.Params) (*http.Response, error
 
 	model := params.ApiModel
 	if model == "" {
+		model = os.Getenv("OLLAMA_MODEL")
+	}
+	if model == "" {
 		model = "gpt-oss:120b"
 	}
 
 	apiKey := params.ApiKey
 	if apiKey == "" {
 		apiKey = os.Getenv("OLLAMA_API_KEY")
+	}
+	if apiKey == "" {
+		apiKey = os.Getenv("AI_API_KEY")
 	}
 
 	requestInfo := struct {
