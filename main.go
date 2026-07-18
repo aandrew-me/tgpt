@@ -32,11 +32,14 @@ var blue = color.New(color.FgBlue)
 var programLoop = true
 
 func loadConfig(configPath string) {
+	explicitConfig := configPath != ""
+
 	if configPath == "" {
-		homeDir, _ := os.UserHomeDir()
 		defaultPaths := []string{
 			"config.txt",
-			filepath.Join(homeDir, ".config", "tgpt", "config.txt"),
+		}
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			defaultPaths = append(defaultPaths, filepath.Join(homeDir, ".config", "tgpt", "config.txt"))
 		}
 		for _, p := range defaultPaths {
 			if _, err := os.Stat(p); err == nil {
@@ -47,20 +50,27 @@ func loadConfig(configPath string) {
 	}
 
 	if configPath != "" {
-		if content, err := os.ReadFile(configPath); err == nil {
-			lines := strings.Split(string(content), "\n")
-			for _, line := range lines {
-				line = strings.TrimSpace(line)
-				if line == "" || strings.HasPrefix(line, "#") {
-					continue
-				}
-				parts := strings.SplitN(line, "=", 2)
-				if len(parts) == 2 {
-					key := strings.TrimSpace(parts[0])
-					val := strings.TrimSpace(parts[1])
-					if os.Getenv(key) == "" {
-						os.Setenv(key, val)
-					}
+		content, err := os.ReadFile(configPath)
+		if err != nil {
+			if explicitConfig {
+				fmt.Fprintf(os.Stderr, "Warning: could not read config file %q: %v\n", configPath, err)
+			}
+			return
+		}
+		lines := strings.Split(string(content), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				val := strings.TrimSpace(parts[1])
+				val = strings.Trim(val, `"'`)
+				
+				if os.Getenv(key) == "" {
+					os.Setenv(key, val)
 				}
 			}
 		}
