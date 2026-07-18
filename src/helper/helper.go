@@ -790,7 +790,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-		return ""
+		return "", err
 	}
 
 	if extraOptions.IsGetWhole {
