@@ -714,8 +714,22 @@ func AddToShellHistory(command string) {
 	}
 }
 
+var lastSuccessfulProvider string
+
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, error) {
 	providersToTry := providersForRotation(params)
+
+	isInteractive := extraOptions.IsInteractive || extraOptions.IsInteractiveShell || extraOptions.IsInteractiveFind
+
+	// In interactive mode, try the last successful provider first
+	if isInteractive && lastSuccessfulProvider != "" {
+		for i, p := range providersToTry {
+			if p == lastSuccessfulProvider {
+				providersToTry = append(providersToTry[i:], providersToTry[:i]...)
+				break
+			}
+		}
+	}
 
 	for i, provider := range providersToTry {
 		params.Provider = provider
@@ -771,6 +785,11 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 		stopSpin = true
 		fmt.Print("\r")
+
+		// Remember the successful provider for interactive mode
+		if isInteractive {
+			lastSuccessfulProvider = provider
+		}
 
 		if i > 0 {
 			fmt.Printf("Fell back to \033[1m%s\033[0m\n", provider)
