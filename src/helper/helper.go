@@ -626,6 +626,7 @@ func printConnectionErrorMsg(err error) {
 func handleStatus400(resp *http.Response) {
 	bold.Fprintln(os.Stderr, "\rSome error has occurred. Statuscode:", resp.StatusCode)
 	respBody, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
 	fmt.Println(string(respBody))
 	os.Exit(1)
 }
