@@ -26,6 +26,7 @@ type ExtraOptions struct {
 	IsFind             bool // IsFind enable web search functionality
 	IsInteractiveFind  bool // IsInteractiveFind enable interactive web search mode
 	Verbose            bool // Verbose enable detailed search output
+	IsThink            bool // IsThink show thinking tags or hide them with animation
 }
 
 type CommonResponse struct {
