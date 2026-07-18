@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
@@ -44,6 +45,7 @@ var (
 	ShellName       string
 	ShellOptions    []string
 	ShellConfigFile string
+	searchRegex     = regexp.MustCompile(`<search>(.*?)</search>`)
 )
 
 var bold = color.New(color.Bold)
@@ -86,10 +88,10 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 	return msgObjectNew, responseTxt
 }
 
-func Loading(stop *bool) {
+func Loading(stop *atomic.Bool) {
 	spinChars := []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "}
 	i := 0
-	for !*stop {
+	for !stop.Load() {
 
 		fmt.Printf("\r%s Loading", spinChars[i])
 		i = (i + 1) % len(spinChars)
@@ -184,10 +186,11 @@ func SetShellAndOSVars() {
 	case "linux":
 		result, err := exec.Command("lsb_release", "-si").Output()
 		distro := strings.TrimSpace(string(result))
-		if err != nil {
-			distro = ""
+		if err != nil || distro == "" {
+			OperatingSystem = "Linux"
+		} else {
+			OperatingSystem = "Linux/" + distro
 		}
-		OperatingSystem = "Linux" + "/" + distro
 	default:
 		OperatingSystem = runtime.GOOS
 	}
@@ -221,15 +224,10 @@ func SetShellAndOSVars() {
 	ShellOptions = []string{"-c"}
 }
 
-// shellCommand first sets the global variables getCommand uses, then it creates a prompt to generate a command and then it passes that to getCommand
+// ShellCommand sets the global variables, creates a prompt to generate a command, and requests the response
 func ShellCommand(input string, params structs.Params, extraOptions structs.ExtraOptions) {
 	SetShellAndOSVars()
 	shellPrompt := fmt.Sprintf("Your role: Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. Do not provide any description. If you need to store any data, assume it will be stored in the chat. Provide only %s command for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:", ShellName, OperatingSystem, input)
-	GetCommand(shellPrompt, params, extraOptions)
-}
-
-// getCommand will make a request to an AI model, then it will run the response using an appropriate handler (bash, sh OR powershell, cmd)
-func GetCommand(shellPrompt string, params structs.Params, extraOptions structs.ExtraOptions) {
 	_, _ = MakeRequestAndGetData(shellPrompt, params, extraOptions)
 }
 
@@ -247,7 +245,11 @@ func GetVersionHistory() {
 		os.Exit(1)
 	}
 
-	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger())
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error creating client:", err)
+		os.Exit(1)
+	}
 
 	res, err := client.Do(req)
 
@@ -256,6 +258,7 @@ func GetVersionHistory() {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
+	defer res.Body.Close()
 
 	resBody, err := io.ReadAll(res.Body)
 
@@ -264,11 +267,12 @@ func GetVersionHistory() {
 		os.Exit(1)
 	}
 
-	defer res.Body.Close()
-
 	var releases []RESPONSE
 
-	json.Unmarshal(resBody, &releases)
+	if err := json.Unmarshal(resBody, &releases); err != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing releases:", err)
+		os.Exit(1)
+	}
 
 	for i := len(releases) - 1; i >= 0; i-- {
 		boldBlue.Println("Release", releases[i].Tagname)
@@ -277,204 +281,171 @@ func GetVersionHistory() {
 	}
 }
 
-func GetWholeText(input string, extraOptions structs.ExtraOptions, params structs.Params) {
-	_, _ = MakeRequestAndGetData(input, params, extraOptions)
-}
-
 func GetLastCodeBlock(markdown string) string {
 	lines := strings.Split(markdown, "\n")
-	var codeBlock []string
-	capturing := false
+	start, end := -1, -1
 
 	for i := len(lines) - 1; i >= 0; i-- {
 		if strings.HasPrefix(lines[i], "```") {
-			if capturing {
-				capturing = false
-				break
+			if end == -1 {
+				end = i
 			} else {
-				capturing = true
-				continue
+				start = i
+				break
 			}
-		}
-		if capturing {
-			codeBlock = append([]string{lines[i]}, codeBlock...)
 		}
 	}
 
-	// If no code block is found, return an empty string.
-	if capturing || len(codeBlock) == 0 {
+	if start == -1 || end == -1 || start >= end {
 		return ""
 	}
 
-	return strings.Join(codeBlock, "\n")
+	return strings.Join(lines[start+1:end], "\n")
+}
+
+type streamFormatter struct {
+	count           int
+	isCode          bool
+	isGreen         bool
+	tickCount       int
+	previousWasTick bool
+	isTick          bool
+}
+
+func newStreamFormatter() *streamFormatter {
+	return &streamFormatter{}
+}
+
+func (f *streamFormatter) formatChar(word string, isRealCode bool) {
+	if f.count <= 0 {
+		if word == "`" {
+			f.tickCount++
+			f.isTick = true
+			if f.tickCount == 2 && !f.previousWasTick {
+				f.tickCount = 0
+			} else if f.tickCount == 6 {
+				f.tickCount = 0
+			}
+			f.previousWasTick = true
+			f.isGreen = false
+			f.isCode = false
+		} else {
+			f.isTick = false
+			switch f.tickCount {
+			case 1:
+				f.isGreen = true
+			case 3:
+				f.isCode = true
+			}
+			f.previousWasTick = false
+		}
+
+		if f.isCode {
+			codeText.Print(word)
+		} else if f.isGreen {
+			boldBlue.Print(word)
+		} else if !f.isTick {
+			fmt.Print(word)
+		}
+	} else {
+		if word == "`" {
+			f.tickCount++
+			f.isTick = true
+			if f.tickCount == 2 && !f.previousWasTick {
+				f.tickCount = 0
+			} else if f.tickCount >= 6 && f.tickCount%2 == 0 && f.previousWasTick {
+				f.tickCount = 0
+			}
+			f.isGreen = false
+			f.isCode = false
+		} else {
+			f.isTick = false
+			if f.tickCount == 1 {
+				f.isGreen = true
+			} else if f.tickCount >= 3 {
+				f.isCode = true
+			}
+		}
+
+		if f.isCode {
+			codeText.Print(word)
+		} else if f.isGreen {
+			boldBlue.Print(word)
+		} else if !f.isTick {
+			fmt.Print(word)
+		} else {
+			if f.tickCount > 3 || isRealCode || (f.tickCount == 0 && f.previousWasTick) {
+				fmt.Print(word)
+			}
+		}
+
+		if word == "`" {
+			f.previousWasTick = true
+		} else {
+			f.previousWasTick = false
+		}
+	}
 }
 
 func HandleEachPart(resp *http.Response, input string, params structs.Params) string {
 	scanner := bufio.NewScanner(resp.Body)
 
-	// Variables
-	count := 0
-	isCode := false
-	isGreen := false
-	tickCount := 0
-	previousWasTick := false
-	isTick := false
-	isRealCode := false
-
 	lineLength := 0
 	size, termwidthErr := ts.GetSize()
 	termWidth := size.Col()
 
-	fullText := ""
+	var fullText strings.Builder
+	formatter := newStreamFormatter()
 
 	for scanner.Scan() {
 		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
 		if len(mainText) < 1 {
 			continue
 		}
-		fullText += mainText
+		fullText.WriteString(mainText)
 
-		if count <= 0 {
-			wordLength := len([]rune(mainText))
-			if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-				fmt.Print("\n")
-				lineLength = 0
-			}
-			lineLength += wordLength
-			splitLine := strings.Split(mainText, "")
-			// Iterating through each word
-			for _, word := range splitLine {
-				// If its a backtick
-				if word == "`" {
-					tickCount++
-					isTick = true
+		wordLength := len([]rune(mainText))
+		if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
+			fmt.Print("\n")
+			lineLength = 0
+		}
+		lineLength += wordLength
 
-					if tickCount == 2 && !previousWasTick {
-						tickCount = 0
-					} else if tickCount == 6 {
-						tickCount = 0
-					}
-					previousWasTick = true
-					isGreen = false
-					isCode = false
-
-				} else {
-					isTick = false
-					// If its a normal word
-
-					switch tickCount {
-					case 1:
-						isGreen = true
-					case 3:
-						isCode = true
-					}
-					previousWasTick = false
-				}
-
-				if isCode {
-					codeText.Print(word)
-				} else if isGreen {
-					boldBlue.Print(word)
-				} else if !isTick {
-					fmt.Print(word)
-				}
-			}
-		} else {
-			wordLength := len([]rune(mainText))
-
-			if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-				fmt.Print("\n")
-				lineLength = 0
-			}
-			lineLength += wordLength
-			splitLine := strings.Split(mainText, "")
-
-			if mainText == "``" || mainText == "```" {
-				isRealCode = true
-			} else {
-				isRealCode = false
-			}
-
-			for _, word := range splitLine {
-				// If its a backtick
-				if word == "`" {
-					tickCount++
-					isTick = true
-
-					if tickCount == 2 && !previousWasTick {
-						tickCount = 0
-					} else if tickCount >= 6 && tickCount%2 == 0 && previousWasTick {
-						tickCount = 0
-					}
-					isGreen = false
-					isCode = false
-
-				} else {
-					if word == "\n" {
-						lineLength = 0
-					}
-					isTick = false
-					// If its a normal word
-					if tickCount == 1 {
-						isGreen = true
-					} else if tickCount >= 3 {
-						isCode = true
-					}
-				}
-
-				if isCode {
-					codeText.Print(word)
-				} else if isGreen {
-					boldBlue.Print(word)
-				} else if !isTick {
-					fmt.Print(word)
-				} else {
-					if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
-						fmt.Print(word)
-					}
-
-				}
-				if word == "`" {
-					previousWasTick = true
-				} else {
-					previousWasTick = false
-				}
-
-			}
+		isRealCode := false
+		if formatter.count > 0 && (mainText == "``" || mainText == "```") {
+			isRealCode = true
 		}
 
-		count++
+		for _, char := range mainText {
+			word := string(char)
+			formatter.formatChar(word, isRealCode)
+			if word == "\n" {
+				lineLength = 0
+			}
+		}
+		formatter.count++
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
 		os.Exit(1)
 	}
 
-	return fullText
-
+	return fullText.String()
 }
 
 // handle response for interactive shell mode
 func HandleEachPartInteractiveShell(resp *http.Response, input string, params structs.Params) string {
 	scanner := bufio.NewScanner(resp.Body)
 
-	// Variables for formatting
-	count := 0
-	isCode := false
-	isGreen := false
-	tickCount := 0
-	previousWasTick := false
-	isTick := false
-	isRealCode := false
-
 	lineLength := 0
 	size, termwidthErr := ts.GetSize()
 	termWidth := size.Col()
 
-	fullText := ""
+	var fullText strings.Builder
+	formatter := newStreamFormatter()
+
 	// Buffer for incomplete XML tags
 	var xmlBuffer strings.Builder
-	// Track if inside XML tag
 	inXMLTag := false
 
 	for scanner.Scan() {
@@ -483,10 +454,15 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 			continue
 		}
 
+		isRealCode := false
+		if formatter.count > 0 && (mainText == "``" || mainText == "```") {
+			isRealCode = true
+		}
+
 		// Process stream, separating XML tags from natural language/code blocks
 		for _, char := range mainText {
 			word := string(char)
-			fullText += word
+			fullText.WriteString(word)
 			if char == '<' && !inXMLTag {
 				// Start new XML tag
 				inXMLTag = true
@@ -505,103 +481,21 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 				// Inside XML tag, continue buffering
 				xmlBuffer.WriteRune(char)
 			} else {
-				// Original formatting logic
-				if count <= 0 {
-					wordLength := len([]rune(word))
-					if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-						fmt.Print("\n")
-						lineLength = 0
-					}
-					lineLength += wordLength
+				wordLength := len([]rune(word))
+				if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
+					fmt.Print("\n")
+					lineLength = 0
+				}
+				lineLength += wordLength
 
-					// Handle code blocks and colors
-					if word == "`" {
-						tickCount++
-						isTick = true
-						if tickCount == 2 && !previousWasTick {
-							tickCount = 0
-						} else if tickCount == 6 {
-							tickCount = 0
-						}
-						previousWasTick = true
-						isGreen = false
-						isCode = false
-					} else {
-						isTick = false
-						switch tickCount {
-						case 1:
-							isGreen = true
-						case 3:
-							isCode = true
-						}
-						previousWasTick = false
-					}
+				formatter.formatChar(word, isRealCode)
 
-					if isCode {
-						codeText.Print(word)
-					} else if isGreen {
-						boldBlue.Print(word)
-					} else if !isTick {
-						fmt.Print(word)
-					}
-				} else {
-					wordLength := len([]rune(word))
-					if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-						fmt.Print("\n")
-						lineLength = 0
-					}
-					lineLength += wordLength
-
-					if mainText == "``" || mainText == "```" {
-						isRealCode = true
-					} else {
-						isRealCode = false
-					}
-
-					// Handle code blocks and colors
-					if word == "`" {
-						tickCount++
-						isTick = true
-						if tickCount == 2 && !previousWasTick {
-							tickCount = 0
-						} else if tickCount >= 6 && tickCount%2 == 0 && previousWasTick {
-							tickCount = 0
-						}
-						isGreen = false
-						isCode = false
-					} else {
-						if word == "\n" {
-							lineLength = 0
-						}
-						isTick = false
-						if tickCount == 1 {
-							isGreen = true
-						} else if tickCount >= 3 {
-							isCode = true
-						}
-					}
-
-					if isCode {
-						codeText.Print(word)
-					} else if isGreen {
-						boldBlue.Print(word)
-					} else if !isTick {
-						fmt.Print(word)
-					} else {
-						if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
-							fmt.Print(word)
-						}
-					}
-
-					if word == "`" {
-						previousWasTick = true
-					} else {
-						previousWasTick = false
-					}
+				if word == "\n" {
+					lineLength = 0
 				}
 			}
 		}
-		count++
+		formatter.count++
 	}
 
 	// Check for unprocessed XML tag remnants
@@ -614,7 +508,7 @@ func HandleEachPartInteractiveShell(resp *http.Response, input string, params st
 		return ""
 	}
 
-	return fullText
+	return fullText.String()
 }
 
 func printConnectionErrorMsg(err error) {
@@ -645,7 +539,6 @@ func ExecuteCommandWithCapture(shellName string, shellOptions []string, fullLine
 		rawModeOff := exec.Command("stty", "-raw", "echo")
 		rawModeOff.Stdin = os.Stdin
 		_ = rawModeOff.Run()
-		rawModeOff.Wait()
 	}
 
 	var cmd *exec.Cmd
@@ -705,9 +598,10 @@ func AddToShellHistory(command string) {
 			historyPath = homeDir + "/.bash_history"
 		}
 
-		file, _ := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
-		// if err != nil {
-		// }
+		file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			return
+		}
 		defer file.Close()
 
 		_, _ = file.WriteString(command + "\n")
@@ -715,7 +609,7 @@ func AddToShellHistory(command string) {
 }
 
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, error) {
-	stopSpin := false
+	var stopSpin atomic.Bool
 
 	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
 		go Loading(&stopSpin)
@@ -724,8 +618,9 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 	resp, err := providers.NewRequest(input, params, extraOptions)
 
 	if err != nil {
-		stopSpin = true
+		stopSpin.Store(true)
 		printConnectionErrorMsg(err)
+		return "", err
 	}
 
 	defer resp.Body.Close()
@@ -733,7 +628,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 	code := resp.StatusCode
 
 	if code >= 400 {
-		stopSpin = true
+		stopSpin.Store(true)
 		fmt.Print("\r")
 		if !extraOptions.IsInteractive {
 			handleStatus400(resp)
@@ -744,7 +639,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		return "", nil
 	}
 
-	stopSpin = true
+	stopSpin.Store(true)
 	fmt.Print("\r")
 
 	if extraOptions.IsNormal {
@@ -1035,7 +930,6 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 		responseObjects, responseTxt := GetData(input, params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true})
 
 		// Check if response contains search intent
-		searchRegex := regexp.MustCompile(`<search>(.*?)</search>`)
 		matches := searchRegex.FindStringSubmatch(responseTxt)
 
 		if len(matches) > 1 {

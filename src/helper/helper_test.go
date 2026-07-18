@@ -102,4 +102,47 @@ func TestHandleStatus400ExitCode(t *testing.T) {
 	}
 }
 
+func TestGetLastCodeBlock(t *testing.T) {
+	tests := []struct {
+		name     string
+		markdown string
+		expected string
+	}{
+		{
+			name:     "no code blocks",
+			markdown: "hello world\nthis is plain text",
+			expected: "",
+		},
+		{
+			name:     "single code block",
+			markdown: "hello\n```go\nfunc main() {}\n```\nworld",
+			expected: "func main() {}",
+		},
+		{
+			name:     "multiple code blocks",
+			markdown: "first:\n```python\nprint(1)\n```\nsecond:\n```go\nfmt.Println(2)\n```\nend",
+			expected: "fmt.Println(2)",
+		},
+		{
+			name:     "unclosed code block",
+			markdown: "hello\n```go\nfunc main() {}\n",
+			expected: "",
+		},
+		{
+			name:     "empty code block",
+			markdown: "hello\n```\n```\nworld",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := GetLastCodeBlock(tt.markdown)
+			if actual != tt.expected {
+				t.Errorf("expected %q, got %q", tt.expected, actual)
+			}
+		})
+	}
+}
+
 
