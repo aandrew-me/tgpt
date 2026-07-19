@@ -320,17 +320,17 @@ func main() {
 
 					return
 				}
-				helper.GetWholeText(
+				_, _ = helper.MakeRequestAndGetData(
 					*preprompt+trimmedPrompt+contextText+pipedInput,
-					structs.ExtraOptions{IsGetWhole: *isWhole},
 					main_params,
+					structs.ExtraOptions{IsGetWhole: *isWhole},
 				)
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
-				helper.GetWholeText(
+				_, _ = helper.MakeRequestAndGetData(
 					*preprompt+formattedInput+cleanPipedInput,
-					structs.ExtraOptions{IsGetWhole: *isWhole},
 					main_params,
+					structs.ExtraOptions{IsGetWhole: *isWhole},
 				)
 			}
 		case *isShell:
