@@ -27,7 +27,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "meta-llama/llama-4-scout-17b-16e-instruct"
+	model := "openai/gpt-oss-120b"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	} else if envModel := os.Getenv("GROQ_MODEL"); envModel != "" {
