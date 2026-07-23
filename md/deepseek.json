@@ -1,0 +1,8 @@
+{
+  "model_alias": {
+    "anyapi": "deepseek/deepseek-v4-flash",
+    "opencode": "deepseek-v4-flash-free",
+    "deepseek": "deepseek-v4-flash",
+    "ollamacloud": "deepseek-v4-flash:671b"
+  }
+}

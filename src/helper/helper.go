@@ -714,117 +714,187 @@ func AddToShellHistory(command string) {
 	}
 }
 
+var lastSuccessfulProvider string
+
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, error) {
-	stopSpin := false
+	providersToTry := providersForRotation(params)
 
-	if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
-		go Loading(&stopSpin)
-	}
+	isInteractive := extraOptions.IsInteractive || extraOptions.IsInteractiveShell || extraOptions.IsInteractiveFind
 
-	resp, err := providers.NewRequest(input, params, extraOptions)
-
-	if err != nil {
-		stopSpin = true
-		printConnectionErrorMsg(err)
-	}
-
-	defer resp.Body.Close()
-
-	code := resp.StatusCode
-
-	if code >= 400 {
-		stopSpin = true
-		fmt.Print("\r")
-		if !extraOptions.IsInteractive {
-			handleStatus400(resp)
-		}
-		respBody, _ := io.ReadAll(resp.Body)
-		fmt.Println("Some error has occurred, try again")
-		fmt.Println(string(respBody))
-		return "", nil
-	}
-
-	stopSpin = true
-	fmt.Print("\r")
-
-	if extraOptions.IsNormal {
-		// Print the Question
-		if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
-			fmt.Print("\r          \r")
-			// bold.Printf("\r%v\n\n", input)
-			bold.Println()
-		} else {
-			fmt.Println()
-			boldViolet.Println("╭─ Bot")
-		}
-
-		// Handling each part
-		if extraOptions.IsInteractiveShell {
-			return HandleEachPartInteractiveShell(resp, input, params), nil
-		}
-		if extraOptions.IsInteractiveFind {
-			return HandleEachPartInteractiveShell(resp, input, params), nil // Use same formatting as interactive shell
-		}
-		return HandleEachPart(resp, input, params), nil
-	}
-
-	if extraOptions.IsGetCommand {
-		fmt.Print("\r          \r")
-	}
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	// Handling each part
-	fullText := ""
-
-	for scanner.Scan() {
-		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
-		if len(mainText) < 1 {
-			continue
-		}
-		fullText += mainText
-
-		if !extraOptions.IsGetWhole {
-			fmt.Print(mainText)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-		return "", err
-	}
-
-	if extraOptions.IsGetWhole {
-		fmt.Println(fullText)
-	}
-
-	if extraOptions.IsGetSilent || extraOptions.IsGetCode {
-		fmt.Println()
-	}
-
-	if extraOptions.IsGetCommand {
-		lineCount := strings.Count(fullText, "\n") + 1
-
-		if lineCount == 1 {
-			if extraOptions.AutoExec {
-				fmt.Println()
-				ExecuteCommand(ShellName, ShellOptions, fullText)
-			} else {
-				bold.Print("\n\nExecute shell command? [y/n]: ")
-				reader := bufio.NewReader(os.Stdin)
-				userInput, _ := reader.ReadString('\n')
-				userInput = strings.TrimSpace(userInput)
-
-				if userInput == "y" || userInput == "" {
-					ExecuteCommand(ShellName, ShellOptions, fullText)
-				} else {
-					clipboard.CopyToClipboard(fullText)
-				}
+	// In interactive mode, try the last successful provider first
+	if isInteractive && lastSuccessfulProvider != "" {
+		for i, p := range providersToTry {
+			if p == lastSuccessfulProvider {
+				providersToTry = append(providersToTry[i:], providersToTry[:i]...)
+				break
 			}
 		}
 	}
 
+	originalModel := params.ApiModel
+
+	for i, provider := range providersToTry {
+		params.Provider = provider
+		params.ApiModel = originalModel
+
+		key := strings.ToUpper(provider)
+		if alias := os.Getenv("MODEL_ALIAS_" + key); alias != "" {
+			params.ApiModel = alias
+		}
+
+		stopSpin := false
+
+		if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
+			go Loading(&stopSpin)
+		}
+
+		resp, err := providers.NewRequest(input, params, extraOptions)
+
+		if err != nil {
+			stopSpin = true
+			if i < len(providersToTry)-1 {
+				fmt.Fprintf(os.Stderr, "\rProvider %s failed: %v\n", provider, err)
+				continue
+			}
+			printConnectionErrorMsg(err)
+		}
+
+		if resp == nil {
+			continue
+		}
+
+		code := resp.StatusCode
+
+		if code >= 400 {
+			stopSpin = true
+			fmt.Print("\r")
+			if i < len(providersToTry)-1 {
+				resp.Body.Close()
+				fmt.Fprintf(os.Stderr, "\rProvider %s failed (status %d)\n", provider, code)
+				continue
+			}
+			if !extraOptions.IsInteractive {
+				handleStatus400(resp)
+			}
+			respBody, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			fmt.Println("Some error has occurred, try again")
+			fmt.Println(string(respBody))
+			return "", nil
+		}
+
+		stopSpin = true
+		fmt.Print("\r")
+
+		// Remember the successful provider for interactive mode
+		if isInteractive {
+			lastSuccessfulProvider = provider
+		}
+
+		if i > 0 {
+			fmt.Printf("Fell back to \033[1m%s\033[0m\n", provider)
+		}
+
+		defer resp.Body.Close()
+
+		if extraOptions.IsNormal {
+			if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
+				fmt.Print("\r          \r")
+				bold.Println()
+			} else {
+				fmt.Println()
+				boldViolet.Println("╭─ Bot")
+			}
+
+			if extraOptions.IsInteractiveShell {
+				return HandleEachPartInteractiveShell(resp, input, params), nil
+			}
+			if extraOptions.IsInteractiveFind {
+				return HandleEachPartInteractiveShell(resp, input, params), nil
+			}
+			return HandleEachPart(resp, input, params), nil
+		}
+
+		if extraOptions.IsGetCommand {
+			fmt.Print("\r          \r")
+		}
+
+		scanner := bufio.NewScanner(resp.Body)
+
+		fullText := ""
+
+		for scanner.Scan() {
+			mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
+			if len(mainText) < 1 {
+				continue
+			}
+			fullText += mainText
+
+			if !extraOptions.IsGetWhole {
+				fmt.Print(mainText)
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
+			return "", err
+		}
+
+		if extraOptions.IsGetWhole {
+			fmt.Println(fullText)
+		}
+
+		if extraOptions.IsGetSilent || extraOptions.IsGetCode {
+			fmt.Println()
+		}
+
+		if extraOptions.IsGetCommand {
+			lineCount := strings.Count(fullText, "\n") + 1
+
+			if lineCount == 1 {
+				if extraOptions.AutoExec {
+					fmt.Println()
+					ExecuteCommand(ShellName, ShellOptions, fullText)
+				} else {
+					bold.Print("\n\nExecute shell command? [y/n]: ")
+					reader := bufio.NewReader(os.Stdin)
+					userInput, _ := reader.ReadString('\n')
+					userInput = strings.TrimSpace(userInput)
+
+					if userInput == "y" || userInput == "" {
+						ExecuteCommand(ShellName, ShellOptions, fullText)
+					} else {
+						clipboard.CopyToClipboard(fullText)
+					}
+				}
+			}
+		}
+
+		return "", nil
+	}
+
 	return "", nil
+}
+
+func providersForRotation(params structs.Params) []string {
+	if params.RotateProviders == "" {
+		return []string{params.Provider}
+	}
+	raw := strings.Split(params.RotateProviders, ",")
+	list := make([]string, 0, len(raw))
+	for _, p := range raw {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if providers.IsValidProvider(p) {
+			list = append(list, p)
+		}
+	}
+	if len(list) == 0 {
+		list = []string{params.Provider}
+	}
+	return list
 }
 
 func ShowHelpMessage() {
@@ -846,6 +916,7 @@ func ShowHelpMessage() {
 	// fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
+	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
 
 	boldBlue.Println("\nOptions supported for image generation (with -image flag)")

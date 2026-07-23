@@ -34,8 +34,7 @@ func (b *trackedBody) Close() error {
 // TestHandleStatus400BodyClose verifies that handleStatus400 closes resp.Body.
 // Because handleStatus400 calls os.Exit(1), this test runs as a subprocess.
 // A close-marker file is created when Body.Close() is called.
-// Currently this test demonstrates the bug: handleStatus400 does NOT close the body.
-// Once fixed, the marker file will be created and this test will pass.
+// The marker file must exist after handleStatus400 exits (exit code 1).
 func TestHandleStatus400BodyClose(t *testing.T) {
 	if os.Getenv("GO_TEST_SUBPROCESS") == "1" {
 		closeFile := os.Getenv("GO_TEST_CLOSE_FILE")
@@ -64,12 +63,8 @@ func TestHandleStatus400BodyClose(t *testing.T) {
 	// Ignore the error — handleStatus400 calls os.Exit(1)
 	_ = cmd.Run()
 
-	_, err := os.Stat(closeFile)
-	if os.IsNotExist(err) {
-		t.Error("BUG: handleStatus400 did NOT call resp.Body.Close() — " +
-			"body leak: io.ReadAll(resp.Body) reads the body but Close() is never called, " +
-			"then os.Exit(1) exits without any deferred cleanup. " +
-			"Fix: add 'defer resp.Body.Close()' at the start of handleStatus400.")
+	if _, err := os.Stat(closeFile); err != nil {
+		t.Fatalf("handleStatus400 did not close resp.Body: %v", err)
 	}
 }
 
