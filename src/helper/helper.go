@@ -731,15 +731,15 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		}
 	}
 
+	originalModel := params.ApiModel
+
 	for i, provider := range providersToTry {
 		params.Provider = provider
-		initialModel := params.ApiModel
+		params.ApiModel = originalModel
 
 		key := strings.ToUpper(provider)
 		if alias := os.Getenv("MODEL_ALIAS_" + key); alias != "" {
 			params.ApiModel = alias
-		} else {
-			params.ApiModel = initialModel
 		}
 
 		stopSpin := false

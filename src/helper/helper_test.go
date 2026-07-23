@@ -69,7 +69,7 @@ func TestHandleStatus400BodyClose(t *testing.T) {
 		t.Error("BUG: handleStatus400 did NOT call resp.Body.Close() — " +
 			"body leak: io.ReadAll(resp.Body) reads the body but Close() is never called, " +
 			"then os.Exit(1) exits without any deferred cleanup. " +
-			"Fix: add 'defer resp.Body.Close()' at the start of handleStatus400.")
+			"Fix: explicitly call 'resp.Body.Close()' before os.Exit(1).")
 	}
 }
 
