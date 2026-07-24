@@ -71,7 +71,7 @@ func GetMainText(line string, provider string, input string) string {
 	case "sky":
 		return sky.GetMainText(line)
 	default:
-		return pollinations.GetMainText(line)
+		return opencode.GetMainText(line)
 	}
 }
 
@@ -115,7 +115,7 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	case "sky":
 		return sky.NewRequest(input, params)
 	default:
-		return pollinations.NewRequest(input, params)
+		return opencode.NewRequest(input, params)
 	}
 
 }
