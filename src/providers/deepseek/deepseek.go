@@ -27,7 +27,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "deepseek-reasoner"
+	model := "DeepSeek-V4-Flash"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	} else if envModel := os.Getenv("DEEPSEEK_MODEL"); envModel != "" {
@@ -42,7 +42,11 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		apiKey = os.Getenv("AI_API_KEY")
 	}
 
-	url := "https://api.deepseek.com/chat/completions"
+	url := params.Url
+
+	if url == "" {
+		url = "https://api.deepseek.com/chat/completions"
+	}
 
 	requestInfo := RequestBody{
 		Model:  model,
