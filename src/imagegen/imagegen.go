@@ -3,7 +3,6 @@ package imagegen
 import (
 	"fmt"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen/anyapi"
-	"github.com/aandrew-me/tgpt/v2/src/imagegen/arta"
 	pollinations_img "github.com/aandrew-me/tgpt/v2/src/imagegen/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
@@ -24,12 +23,6 @@ func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 		} else {
 			fmt.Println(filename)
 		}
-
-	case "arta":
-		if !isQuite {
-			bold.Println("Generating image with arta...")
-		}
-		arta.Main(prompt, params, isQuite)
 
 	case "anyapi":
 		if !isQuite {

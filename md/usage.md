@@ -25,9 +25,6 @@ Options supported for image generation (with -image flag)
 --out                                              Output image filename (Supported by pollinations)
 --height                                           Output image height (Supported by pollinations)
 --width                                            Output image width (Supported by pollinations)
---img_count                                        Output image count (Supported by arta)
---img_negative                                     Negative prompt (Supported by arta)
---img_ratio                                        Output image ratio (Supported by arta, some models may not support it)
 
 Options:
 -v, --version                                      Print version
@@ -72,13 +69,6 @@ Image generation providers:
 
 Provider: pollinations
 Supported models: flux, turbo
-
-Provider: arta
-Supported models:
-F Dev, Minimalistic Logo, F Retro Anime, Low Poly, F Super Realism, F Realism, Embroidery tattoo, Old school colored, Hand-drawn Logo, GPT4o Ghibli, F Pencil, F Retrocomic, Juggernaut-xl, Medieval, F Softserve, No Style, New School, Trash Polka, Anime tattoo, F Jojoso, Grunge Logo, F Dreamscape, F Whimscape, Kawaii, Flame design, Old School, Katayama-mix-xl, On limbs black, SDXL L, F Pixel, Realistic tattoo, Flux, Graffiti, F Anime Journey, F Koda, Gradient Logo, On limbs color, Elegant Logo, Random Text, F Face Realism, Playground-xl, Epic Logo, Photographic, Mascots Logo, Surrealism, Monogram Logo, Chicano, Pony-xl, Anima-pencil-xl, Mini tattoo, Dotwork, F Miniature, Watercolor, Futuristic Logo, RevAnimated, Geometric Logo, Emblem Logo, Biomech, Combination Logo, Death metal, F Dalle Mix, Neo-traditional, Cheyenne-xl, Realistic-stock-xl, F Epic Realism, Anything-xl, Japanese_2, F Pro, GPT4o, Black Ink, F Midjorney, Abstract Logo, 3D Logo, Red and Black, High GPT4o, Dreamshaper-xl, Yamers-realistic-xl, Cor-epica-xl, F Anime, F Real Anime, Professional, Fantasy Art, Cinematic Art, Vincent Van Gogh, SDXL 1.0
-
-Supported ratios:
-1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 9:21, 21:9
 
 Examples:
 tgpt "What is internet?"

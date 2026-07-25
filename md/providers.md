@@ -16,5 +16,4 @@
 
 **Image Generation Models**: 
 - AnyAPI (Requires API key, 100k anytokens/day)
-- Arta (Free)
 - Pollinations (Free) ([Models](https://image.pollinations.ai/models))
