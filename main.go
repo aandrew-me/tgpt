@@ -97,6 +97,7 @@ func main() {
 	var imgNegative *string
 	var imgCount *string
 	var imgRatio *string
+	var searchProvider *string
 
 	// Load config file
 	var configPath string
@@ -147,6 +148,7 @@ func main() {
 
 	logFile = flag.String("log", "", "Filepath to log conversation to.")
 	rotateProviders = flag.String("rotate", "", "Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)")
+	searchProvider = flag.String("search-provider", "", "Search provider: exa or google (Env: SEARCH_PROVIDER)")
 	shouldExecuteCommand = flag.Bool(("y"), false, "Instantly execute the shell command")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
@@ -219,6 +221,14 @@ func main() {
 	rotateStr := *rotateProviders
 	if !rotateProvidersSet && rotateStr == "" {
 		rotateStr = os.Getenv("AI_ROTATE_PROVIDERS")
+	}
+
+	finalSearchProvider := *searchProvider
+	if finalSearchProvider == "" {
+		finalSearchProvider = os.Getenv("SEARCH_PROVIDER")
+	}
+	if finalSearchProvider == "" {
+		finalSearchProvider = "exa"
 	}
 
 	main_params := structs.Params{
@@ -654,8 +664,9 @@ func main() {
 				}
 
 				extraOptions := structs.ExtraOptions{
-					IsFind:  true,
-					Verbose: *isVerbose,
+					IsFind:         true,
+					Verbose:        *isVerbose,
+					SearchProvider: finalSearchProvider,
 				}
 
 				helper.SearchQuery(trimmedPrompt, main_params, extraOptions, *isQuiet, *logFile)
@@ -676,6 +687,7 @@ func main() {
 				IsInteractiveFind: true,
 				IsFind:            true,
 				Verbose:           *isVerbose,
+				SearchProvider:    finalSearchProvider,
 			}
 
 			// Create a prompt-compatible input reader function for confirmations
