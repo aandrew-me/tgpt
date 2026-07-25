@@ -944,7 +944,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is pollinations. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain and sky")
+	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -987,9 +987,6 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: powerbrain")
 	fmt.Println("Free provider using powerbrainai.com API. Uses gpt-5 model by default. No API key required.")
-
-	bold.Println("\nProvider: sky")
-	fmt.Println("Free, uses gpt-4.1-mini model")
 
 	boldBlue.Println("\nImage generation providers:")
 

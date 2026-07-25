@@ -17,13 +17,12 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/providers/powerbrain"
-	"github.com/aandrew-me/tgpt/v2/src/providers/sky"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	http "github.com/bogdanfinn/fhttp"
 )
 
 var AvailableProviders = []string{
-	"", "anyapi", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
+	"", "anyapi", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -65,8 +64,6 @@ func GetMainText(line string, provider string, input string) string {
 		return pollinations.GetMainText(line)
 	case "powerbrain":
 		return powerbrain.GetMainText(line)
-	case "sky":
-		return sky.GetMainText(line)
 	default:
 		return opencode.GetMainText(line)
 	}
@@ -107,8 +104,6 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return pollinations.NewRequest(input, params)
 	case "powerbrain":
 		return powerbrain.NewRequest(input, params)
-	case "sky":
-		return sky.NewRequest(input, params)
 	default:
 		return opencode.NewRequest(input, params)
 	}
