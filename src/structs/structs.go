@@ -24,9 +24,10 @@ type ExtraOptions struct {
 	IsInteractive      bool
 	IsInteractiveShell bool
 	AutoExec           bool
-	IsFind             bool // IsFind enable web search functionality
-	IsInteractiveFind  bool // IsInteractiveFind enable interactive web search mode
-	Verbose            bool // Verbose enable detailed search output
+	IsFind             bool   // IsFind enable web search functionality
+	IsInteractiveFind  bool   // IsInteractiveFind enable interactive web search mode
+	Verbose            bool   // Verbose enable detailed search output
+	SearchProvider     string // Search provider: "exa" (default) or "google"
 }
 
 type CommonResponse struct {

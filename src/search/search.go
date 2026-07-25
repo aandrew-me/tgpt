@@ -2,6 +2,7 @@ package search
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,6 +30,28 @@ const (
 	maxConcurrentExtractions = 5                // Maximum concurrent content extractions
 )
 
+type MCPResponse struct {
+	JSONRPC string     `json:"jsonrpc"`
+	ID      int        `json:"id"`
+	Result  *MCPResult `json:"result,omitempty"`
+	Error   *MCPError  `json:"error,omitempty"`
+}
+
+type MCPError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type MCPResult struct {
+	Content []MCPContent `json:"content"`
+	IsError bool         `json:"isError,omitempty"`
+}
+
+type MCPContent struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
 // SearchParams represents the parameters extracted by AI for search
 type SearchParams struct {
 	Query      string `json:"query"`
@@ -53,6 +76,128 @@ type GoogleSearchResponse struct {
 	} `json:"items"`
 }
 
+func PerformExaMCPSearch(userQuery string, verbose bool) (string, error) {
+	apiKey := os.Getenv("EXA_API_KEY")
+
+	mcpEndpoint := "https://mcp.exa.ai/mcp"
+
+	if verbose {
+		fmt.Printf("[Exa MCP] Sending SSE search request: %q to %s\n", userQuery, mcpEndpoint)
+	}
+
+	// 1. Build JSON-RPC payload
+	payload := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params": map[string]interface{}{
+			"name": "web_search_exa",
+			"arguments": map[string]interface{}{
+				"query":      userQuery,
+				"numResults": 3,
+				"livecrawl": "fallback",
+			},
+		},
+	}
+
+	reqBody, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JSON-RPC request: %w", err)
+	}
+
+	// 2. Prepare Request with Event-Stream headers
+	req, err := http.NewRequest("POST", mcpEndpoint, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to build request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Connection", "keep-alive")
+
+	if apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	httpClient, err := client.NewClient()
+	if err != nil {
+		return "", fmt.Errorf("failed to create HTTP client: %w", err)
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("server error HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	// 3. Process the Event Stream
+	reader := bufio.NewReaderSize(resp.Body, 1*1024*1024) // 1 MB buffer
+	var rawDataPayload []byte
+
+	for {
+		line, err := reader.ReadString('\n')
+		line = strings.TrimSpace(line)
+
+		if strings.HasPrefix(line, "data:") {
+			dataStr := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+			rawDataPayload = []byte(dataStr)
+			break // Got our JSON-RPC result payload, exit streaming loop
+		}
+
+		if err != nil {
+			if err == io.EOF && len(rawDataPayload) == 0 {
+				return "", fmt.Errorf("stream ended before receiving 'data:' event")
+			}
+			if err != io.EOF {
+				return "", fmt.Errorf("error reading event stream: %w", err)
+			}
+			break
+		}
+	}
+
+	if len(rawDataPayload) == 0 {
+		return "", fmt.Errorf("empty data payload received from event-stream")
+	}
+
+	// 4. Parse the extracted JSON-RPC payload
+	var mcpResp MCPResponse
+	if err := json.Unmarshal(rawDataPayload, &mcpResp); err != nil {
+		return "", fmt.Errorf("failed to unmarshal SSE JSON payload (%d bytes): %w", len(rawDataPayload), err)
+	}
+
+	if mcpResp.Error != nil {
+		return "", fmt.Errorf("MCP RPC Error [%d]: %s", mcpResp.Error.Code, mcpResp.Error.Message)
+	}
+
+	if mcpResp.Result == nil || len(mcpResp.Result.Content) == 0 {
+		return "No search results returned.", nil
+	}
+
+	if mcpResp.Result.IsError {
+		return "", fmt.Errorf("MCP Tool execution error: %s", mcpResp.Result.Content[0].Text)
+	}
+
+	// 5. Aggregate and return content
+	var builder strings.Builder
+	for i, item := range mcpResp.Result.Content {
+		if item.Type == "text" {
+			if verbose {
+				fmt.Printf("[Exa MCP] Received content block %d (%d bytes)\n", i+1, len(item.Text))
+			}
+			builder.WriteString(item.Text)
+			builder.WriteString("\n\n")
+		}
+	}
+
+	return strings.TrimSpace(builder.String()), nil
+}
+
 // PerformSearch executes the complete search workflow
 func PerformSearch(userQuery string, verbose bool) (string, error) {
 	// Get API credentials from environment
@@ -67,7 +212,7 @@ func PerformSearch(userQuery string, verbose bool) (string, error) {
 	// For now, we'll use simple defaults
 	params := SearchParams{
 		Query:      userQuery,
-		NumResults: 3,
+		NumResults: 5,
 	}
 
 	// Perform Google search
@@ -98,6 +243,8 @@ func PerformSearch(userQuery string, verbose bool) (string, error) {
 	// Format results for AI synthesis
 	return formatResultsForAI(results, userQuery), nil
 }
+
+// Perform search with exa mcp server
 
 // googleSearch performs the actual Google Custom Search API call
 func googleSearch(params SearchParams, apiKey, searchEngineID string, verbose bool) ([]SearchResult, error) {
@@ -402,7 +549,7 @@ func ConfirmSearchExecution(params SearchParams, autoConfirm bool, isQuiet bool,
 
 // ProcessSearchWithConfirmation handles the full search flow with optimization and confirmation
 // inputReader is an optional function to get user input for confirmation. If nil, uses default bufio.NewReader(os.Stdin)
-func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, verbose bool, skipConfirmation bool, isQuiet bool, inputReader func() (string, error)) (string, error) {
+func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, verbose bool, skipConfirmation bool, isQuiet bool, inputReader func() (string, error), searchProvider string) (string, error) {
 	if verbose {
 		fmt.Printf("DEBUG: Starting search optimization for: '%s'\n", userInput)
 	}
@@ -418,13 +565,22 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 			searchParams.Query, searchParams.NumResults, searchParams.SiteFilter)
 	}
 
-	// Ask for user confirmation (or auto-confirm for one-shot mode)
-	if !ConfirmSearchExecution(searchParams, skipConfirmation, isQuiet, inputReader) {
-		return "Search cancelled by user.", nil
+	// Ask for user confirmation unless skipConfirmation is enabled
+	if skipConfirmation {
+		if verbose && !isQuiet {
+			fmt.Printf("DEBUG: skipConfirmation enabled, bypassing confirmation prompt\n")
+		}
+	} else {
+		if !ConfirmSearchExecution(searchParams, false, isQuiet, inputReader) {
+			return "Search cancelled by user.", nil
+		}
 	}
 
-	// Proceed with search using the optimized parameters
-	return PerformSearchWithParams(searchParams, verbose)
+	if searchProvider == "google" {
+		return PerformSearchWithParams(searchParams, verbose)
+	}
+
+	return PerformExaMCPSearch(searchParams.Query, verbose)
 }
 
 // PerformSearchWithParams executes search with pre-built SearchParams
