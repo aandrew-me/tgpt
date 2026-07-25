@@ -70,7 +70,3 @@ type AssistantResponsePhind struct {
 	Name     string `json:"name"`
 }
 
-type KimiResponse struct {
-	Event string `json:"event"`
-	Text  string `json:"text"`
-}

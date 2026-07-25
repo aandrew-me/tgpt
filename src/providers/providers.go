@@ -9,7 +9,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/providers/groq"
 	"github.com/aandrew-me/tgpt/v2/src/providers/isou"
-	"github.com/aandrew-me/tgpt/v2/src/providers/kimi"
 	"github.com/aandrew-me/tgpt/v2/src/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/litellm"
 	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
@@ -24,7 +23,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"", "anyapi", "deepseek", "isou", "gemini", "groq", "kimi", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
+	"", "anyapi", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain", "sky",
 }
 
 func IsValidProvider(name string) bool {
@@ -48,8 +47,6 @@ func GetMainText(line string, provider string, input string) string {
 		return gemini.GetMainText(line)
 	case "groq":
 		return groq.GetMainText(line)
-	case "kimi":
-		return kimi.GetMainText(line)
 	case "koboldai":
 		return koboldai.GetMainText(line)
 	case "litellm":
@@ -92,8 +89,6 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return groq.NewRequest(input, params)
 	case "isou":
 		return isou.NewRequest(input, params)
-	case "kimi":
-		return kimi.NewRequest(input, params)
 	case "koboldai":
 		return koboldai.NewRequest(input, params)
 	case "litellm":

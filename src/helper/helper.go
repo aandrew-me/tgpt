@@ -944,7 +944,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is pollinations. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, kimi, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain and sky")
+	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain and sky")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -960,9 +960,6 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: isou")
 	fmt.Println("Free provider with web search")
-
-	bold.Println("\nProvider: kimi")
-	fmt.Println("Free provider using kimi.com API. Uses k2 model by default. Auto-registers a device token, no API key required. Recognizes KIMI_MODEL env var.")
 
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
