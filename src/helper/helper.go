@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/olekukonko/ts"
 
-	tls_client "github.com/bogdanfinn/tls-client"
 	"golang.org/x/mod/semver"
 )
 
@@ -44,6 +44,10 @@ var (
 	ShellOptions    []string
 	ShellConfigFile string
 )
+
+type versionResponse struct {
+	Version string `json:"version"`
+}
 
 var bold = color.New(color.Bold)
 var boldBlue = color.New(color.Bold, color.FgBlue)
@@ -96,65 +100,91 @@ func Loading(stop *bool) {
 	}
 }
 
+func canWriteToDir(path string) bool {
+	dir := filepath.Dir(path)
+	tmpFile, err := os.CreateTemp(dir, ".perm_test_*")
+	if err != nil {
+		return false // Permission denied
+	}
+	tmpFile.Close()
+	os.Remove(tmpFile.Name())
+	return true
+}
+
 func Update(localVersion string, executablePath string) {
 	if runtime.GOOS == "windows" || runtime.GOOS == "android" {
 		fmt.Println("This feature is not supported on your Operating System")
-	} else {
-		client, err := client.NewClient()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-
-		url := "https://raw.githubusercontent.com/aandrew-me/tgpt/main/version.txt"
-
-		req, err := http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			// Handle error
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			return
-		}
-
-		res, err := client.Do(req)
-
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-
-		defer res.Body.Close()
-
-		var data Data
-		err = json.NewDecoder(res.Body).Decode(&data)
-		if err != nil {
-			// Handle error
-			fmt.Fprintln(os.Stderr, "Error:", err)
-			return
-		}
-
-		remoteVersion := "v" + data.Version
-
-		comparisonResult := semver.Compare("v"+localVersion, remoteVersion)
-
-		if comparisonResult == -1 {
-			fmt.Println("Updating...")
-			cmd := exec.Command("bash", "-c", "curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s "+executablePath)
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-
-			err = cmd.Run()
-
-			if err != nil {
-				fmt.Println("Failed to update. Error:", err)
-			} else {
-				fmt.Println("Successfully updated.")
-			}
-
-		} else {
-			fmt.Println("You are already using the latest version.", remoteVersion)
-		}
+		return
 	}
+
+	url := "https://raw.githubusercontent.com/aandrew-me/tgpt/main/version.txt"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error creating request:", err)
+		return
+	}
+
+	client, err := client.NewClient()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error creating HTTP client:", err)
+		return
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error fetching remote version:", err)
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		fmt.Fprintf(os.Stderr, "Error fetching version: HTTP %d\n", res.StatusCode)
+		return
+	}
+
+	var verData versionResponse
+	if err := json.NewDecoder(res.Body).Decode(&verData); err != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing version JSON:", err)
+		return
+	}
+
+	localSemver := "v" + strings.TrimPrefix(localVersion, "v")
+	remoteSemver := "v" + strings.TrimPrefix(verData.Version, "v")
+
+	if semver.Compare(localSemver, remoteSemver) >= 0 {
+		fmt.Println("You are already using the latest version:", remoteSemver)
+		return
+	}
+
+	fmt.Printf("Updating from %s to %s...\n", localSemver, remoteSemver)
+
+	useSudo := !canWriteToDir(executablePath)
+
+	var script string
+	if useSudo {
+		fmt.Println("Elevated privileges required to write to:", filepath.Dir(executablePath))
+		fmt.Println("Requesting sudo access...")
+		// - 'set -o pipefail': returns non-zero exit code if curl fails
+		// - 'curl -sSLf': '-f' forces exit failure on HTTP 4xx/5xx errors
+		// - 'sudo bash ...': escalates script execution safely
+		script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | sudo bash -s -- "$1"`
+	} else {
+		script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s -- "$1"`
+	}
+
+	// Pass executablePath as positional parameter $1 to safely prevent shell injection.
+	cmd := exec.Command("bash", "-c", script, "bash", executablePath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// 6. Execute update script
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "\nFailed to update. Error:", err)
+		return
+	}
+
+	fmt.Println("Successfully updated.")
 }
 
 func CodeGenerate(input string, params structs.Params, extraOptions structs.ExtraOptions) {
@@ -238,7 +268,7 @@ type RESPONSE struct {
 }
 
 func GetVersionHistory() {
-	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases", nil)
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases/latest", nil)
 
 	if err != nil {
 		fmt.Fprint(os.Stderr, "Some error has occurred\n\n")
@@ -246,7 +276,11 @@ func GetVersionHistory() {
 		os.Exit(1)
 	}
 
-	client, _ := tls_client.NewHttpClient(tls_client.NewNoopLogger())
+	client, err := client.NewClient()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error creating client:", err)
+		os.Exit(1)
+	}
 
 	res, err := client.Do(req)
 
@@ -256,24 +290,20 @@ func GetVersionHistory() {
 		os.Exit(1)
 	}
 
-	resBody, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
 
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	defer res.Body.Close()
+	var release RESPONSE
+	json.Unmarshal(resBody, &release)
 
-	var releases []RESPONSE
-
-	json.Unmarshal(resBody, &releases)
-
-	for i := len(releases) - 1; i >= 0; i-- {
-		boldBlue.Println("Release", releases[i].Tagname)
-		fmt.Println(releases[i].Body)
-		fmt.Println()
-	}
+	boldBlue.Println("Release", release.Tagname)
+	fmt.Println(release.Body)
+	fmt.Println()
 }
 
 func GetWholeText(input string, extraOptions structs.ExtraOptions, params structs.Params) {
@@ -923,7 +953,6 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Output image height (Supported by pollinations)\n", "--height")
 	fmt.Printf("%-50v Output image width (Supported by pollinations)\n", "--width")
 
-
 	boldBlue.Println("\nOptions:")
 	fmt.Printf("%-50v Print version \n", "-v, --version")
 	fmt.Printf("%-50v Print help message \n", "-h, --help")
@@ -933,7 +962,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Find information using web search \n", "-f, --find")
 	fmt.Printf("%-50v Interactive find mode with web search \n", "-if, --interactive-find")
 	fmt.Printf("%-50v Start interactive shell mode with aliases and functions \n", "-ia, --interactive-alias")
-	fmt.Printf("%-50v See changelog of versions \n", "-cl, --changelog")
+	fmt.Printf("%-50v See changelog of latest version \n", "-cl, --changelog")
 
 	if runtime.GOOS != "windows" {
 		fmt.Printf("%-50v Update program \n", "-u, --update")
