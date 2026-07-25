@@ -3,6 +3,7 @@ package imagegen
 import (
 	"fmt"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen/anyapi"
+	"github.com/aandrew-me/tgpt/v2/src/imagegen/magicstudio"
 	pollinations_img "github.com/aandrew-me/tgpt/v2/src/imagegen/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
@@ -13,13 +14,14 @@ var bold = color.New(color.Bold)
 
 func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 	switch params.Provider {
-	case "pollinations", "":
+	case "pollinations":
 		if !isQuite {
 			bold.Println("Generating image with pollinations.ai...")
 		}
 		filename := pollinations_img.GenerateImagePollinations(prompt, params)
 		if !isQuite {
 			fmt.Printf("Saved image as %v\n", filename)
+			_ = utils.OpenImage(filename)
 		} else {
 			fmt.Println(filename)
 		}
@@ -31,6 +33,19 @@ func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 		filename := anyapi.GenerateImage(prompt, params)
 		if !isQuite {
 			fmt.Printf("Saved image as %v\n", filename)
+			_ = utils.OpenImage(filename)
+		} else {
+			fmt.Println(filename)
+		}
+	
+	case "magicstudio", "":
+		if !isQuite {
+			bold.Println("Generating image with magicstudio.ai...")
+		}
+		filename := magicstudio.GenerateImageMagicStudio(prompt, params)
+		if !isQuite {
+			fmt.Printf("Saved image as %v\n", filename)
+			_ = utils.OpenImage(filename)
 		} else {
 			fmt.Println(filename)
 		}

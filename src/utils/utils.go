@@ -5,7 +5,9 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	http "github.com/bogdanfinn/fhttp"
@@ -89,4 +91,17 @@ func DownloadImage(url string, destDir string) error {
 	fmt.Println("Saved image", fileName)
 
 	return nil
+}
+
+func OpenImage(path string) error {
+	switch runtime.GOOS {
+	case "linux":
+		return exec.Command("xdg-open", path).Start()
+	case "darwin":
+		return exec.Command("open", path).Start()
+	case "windows":
+		return exec.Command("cmd", "/c", "start", "", path).Start()
+	default:
+		return exec.ErrNotFound
+	}
 }

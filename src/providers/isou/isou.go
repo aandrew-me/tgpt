@@ -58,7 +58,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Add("Referer", "https://isou.chat/chat")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Origin", "https://isou.chat")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/148.0")
 
 	// Return response
 	return (client.Do(req))

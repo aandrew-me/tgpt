@@ -987,6 +987,9 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nImage generation providers:")
 
+	bold.Println("\nProvider: magicstudio")
+	fmt.Println("Free provider, very fast.")
+
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Requires API key via ANYAPI_API_KEY env var or --key. Supports many models including google/gemini-2.5-flash-image")
 

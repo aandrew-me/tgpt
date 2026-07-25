@@ -15,7 +15,7 @@ func NewClient() (tls_client.HttpClient, error) {
 		tls_client.WithTimeoutSeconds(600),
 		// Allow overriding TLS fingerprint via env; default stays Firefox_117.
 		tls_client.WithClientProfile(func() profiles.ClientProfile {
-			p := profiles.Firefox_117
+			p := profiles.Firefox_148
 			switch strings.ToLower(os.Getenv("TLS_CLIENT_PROFILE")) {
 			case "firefox_133", "ff133":
 				p = profiles.Firefox_133
