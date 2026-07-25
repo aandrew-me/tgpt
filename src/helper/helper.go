@@ -947,7 +947,7 @@ func ShowHelpMessage() {
 	fmt.Println(`tgpt "What is internet?"`)
 	fmt.Println(`tgpt -m`)
 	fmt.Println(`tgpt -s "How to update my system?"`)
-	fmt.Println(`tgpt --provider duckduckgo "What is 1+1"`)
+	fmt.Println(`tgpt --provider deepseek "What is 1+1"`)
 	fmt.Println(`tgpt --img "cat"`)
 	fmt.Println(`tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
