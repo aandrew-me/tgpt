@@ -23,7 +23,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(0)
 	}
 
-	model := "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+	model := "gpt-5.4-mini"
 
 	if params.ApiModel != "" {
 		model = params.ApiModel
@@ -34,7 +34,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		"provider": "openai",
 		"language": "all",
 		"categories": [
-			"science"
+			"general"
 		],
 		"engine": "SEARXNG",
 		"messages": [{"role": "user", "content": "%s"}]
@@ -53,7 +53,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	// Setting all the required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Accept", "text/event-stream")
 	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Add("Referer", "https://isou.chat/chat")
 	req.Header.Add("Content-Type", "application/json")
