@@ -58,13 +58,6 @@ var (
 
 var lastSuccessfulProvider string
 
-// ---------------------------------------------------------------------------
-// streamFormatter — handles terminal coloring for code blocks and inline code.
-// Replaces the duplicated first-iteration / subsequent-iteration logic in
-// HandleEachPart and HandleEachPartInteractiveShell with a single unified
-// implementation that uses the more correct "subsequent iteration" rules
-// for every chunk.
-// ---------------------------------------------------------------------------
 
 type streamFormatter struct {
 	tickCount       int
@@ -153,12 +146,6 @@ func (f *streamFormatter) writeText(text string) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// interactiveFormatter — extends streamFormatter with XML tag suppression.
-// Recognized tags (<cmd>, </cmd>, <search>, </search>) are silently consumed
-// so they don't appear in terminal output. Non-tag text starting with '<' is
-// flushed normally instead of being swallowed indefinitely (original bug).
-// ---------------------------------------------------------------------------
 
 var xmlTagTargets = []string{"cmd>", "/cmd>", "search>", "/search>"}
 
@@ -218,25 +205,18 @@ func (f *interactiveFormatter) writeText(text string) {
 			f.streamFormatter.writeChar(char)
 			continue
 		}
-		// Inside potential XML tag — keep buffering
 		f.xmlBuffer.WriteRune(ch)
 		buf := f.xmlBuffer.String()
 		switch {
 		case isCompleteXMLTag(buf):
-			// Recognized tag — discard (processed separately via regex)
 			f.inXMLTag = false
 			f.xmlBuffer.Reset()
 		case !isXMLTagPrefix(buf):
-			// Not a recognized tag — flush as normal text
 			f.flushXMLBuffer()
 		}
-		// Otherwise keep buffering
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Public functions
-// ---------------------------------------------------------------------------
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
 	responseTxt, _ := MakeRequestAndGetData(input, params, extraOptions)
@@ -246,11 +226,11 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 	}
 
 	var msgObjectNew []interface{}
-	
-    msgObjectNew = []interface{}{
-			structs.DefaultMessage{Content: input, Role: "user"},
-			structs.DefaultMessage{Content: responseTxt, Role: "assistant"},
-		}
+
+	msgObjectNew = []interface{}{
+		structs.DefaultMessage{Content: input, Role: "user"},
+		structs.DefaultMessage{Content: responseTxt, Role: "assistant"},
+	}
 
 	return msgObjectNew, responseTxt
 }
@@ -632,7 +612,7 @@ func AddToShellHistory(command string) {
 	var historyPath string
 	var prefix string
 
-    shellBase := filepath.Base(shell)
+	shellBase := filepath.Base(shell)
 
 	switch {
 	case shellBase == "bash":
@@ -850,17 +830,18 @@ func ShowHelpMessage() {
 	boldBlue.Println(`Usage: tgpt [Flags] [Prompt]`)
 
 	boldBlue.Println("\nFlags:")
-	fmt.Printf("%-50v Generate and Execute shell commands. (Experimental) \n", "-s, --shell")
-	fmt.Printf("%-50v Generate Code. (Experimental)\n", "-c, --code")
-	fmt.Printf("%-50v Gives response back without loading animation\n", "-q, --quiet")
-	fmt.Printf("%-50v Gives response back as a whole text\n", "-w, --whole")
+	fmt.Printf("%-50v Generate and Execute shell commands. \n", "-s, --shell")
+	fmt.Printf("%-50v Generate Code.\n", "-c, --code")
+	fmt.Printf("%-50v Gives response back without loading animation and extra text\n", "-q, --quiet")
+	fmt.Printf("%-50v Gives response back as a whole text instead of streaming it\n", "-w, --whole")
 	fmt.Printf("%-50v Generate images from text\n", "-img, --image")
 	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER for chat and IMG_PROVIDER for image gen.)\n", "--provider")
+	fmt.Printf("%-50v Find information using web search \n", "-f, --find")
 
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
-	fmt.Printf("%-50v Set OpenAI API endpoint url\n", "--url")
+	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, ollama, litellm, groq, gemini, deepseek\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
@@ -877,7 +858,6 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Start normal interactive mode \n", "-i, --interactive")
 	fmt.Printf("%-50v Start multi-line interactive mode \n", "-m, --multiline")
 	fmt.Printf("%-50v Start interactive shell mode. (Doesn't work with all providers) \n", "-is, --interactive-shell")
-	fmt.Printf("%-50v Find information using web search \n", "-f, --find")
 	fmt.Printf("%-50v Interactive find mode with web search \n", "-if, --interactive-find")
 	fmt.Printf("%-50v Start interactive shell mode with aliases and functions \n", "-ia, --interactive-alias")
 	fmt.Printf("%-50v See changelog of latest version \n", "-cl, --changelog")
@@ -887,14 +867,14 @@ func ShowHelpMessage() {
 	}
 
 	boldBlue.Println("\nProviders:")
-	fmt.Println("The default provider is pollinations. The AI_PROVIDER environment variable can be used to specify a different provider.")
+	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
 	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
 
 	bold.Println("\nProvider: deepseek")
-	fmt.Println("Uses deepseek-reasoner model by default. Requires API key. Recognizes DEEPSEEK_API_KEY and DEEPSEEK_MODEL env vars.")
+	fmt.Println("Uses DeepSeek-V4-Flash model by default. Requires API key. Recognizes DEEPSEEK_API_KEY and DEEPSEEK_MODEL env vars. Docs: https://api-docs.deepseek.com/")
 
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API key. Recognizes GROQ_API_KEY and GROQ_MODEL env vars. Models: https://console.groq.com/docs/models")
@@ -903,7 +883,7 @@ func ShowHelpMessage() {
 	fmt.Println("Requires a free API key. Recognizes GEMINI_API_KEY and GEMINI_MODEL env vars. https://aistudio.google.com/apikey")
 
 	bold.Println("\nProvider: isou")
-	fmt.Println("Free provider with web search")
+	fmt.Println("Free provider with web search. Site: https://isou.chat/")
 
 	bold.Println("\nProvider: koboldai")
 	fmt.Println("Uses koboldcpp/HF_SPACE_Tiefighter-13B only, answers from novels")
@@ -915,13 +895,13 @@ func ShowHelpMessage() {
 	fmt.Println("Requires API key. Uses MiniMax-M2.7 model by default. Recognizes MINIMAX_API_KEY and MINIMAX_MODEL env vars. https://platform.minimaxi.com")
 
 	bold.Println("\nProvider: ollama")
-	fmt.Println("Needs to be run locally. Supports many models")
+	fmt.Println("Needs to be run locally. Supports many models. ")
 
 	bold.Println("\nProvider: ollamacloud")
 	fmt.Println("Uses Ollama Cloud API. Recognizes OLLAMA_API_KEY and OLLAMA_MODEL env vars. Default model: gpt-oss:120b")
 
 	bold.Println("\nProvider: opencode")
-	fmt.Println("Free provider using opencode.ai/zen API. Uses deepseek-v4-flash-free model by default. API key defaults to 'public'. Recognizes OPENCODE_API_KEY, OPENCODE_MODEL and OPENCODE_URL env vars.")
+	fmt.Println("Free provider using opencode.ai/zen API. Uses deepseek-v4-flash-free model by default. API key defaults to 'public'. Recognizes OPENCODE_API_KEY, OPENCODE_MODEL and OPENCODE_URL env vars. Available models: https://opencode.ai/docs/zen/#endpoints")
 
 	bold.Println("\nProvider: openai")
 	fmt.Println("Needs API key to work and supports various models. Recognizes OPENAI_API_KEY, CEREBRAS_API_KEY and OPENAI_MODEL env vars. Supports custom urls with --url")
@@ -943,14 +923,26 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: pollinations")
 	fmt.Println("Supported models: flux, turbo")
 
+	boldBlue.Println("\nConfiguration file")
+	fmt.Println("You can create a configuration file, ~/.config/tgpt/config.txt or in the directory where the tgpt binary is located. The configuration file supports all the environment variables supported by tgpt.")
+	boldBlue.Println("\nExample config file:")
+	codeText.Println("POLLINATIONS_API_KEY=sk_xxxxx")
+	codeText.Println("ANYAPI_API_KEY=sk_xxxxxxxx")
+	codeText.Println("GROQ_API_KEY=gsk_xxxx")
+	codeText.Println("HTTP_PROXY=http://localhost:8080")
+	codeText.Println("AI_PROVIDER=groq")
+	codeText.Println("OPENCODE_MODEL=mimo-v2.5-free")
+	codeText.Println("AI_ROTATE_PROVIDERS=deepseek,groq,anyapi,opencode")
+
 	boldBlue.Println("\nExamples:")
 	fmt.Println(`tgpt "What is internet?"`)
 	fmt.Println(`tgpt -m`)
 	fmt.Println(`tgpt -s "How to update my system?"`)
+	fmt.Println(`tgpt -c "Write a function in Go that reverses a string"`)
 	fmt.Println(`tgpt --provider deepseek "What is 1+1"`)
 	fmt.Println(`tgpt --img "cat"`)
 	fmt.Println(`tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"`)
-	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-3.5-turbo" "What is 1+1"`)
+	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-5.6" "What is 1+1"`)
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
 }
 
