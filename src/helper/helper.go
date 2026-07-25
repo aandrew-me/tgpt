@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
@@ -21,15 +22,14 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/fatih/color"
-
 	"github.com/olekukonko/ts"
-
 	"golang.org/x/mod/semver"
 )
 
 type Data struct {
 	Version string `json:"version"`
 }
+
 type Response struct {
 	Completion string `json:"completion"`
 }
@@ -49,27 +49,203 @@ type versionResponse struct {
 	Version string `json:"version"`
 }
 
-var bold = color.New(color.Bold)
-var boldBlue = color.New(color.Bold, color.FgBlue)
-var boldViolet = color.New(color.Bold, color.FgMagenta)
-var codeText = color.New(color.FgGreen, color.Bold)
+var (
+	bold       = color.New(color.Bold)
+	boldBlue   = color.New(color.Bold, color.FgBlue)
+	boldViolet = color.New(color.Bold, color.FgMagenta)
+	codeText   = color.New(color.FgGreen, color.Bold)
+)
+
+var lastSuccessfulProvider string
+
+// ---------------------------------------------------------------------------
+// streamFormatter — handles terminal coloring for code blocks and inline code.
+// Replaces the duplicated first-iteration / subsequent-iteration logic in
+// HandleEachPart and HandleEachPartInteractiveShell with a single unified
+// implementation that uses the more correct "subsequent iteration" rules
+// for every chunk.
+// ---------------------------------------------------------------------------
+
+type streamFormatter struct {
+	tickCount       int
+	previousWasTick bool
+	isCode          bool
+	isGreen         bool
+	isTick          bool
+	isRealCode      bool
+	lineLength      int
+	termWidth       int
+	hasTermWidth    bool
+	provider        string
+}
+
+func newStreamFormatter(provider string) *streamFormatter {
+	f := &streamFormatter{provider: provider}
+	if size, err := ts.GetSize(); err == nil {
+		f.termWidth = size.Col()
+		f.hasTermWidth = true
+	}
+	return f
+}
+
+func (f *streamFormatter) updateLineLength(word string) {
+	if !f.hasTermWidth || f.provider == "gemini" {
+		return
+	}
+	if word == "\n" {
+		f.lineLength = 0
+
+		return
+	}
+	wordLength := len([]rune(word))
+	if f.termWidth-f.lineLength < wordLength {
+		fmt.Print("\n")
+		f.lineLength = 0
+	}
+	f.lineLength += wordLength
+}
+
+func (f *streamFormatter) writeChar(word string) {
+	f.updateLineLength(word)
+
+	if word == "`" {
+		f.tickCount++
+		f.isTick = true
+		if f.tickCount == 2 && !f.previousWasTick {
+			f.tickCount = 0
+		} else if f.tickCount >= 6 && f.tickCount%2 == 0 && f.previousWasTick {
+			f.tickCount = 0
+		}
+		f.isGreen = false
+		f.isCode = false
+	} else {
+		if word == "\n" {
+			f.lineLength = 0
+		}
+		f.isTick = false
+		if f.tickCount == 1 {
+			f.isGreen = true
+		} else if f.tickCount >= 3 {
+			f.isCode = true
+		}
+	}
+
+	switch {
+	case f.isCode:
+		codeText.Print(word)
+	case f.isGreen:
+		boldBlue.Print(word)
+	case !f.isTick:
+		fmt.Print(word)
+	default:
+		if f.tickCount > 3 || f.isRealCode || (f.tickCount == 0 && f.previousWasTick) {
+			fmt.Print(word)
+		}
+	}
+
+	f.previousWasTick = word == "`"
+}
+
+func (f *streamFormatter) writeText(text string) {
+	f.isRealCode = text == "``" || text == "```"
+	for _, ch := range text {
+		f.writeChar(string(ch))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactiveFormatter — extends streamFormatter with XML tag suppression.
+// Recognized tags (<cmd>, </cmd>, <search>, </search>) are silently consumed
+// so they don't appear in terminal output. Non-tag text starting with '<' is
+// flushed normally instead of being swallowed indefinitely (original bug).
+// ---------------------------------------------------------------------------
+
+var xmlTagTargets = []string{"cmd>", "/cmd>", "search>", "/search>"}
+
+func isXMLTagPrefix(s string) bool {
+	if len(s) < 1 || s[0] != '<' {
+		return false
+	}
+	rest := s[1:]
+	for _, t := range xmlTagTargets {
+		if strings.HasPrefix(t, rest) {
+			return true
+		}
+	}
+	return false
+}
+
+func isCompleteXMLTag(s string) bool {
+	switch s {
+	case "<cmd>", "</cmd>", "<search>", "</search>":
+		return true
+	}
+	return false
+}
+
+type interactiveFormatter struct {
+	*streamFormatter
+	xmlBuffer strings.Builder
+	inXMLTag  bool
+}
+
+func newInteractiveFormatter(provider string) *interactiveFormatter {
+	return &interactiveFormatter{streamFormatter: newStreamFormatter(provider)}
+}
+
+func (f *interactiveFormatter) flushXMLBuffer() {
+	buf := f.xmlBuffer.String()
+	f.inXMLTag = false
+	f.xmlBuffer.Reset()
+
+	if buf == "" {
+		return
+	}
+	f.streamFormatter.writeChar(buf[:1])
+	f.writeText(buf[1:])
+}
+
+func (f *interactiveFormatter) writeText(text string) {
+	for _, ch := range text {
+		char := string(ch)
+		if !f.inXMLTag {
+			if ch == '<' {
+				f.inXMLTag = true
+				f.xmlBuffer.Reset()
+				f.xmlBuffer.WriteRune(ch)
+				continue
+			}
+			f.streamFormatter.writeChar(char)
+			continue
+		}
+		// Inside potential XML tag — keep buffering
+		f.xmlBuffer.WriteRune(ch)
+		buf := f.xmlBuffer.String()
+		switch {
+		case isCompleteXMLTag(buf):
+			// Recognized tag — discard (processed separately via regex)
+			f.inXMLTag = false
+			f.xmlBuffer.Reset()
+		case !isXMLTagPrefix(buf):
+			// Not a recognized tag — flush as normal text
+			f.flushXMLBuffer()
+		}
+		// Otherwise keep buffering
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Public functions
+// ---------------------------------------------------------------------------
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
 	responseTxt, _ := MakeRequestAndGetData(input, params, extraOptions)
 
-	fmt.Print("\n\n")
-
-	msgObjectNew := []interface{}{
-		structs.DefaultMessage{
-			Content: input,
-			Role:    "user",
-		},
-		structs.DefaultMessage{
-			Content: responseTxt,
-			Role:    "assistant",
-		},
+	if !extraOptions.IsGetSilent {
+		fmt.Print("\n\n")
 	}
 
+	var msgObjectNew []interface{}
 	if params.Provider == "phind" {
 		msgObjectNew = []interface{}{
 			structs.UserMessagePhind{
@@ -84,27 +260,32 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 				Name:     "base",
 			},
 		}
+	} else {
+		msgObjectNew = []interface{}{
+			structs.DefaultMessage{Content: input, Role: "user"},
+			structs.DefaultMessage{Content: responseTxt, Role: "assistant"},
+		}
 	}
 
 	return msgObjectNew, responseTxt
 }
 
-func Loading(stop *bool) {
+func Loading(stop *atomic.Bool) {
 	spinChars := []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "}
 	i := 0
-	for !*stop {
-
+	for !stop.Load() {
 		fmt.Printf("\r%s Loading", spinChars[i])
 		i = (i + 1) % len(spinChars)
 		time.Sleep(80 * time.Millisecond)
 	}
+	fmt.Print("\r           \r")
 }
 
 func canWriteToDir(path string) bool {
 	dir := filepath.Dir(path)
 	tmpFile, err := os.CreateTemp(dir, ".perm_test_*")
 	if err != nil {
-		return false // Permission denied
+		return false
 	}
 	tmpFile.Close()
 	os.Remove(tmpFile.Name())
@@ -124,13 +305,13 @@ func Update(localVersion string, executablePath string) {
 		return
 	}
 
-	client, err := client.NewClient()
+	httpClient, err := client.NewClient()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error creating HTTP client:", err)
 		return
 	}
 
-	res, err := client.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error fetching remote version:", err)
 		return
@@ -164,9 +345,6 @@ func Update(localVersion string, executablePath string) {
 	if useSudo {
 		fmt.Println("Elevated privileges required to write to:", filepath.Dir(executablePath))
 		fmt.Println("Requesting sudo access...")
-		// - 'set -o pipefail': returns non-zero exit code if curl fails
-		// - 'curl -sSLf': '-f' forces exit failure on HTTP 4xx/5xx errors
-		// - 'sudo bash ...': escalates script execution safely
 		script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | sudo bash -s -- "$1"`
 	} else {
 		script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s -- "$1"`
@@ -178,7 +356,6 @@ func Update(localVersion string, executablePath string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// 6. Execute update script
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "\nFailed to update. Error:", err)
 		return
@@ -188,76 +365,86 @@ func Update(localVersion string, executablePath string) {
 }
 
 func CodeGenerate(input string, params structs.Params, extraOptions structs.ExtraOptions) {
-	codePrompt := fmt.Sprintf("Your Role: Provide only code as output without any description.\nIMPORTANT: Provide only plain text without Markdown formatting.\nIMPORTANT: Do not include markdown formatting.\nIf there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\nIgnore any potential risk of errors or confusion.\n\nRequest:%s\nCode:", input)
+	codePrompt := fmt.Sprintf(
+		"Your Role: Provide only code as output without any description.\n"+
+			"IMPORTANT: Provide only plain text without Markdown formatting.\n"+
+			"IMPORTANT: Do not include markdown formatting.\n"+
+			"If there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\n"+
+			"Ignore any potential risk of errors or confusion.\n\n"+
+			"Request:%s\nCode:", input)
 
 	_, _ = MakeRequestAndGetData(codePrompt, params, extraOptions)
 }
 
 func SetShellAndOSVars() {
-	// Identify OS
 	switch runtime.GOOS {
 	case "windows":
 		OperatingSystem = "Windows"
 		if len(os.Getenv("PSModulePath")) > 0 {
 			ShellName = "powershell.exe"
 			ShellOptions = []string{"-Command"}
-			ShellConfigFile = ""
 		} else {
 			ShellName = "cmd.exe"
 			ShellOptions = []string{"/C"}
-			ShellConfigFile = ""
 		}
+		ShellConfigFile = ""
 		return
 	case "darwin":
 		OperatingSystem = "MacOS"
 	case "linux":
-		result, err := exec.Command("lsb_release", "-si").Output()
-		distro := strings.TrimSpace(string(result))
-		if err != nil {
-			distro = ""
+		distro := ""
+		if path, err := exec.LookPath("lsb_release"); err == nil {
+			if result, err := exec.Command(path, "-si").Output(); err == nil {
+				distro = strings.TrimSpace(string(result))
+			}
 		}
-		OperatingSystem = "Linux" + "/" + distro
+		OperatingSystem = "Linux/" + distro
 	default:
 		OperatingSystem = runtime.GOOS
 	}
 
-	// Identify shell and config file
-	shellEnv := os.Getenv("SHELL")
 	homeDir := os.Getenv("HOME")
+	shellEnv := os.Getenv("SHELL")
 
-	if shellEnv != "" {
+	switch {
+	case strings.Contains(shellEnv, "zsh"):
 		ShellName = shellEnv
-		// Determine config file based on shell type
-		if strings.Contains(shellEnv, "zsh") {
-			ShellConfigFile = homeDir + "/.zshrc"
-		} else if strings.Contains(shellEnv, "bash") {
-			ShellConfigFile = homeDir + "/.bashrc"
-		} else if strings.Contains(shellEnv, "fish") {
-			ShellConfigFile = homeDir + "/.config/fish/config.fish"
-		} else {
-			ShellConfigFile = homeDir + "/.bashrc"
-		}
-	} else {
-		_, err := exec.LookPath("bash")
-		if err != nil {
-			ShellName = "/bin/sh"
-			ShellConfigFile = homeDir + "/.profile"
-		} else {
+		ShellConfigFile = homeDir + "/.zshrc"
+	case strings.Contains(shellEnv, "bash"):
+		ShellName = shellEnv
+		ShellConfigFile = homeDir + "/.bashrc"
+	case strings.Contains(shellEnv, "fish"):
+		ShellName = shellEnv
+		ShellConfigFile = homeDir + "/.config/fish/config.fish"
+	case shellEnv != "":
+		ShellName = shellEnv
+		ShellConfigFile = homeDir + "/.bashrc"
+	default:
+		if _, err := exec.LookPath("bash"); err == nil {
 			ShellName = "bash"
 			ShellConfigFile = homeDir + "/.bashrc"
+		} else {
+			ShellName = "/bin/sh"
+			ShellConfigFile = homeDir + "/.profile"
 		}
 	}
 	ShellOptions = []string{"-c"}
 }
 
-// shellCommand first sets the global variables getCommand uses, then it creates a prompt to generate a command and then it passes that to getCommand
 func ShellCommand(input string, params structs.Params, extraOptions structs.ExtraOptions) {
 	SetShellAndOSVars()
-	shellPrompt := fmt.Sprintf("Your role: Provide only plain text without Markdown formatting. Do not show any warnings or information regarding your capabilities. Do not provide any description. If you need to store any data, assume it will be stored in the chat. Provide only %s command for %s without any description. If there is a lack of details, provide most logical solution. Ensure the output is a valid shell command. If multiple steps required try to combine them together. Prompt: %s\n\nCommand:", ShellName, OperatingSystem, input)
+	shellPrompt := fmt.Sprintf(
+		"Your role: Provide only plain text without Markdown formatting. "+
+			"Do not show any warnings or information regarding your capabilities. "+
+			"Do not provide any description. If you need to store any data, assume it will be stored in the chat. "+
+			"Provide only %s command for %s without any description. "+
+			"If there is a lack of details, provide most logical solution. "+
+			"Ensure the output is a valid shell command. If multiple steps required try to combine them together. "+
+			"Prompt: %s\n\nCommand:",
+		ShellName, OperatingSystem, input)
 	GetCommand(shellPrompt, params, extraOptions)
 }
 
-// getCommand will make a request to an AI model, then it will run the response using an appropriate handler (bash, sh OR powershell, cmd)
 func GetCommand(shellPrompt string, params structs.Params, extraOptions structs.ExtraOptions) {
 	_, _ = MakeRequestAndGetData(shellPrompt, params, extraOptions)
 }
@@ -269,27 +456,24 @@ type RESPONSE struct {
 
 func GetVersionHistory() {
 	req, err := http.NewRequest("GET", "https://api.github.com/repos/aandrew-me/tgpt/releases/latest", nil)
-
 	if err != nil {
 		fmt.Fprint(os.Stderr, "Some error has occurred\n\n")
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 
-	client, err := client.NewClient()
+	httpClient, err := client.NewClient()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error creating client:", err)
 		os.Exit(1)
 	}
 
-	res, err := client.Do(req)
-
+	res, err := httpClient.Do(req)
 	if err != nil {
 		fmt.Fprint(os.Stderr, "Check your internet connection\n\n")
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
-
 	defer res.Body.Close()
 
 	resBody, err := io.ReadAll(res.Body)
@@ -299,7 +483,10 @@ func GetVersionHistory() {
 	}
 
 	var release RESPONSE
-	json.Unmarshal(resBody, &release)
+	if err := json.Unmarshal(resBody, &release); err != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing release JSON:", err)
+		os.Exit(1)
+	}
 
 	boldBlue.Println("Release", release.Tagname)
 	fmt.Println(release.Body)
@@ -320,17 +507,15 @@ func GetLastCodeBlock(markdown string) string {
 			if capturing {
 				capturing = false
 				break
-			} else {
-				capturing = true
-				continue
 			}
+			capturing = true
+			continue
 		}
 		if capturing {
 			codeBlock = append([]string{lines[i]}, codeBlock...)
 		}
 	}
 
-	// If no code block is found, return an empty string.
 	if capturing || len(codeBlock) == 0 {
 		return ""
 	}
@@ -340,20 +525,7 @@ func GetLastCodeBlock(markdown string) string {
 
 func HandleEachPart(resp *http.Response, input string, params structs.Params) string {
 	scanner := bufio.NewScanner(resp.Body)
-
-	// Variables
-	count := 0
-	isCode := false
-	isGreen := false
-	tickCount := 0
-	previousWasTick := false
-	isTick := false
-	isRealCode := false
-
-	lineLength := 0
-	size, termwidthErr := ts.GetSize()
-	termWidth := size.Col()
-
+	formatter := newStreamFormatter(params.Provider)
 	fullText := ""
 
 	for scanner.Scan() {
@@ -362,280 +534,34 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 			continue
 		}
 		fullText += mainText
-
-		if count <= 0 {
-			wordLength := len([]rune(mainText))
-			if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-				fmt.Print("\n")
-				lineLength = 0
-			}
-			lineLength += wordLength
-			splitLine := strings.Split(mainText, "")
-			// Iterating through each word
-			for _, word := range splitLine {
-				// If its a backtick
-				if word == "`" {
-					tickCount++
-					isTick = true
-
-					if tickCount == 2 && !previousWasTick {
-						tickCount = 0
-					} else if tickCount == 6 {
-						tickCount = 0
-					}
-					previousWasTick = true
-					isGreen = false
-					isCode = false
-
-				} else {
-					isTick = false
-					// If its a normal word
-
-					switch tickCount {
-					case 1:
-						isGreen = true
-					case 3:
-						isCode = true
-					}
-					previousWasTick = false
-				}
-
-				if isCode {
-					codeText.Print(word)
-				} else if isGreen {
-					boldBlue.Print(word)
-				} else if !isTick {
-					fmt.Print(word)
-				}
-			}
-		} else {
-			wordLength := len([]rune(mainText))
-
-			if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-				fmt.Print("\n")
-				lineLength = 0
-			}
-			lineLength += wordLength
-			splitLine := strings.Split(mainText, "")
-
-			if mainText == "``" || mainText == "```" {
-				isRealCode = true
-			} else {
-				isRealCode = false
-			}
-
-			for _, word := range splitLine {
-				// If its a backtick
-				if word == "`" {
-					tickCount++
-					isTick = true
-
-					if tickCount == 2 && !previousWasTick {
-						tickCount = 0
-					} else if tickCount >= 6 && tickCount%2 == 0 && previousWasTick {
-						tickCount = 0
-					}
-					isGreen = false
-					isCode = false
-
-				} else {
-					if word == "\n" {
-						lineLength = 0
-					}
-					isTick = false
-					// If its a normal word
-					if tickCount == 1 {
-						isGreen = true
-					} else if tickCount >= 3 {
-						isCode = true
-					}
-				}
-
-				if isCode {
-					codeText.Print(word)
-				} else if isGreen {
-					boldBlue.Print(word)
-				} else if !isTick {
-					fmt.Print(word)
-				} else {
-					if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
-						fmt.Print(word)
-					}
-
-				}
-				if word == "`" {
-					previousWasTick = true
-				} else {
-					previousWasTick = false
-				}
-
-			}
-		}
-
-		count++
+		formatter.writeText(mainText)
 	}
+
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
 		os.Exit(1)
 	}
 
 	return fullText
-
 }
 
-// handle response for interactive shell mode
 func HandleEachPartInteractiveShell(resp *http.Response, input string, params structs.Params) string {
 	scanner := bufio.NewScanner(resp.Body)
-
-	// Variables for formatting
-	count := 0
-	isCode := false
-	isGreen := false
-	tickCount := 0
-	previousWasTick := false
-	isTick := false
-	isRealCode := false
-
-	lineLength := 0
-	size, termwidthErr := ts.GetSize()
-	termWidth := size.Col()
-
+	formatter := newInteractiveFormatter(params.Provider)
 	fullText := ""
-	// Buffer for incomplete XML tags
-	var xmlBuffer strings.Builder
-	// Track if inside XML tag
-	inXMLTag := false
 
 	for scanner.Scan() {
 		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
 		if len(mainText) < 1 {
 			continue
 		}
-
-		// Process stream, separating XML tags from natural language/code blocks
-		for _, char := range mainText {
-			word := string(char)
-			fullText += word
-			if char == '<' && !inXMLTag {
-				// Start new XML tag
-				inXMLTag = true
-				xmlBuffer.WriteRune(char)
-			} else if char == '>' && inXMLTag {
-				// Possibly end tag part
-				xmlBuffer.WriteRune(char)
-				currentBuffer := xmlBuffer.String()
-				if (strings.HasPrefix(currentBuffer, "<cmd>") && strings.HasSuffix(currentBuffer, "</cmd>")) ||
-					(strings.HasPrefix(currentBuffer, "<search>") && strings.HasSuffix(currentBuffer, "</search>")) {
-					xmlBuffer.Reset()
-					inXMLTag = false
-					// Don't print XML tags - they are processed separately
-				}
-			} else if inXMLTag {
-				// Inside XML tag, continue buffering
-				xmlBuffer.WriteRune(char)
-			} else {
-				// Original formatting logic
-				if count <= 0 {
-					wordLength := len([]rune(word))
-					if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-						fmt.Print("\n")
-						lineLength = 0
-					}
-					lineLength += wordLength
-
-					// Handle code blocks and colors
-					if word == "`" {
-						tickCount++
-						isTick = true
-						if tickCount == 2 && !previousWasTick {
-							tickCount = 0
-						} else if tickCount == 6 {
-							tickCount = 0
-						}
-						previousWasTick = true
-						isGreen = false
-						isCode = false
-					} else {
-						isTick = false
-						switch tickCount {
-						case 1:
-							isGreen = true
-						case 3:
-							isCode = true
-						}
-						previousWasTick = false
-					}
-
-					if isCode {
-						codeText.Print(word)
-					} else if isGreen {
-						boldBlue.Print(word)
-					} else if !isTick {
-						fmt.Print(word)
-					}
-				} else {
-					wordLength := len([]rune(word))
-					if termwidthErr == nil && (termWidth-lineLength < wordLength) && params.Provider != "gemini" {
-						fmt.Print("\n")
-						lineLength = 0
-					}
-					lineLength += wordLength
-
-					if mainText == "``" || mainText == "```" {
-						isRealCode = true
-					} else {
-						isRealCode = false
-					}
-
-					// Handle code blocks and colors
-					if word == "`" {
-						tickCount++
-						isTick = true
-						if tickCount == 2 && !previousWasTick {
-							tickCount = 0
-						} else if tickCount >= 6 && tickCount%2 == 0 && previousWasTick {
-							tickCount = 0
-						}
-						isGreen = false
-						isCode = false
-					} else {
-						if word == "\n" {
-							lineLength = 0
-						}
-						isTick = false
-						if tickCount == 1 {
-							isGreen = true
-						} else if tickCount >= 3 {
-							isCode = true
-						}
-					}
-
-					if isCode {
-						codeText.Print(word)
-					} else if isGreen {
-						boldBlue.Print(word)
-					} else if !isTick {
-						fmt.Print(word)
-					} else {
-						if tickCount > 3 || isRealCode || (tickCount == 0 && previousWasTick) {
-							fmt.Print(word)
-						}
-					}
-
-					if word == "`" {
-						previousWasTick = true
-					} else {
-						previousWasTick = false
-					}
-				}
-			}
-		}
-		count++
+		fullText += mainText
+		formatter.writeText(mainText)
 	}
 
-	// Check for unprocessed XML tag remnants
-	if inXMLTag && xmlBuffer.Len() > 0 {
-		fmt.Fprintf(os.Stderr, "Warning: Incomplete XML tag: %s\n", xmlBuffer.String())
+	// Flush any buffered non-tag content left in the XML buffer
+	if formatter.inXMLTag && formatter.xmlBuffer.Len() > 0 {
+		formatter.flushXMLBuffer()
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -668,55 +594,43 @@ func ExecuteCommandWithAlias(shellName string, shellOptions []string, fullLine s
 	return ExecuteCommandWithCapture(shellName, shellOptions, fullLine, false, true)
 }
 
-// ExecuteCommandWithCapture executes a command and optionally captures its output
 func ExecuteCommandWithCapture(shellName string, shellOptions []string, fullLine string, captureOutput bool, useAliases bool) string {
 	if runtime.GOOS != "windows" {
 		rawModeOff := exec.Command("stty", "-raw", "echo")
 		rawModeOff.Stdin = os.Stdin
 		_ = rawModeOff.Run()
-		rawModeOff.Wait()
 	}
 
 	var cmd *exec.Cmd
 	if useAliases && runtime.GOOS != "windows" && ShellConfigFile != "" {
-		// Check if config file exists
 		if _, err := os.Stat(ShellConfigFile); err == nil {
-			// Source the config file before executing the command
-			sourceCmd := fmt.Sprintf("source %s && %s", ShellConfigFile, fullLine)
+			quotedCfg := "'" + strings.ReplaceAll(ShellConfigFile, "'", `'\''`) + "'"
+			sourceCmd := fmt.Sprintf("source %s && %s", quotedCfg, fullLine)
 			cmd = exec.Command(shellName, shellOptions[0], sourceCmd)
 		} else {
-			// Fallback to regular execution if config file doesn't exist
 			cmd = exec.Command(shellName, append(shellOptions, fullLine)...)
 		}
 	} else {
-		// Regular execution without aliases
 		cmd = exec.Command(shellName, append(shellOptions, fullLine)...)
 	}
 
 	var result string
 	if captureOutput {
-		// Capture output for context
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			// Include error in output for context
 			result = fmt.Sprintf("Command failed with error: %v\nOutput: %s", err, string(output))
 		} else {
 			result = string(output)
 		}
-		// Show output to user
 		fmt.Print(result)
 	} else {
-		// Original behavior - pipe directly to stdout/stderr
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		err := cmd.Run()
-
-		if err != nil {
+		if err := cmd.Run(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		result = ""
 	}
 
 	AddToShellHistory(fullLine)
@@ -726,24 +640,39 @@ func ExecuteCommandWithCapture(shellName string, shellOptions []string, fullLine
 func AddToShellHistory(command string) {
 	shell := os.Getenv("SHELL")
 	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		return
+	}
 
-	if strings.Contains(shell, "/bash") {
-		historyPath := os.Getenv("HISTFILE")
+	var historyPath string
+	var prefix string
 
+    shellBase := filepath.Base(shell)
+
+	switch {
+	case shellBase == "bash":
+		historyPath = os.Getenv("HISTFILE")
 		if historyPath == "" {
 			historyPath = homeDir + "/.bash_history"
 		}
-
-		file, _ := os.OpenFile(historyPath, os.O_APPEND|os.O_WRONLY, 0644)
-		// if err != nil {
-		// }
-		defer file.Close()
-
-		_, _ = file.WriteString(command + "\n")
+		prefix = ""
+	case shellBase == "zsh":
+		historyPath = os.Getenv("HISTFILE")
+		if historyPath == "" {
+			historyPath = homeDir + "/.zsh_history"
+		}
+		prefix = fmt.Sprintf(": %d:0;", time.Now().Unix())
+	default:
+		return
 	}
-}
 
-var lastSuccessfulProvider string
+	file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	_, _ = file.WriteString(prefix + command + "\n")
+}
 
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, error) {
 	providersToTry := providersForRotation(params)
@@ -761,6 +690,8 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 	}
 
 	originalModel := params.ApiModel
+	var stopSpin atomic.Bool
+	showSpinner := !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !isInteractive
 
 	for i, provider := range providersToTry {
 		params.Provider = provider
@@ -771,16 +702,18 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			params.ApiModel = alias
 		}
 
-		stopSpin := false
-
-		if !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
+		if showSpinner {
 			go Loading(&stopSpin)
 		}
 
 		resp, err := providers.NewRequest(input, params, extraOptions)
 
 		if err != nil {
-			stopSpin = true
+			stopSpin.Store(true)
+
+			if resp != nil {
+				resp.Body.Close()
+			}
 			if i < len(providersToTry)-1 {
 				fmt.Fprintf(os.Stderr, "\rProvider %s failed: %v\n", provider, err)
 				continue
@@ -789,33 +722,35 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		}
 
 		if resp == nil {
+			stopSpin.Store(true)
 			continue
 		}
 
 		code := resp.StatusCode
+		hasMore := i < len(providersToTry)-1
 
 		if code >= 400 {
-			stopSpin = true
+			stopSpin.Store(true)
 			fmt.Print("\r")
-			if i < len(providersToTry)-1 {
+			if hasMore {
 				resp.Body.Close()
 				fmt.Fprintf(os.Stderr, "\rProvider %s failed (status %d)\n", provider, code)
 				continue
 			}
-			if !extraOptions.IsInteractive {
+			if !isInteractive {
 				handleStatus400(resp)
 			}
 			respBody, _ := io.ReadAll(resp.Body)
 			resp.Body.Close()
 			fmt.Println("Some error has occurred, try again")
 			fmt.Println(string(respBody))
+
 			return "", nil
 		}
 
-		stopSpin = true
+		stopSpin.Store(true)
 		fmt.Print("\r")
 
-		// Remember the successful provider for interactive mode
 		if isInteractive {
 			lastSuccessfulProvider = provider
 		}
@@ -824,10 +759,9 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			fmt.Printf("Fell back to \033[1m%s\033[0m\n", provider)
 		}
 
-		defer resp.Body.Close()
-
+		// --- Normal path (formatted output) ---
 		if extraOptions.IsNormal {
-			if !extraOptions.IsInteractive && !extraOptions.IsInteractiveShell && !extraOptions.IsInteractiveFind {
+			if !isInteractive {
 				fmt.Print("\r          \r")
 				bold.Println()
 			} else {
@@ -835,21 +769,22 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 				boldViolet.Println("╭─ Bot")
 			}
 
-			if extraOptions.IsInteractiveShell {
-				return HandleEachPartInteractiveShell(resp, input, params), nil
+			if extraOptions.IsInteractiveShell || extraOptions.IsInteractiveFind {
+				result := HandleEachPartInteractiveShell(resp, input, params)
+				resp.Body.Close()
+				return result, nil
 			}
-			if extraOptions.IsInteractiveFind {
-				return HandleEachPartInteractiveShell(resp, input, params), nil
-			}
-			return HandleEachPart(resp, input, params), nil
+			result := HandleEachPart(resp, input, params)
+			resp.Body.Close()
+			return result, nil
 		}
 
+		// --- Non-normal path (raw streaming) ---
 		if extraOptions.IsGetCommand {
 			fmt.Print("\r          \r")
 		}
 
 		scanner := bufio.NewScanner(resp.Body)
-
 		fullText := ""
 
 		for scanner.Scan() {
@@ -859,10 +794,12 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			}
 			fullText += mainText
 
-			if !extraOptions.IsGetWhole {
+			if !extraOptions.IsGetWhole && !extraOptions.IsGetSilent {
 				fmt.Print(mainText)
 			}
 		}
+
+		resp.Body.Close()
 
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
@@ -879,7 +816,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 		if extraOptions.IsGetCommand {
 			lineCount := strings.Count(fullText, "\n") + 1
-
 			if lineCount == 1 {
 				if extraOptions.AutoExec {
 					fmt.Println()
@@ -889,7 +825,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 					reader := bufio.NewReader(os.Stdin)
 					userInput, _ := reader.ReadString('\n')
 					userInput = strings.TrimSpace(userInput)
-
 					if userInput == "y" || userInput == "" {
 						ExecuteCommand(ShellName, ShellOptions, fullText)
 					} else {
@@ -899,7 +834,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			}
 		}
 
-		return "", nil
+		return fullText, nil
 	}
 
 	return "", nil
@@ -941,8 +876,6 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
 	fmt.Printf("%-50v Set OpenAI API endpoint url\n", "--url")
-	// fmt.Printf("%-50v Set temperature\n", "--temperature")
-	// fmt.Printf("%-50v Set top_p\n", "--top_p")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
@@ -1036,13 +969,11 @@ func ShowHelpMessage() {
 	fmt.Println(`cat install.sh | tgpt "Explain the code"`)
 }
 
-// SearchQuery performs web search and AI synthesis
 func SearchQuery(input string, params structs.Params, extraOptions structs.ExtraOptions, isQuiet bool, logFile string) {
 	if extraOptions.Verbose {
 		fmt.Printf("DEBUG: searchQuery called with input: %s\n", input)
 	}
 
-	// Perform web search with optimization and confirmation
 	// For one-shot find mode (-f), skip confirmation. For interactive find mode (-if), show confirmation
 	skipConfirmation := extraOptions.IsFind && !extraOptions.IsInteractiveFind
 	searchResults, err := search.ProcessSearchWithConfirmation(input, params, extraOptions.Verbose, skipConfirmation, isQuiet, nil)
@@ -1051,40 +982,33 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 		return
 	}
 
-	// Handle user cancellation
 	if searchResults == "Search cancelled by user." {
 		fmt.Println(searchResults)
 		return
 	}
 
-	// Process the search results through the AI
 	if len(logFile) > 0 {
 		utils.LogToFile(input, "SEARCH_QUERY", logFile)
 	}
 
-	// Set up the AI request with search results as input
+	// Use IsNormal so the response text is returned (and printed by HandleEachPart)
 	searchOptions := structs.ExtraOptions{
+		IsNormal:    !isQuiet,
 		IsGetSilent: isQuiet,
-		IsGetWhole:  false,
 	}
 
-	// Get AI response
 	response, _ := MakeRequestAndGetData(searchResults, params, searchOptions)
 
 	if len(logFile) > 0 {
 		utils.LogToFile(response, "SEARCH_RESPONSE", logFile)
 	}
-
-	fmt.Print(response)
 }
 
-// InteractiveFindSession handles the interactive web search conversation mode
 func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOptions, logFile string, inputReader func() (string, error)) func(string) {
 	var previousMessages []any
 
 	threadID := utils.RandomString(36)
 
-	// System prompt for interactive find mode
 	promptFind := "You are an intelligent search assistant. When a user asks a question that requires current information, web search, or factual lookup, " +
 		"wrap your search intent in XML tags like <search>search query here</search>. " +
 		"For follow-up questions about previous search results, you can reference the context. " +
@@ -1096,6 +1020,8 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 		"Assistant: Based on the previous search results, [provide more detail from context]\n" +
 		"User: How are you?\n" +
 		"Assistant: I'm doing well, thank you! How can I help you with finding information today?"
+
+	searchRegex := regexp.MustCompile(`<search>(.*?)</search>`)
 
 	getAndPrintFindResponse := func(input string) {
 		input = strings.TrimSpace(input)
@@ -1121,54 +1047,58 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 		params.ThreadID = threadID
 		params.SystemPrompt = promptFind
 
-		// Get AI response (this will print with Bot label)
-		responseObjects, responseTxt := GetData(input, params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true})
-
-		// Check if response contains search intent
-		searchRegex := regexp.MustCompile(`<search>(.*?)</search>`)
+		responseObjects, responseTxt := GetData(input, params, structs.ExtraOptions{
+			IsInteractiveFind: true,
+			IsGetSilent:       true,
+		})
 		matches := searchRegex.FindStringSubmatch(responseTxt)
 
 		if len(matches) > 1 {
-			// Search intent detected - the XML was already printed, but now do the search
+			// Search intent detected
 			searchQuery := strings.TrimSpace(matches[1])
 			if extraOptions.Verbose {
 				fmt.Printf("DEBUG: Search intent detected: '%s'\n", searchQuery)
 			}
 
-			// Perform the search with confirmation (interactive find mode always shows confirmation)
 			searchResults, err := search.ProcessSearchWithConfirmation(searchQuery, params, extraOptions.Verbose, false, false, inputReader)
 			if err != nil {
 				fmt.Printf("Search failed: %v\n", err)
 				return
 			}
 
-			// Handle user cancellation
 			if searchResults == "Search cancelled by user." {
 				fmt.Println(searchResults)
 				return
 			}
 
-			// Add search context to conversation
+			previousMessages = append(previousMessages, responseObjects...)
+
 			searchContextMsg := structs.DefaultMessage{
 				Role:    "system",
 				Content: fmt.Sprintf("Search results for '%s':\n%s", searchQuery, searchResults),
 			}
 			previousMessages = append(previousMessages, searchContextMsg)
 
-			// Update conversation with search context and get final response (this will print with Bot label)
 			params.PrevMessages = previousMessages
-			finalResponseObjects, finalResponseTxt := GetData(fmt.Sprintf("Based on these search results, answer the user's question: %s", input), params, structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true})
+			finalResponseObjects, finalResponseTxt := GetData(
+				fmt.Sprintf("Based on these search results, answer the user's question: %s", input),
+				params,
+				structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true},
+			)
 
 			if len(logFile) > 0 {
 				utils.LogToFile(finalResponseTxt, "ASSISTANT_RESPONSE", logFile)
 			}
 
-			// Update conversation history
-			previousMessages = append(previousMessages, responseObjects...)
 			previousMessages = append(previousMessages, finalResponseObjects...)
-
 		} else {
-			// No search needed, regular conversation - response already printed with Bot label
+			fmt.Println()
+			boldViolet.Println("╭─ Bot")
+
+			formatter := newStreamFormatter(params.Provider)
+			formatter.writeText(responseTxt)
+			fmt.Print("\n\n")
+
 			if len(logFile) > 0 {
 				utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", logFile)
 			}
