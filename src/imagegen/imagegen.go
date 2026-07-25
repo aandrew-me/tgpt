@@ -40,7 +40,7 @@ func GenerateImg(prompt string, params structs.ImageParams, isQuite bool) {
 	
 	case "magicstudio", "":
 		if !isQuite {
-			bold.Println("Generating image with magicstudio.ai...")
+			bold.Println("Generating image with magicstudio...")
 		}
 		filename := magicstudio.GenerateImageMagicStudio(prompt, params)
 		if !isQuite {
