@@ -36,6 +36,14 @@ func GenerateImagePollinations(prompt string, params structs.ImageParams) string
 		model = params.ApiModel
 	}
 
+	apiKey := params.ApiKey
+	if apiKey == "" {
+		apiKey = os.Getenv("POLLINATIONS_API_KEY")
+	}
+	if apiKey == "" {
+		apiKey = os.Getenv("AI_API_KEY")
+	}
+
 	link := fmt.Sprintf("https://image.pollinations.ai/prompt/%v", full_prompt)
 
 	queryParams := url_package.Values{}
@@ -71,6 +79,9 @@ func GenerateImagePollinations(prompt string, params structs.ImageParams) string
 	req, _ := http.NewRequest("GET", urlObj.String(), nil)
 
 	req.Header.Add("Referer", "tgpt")
+	if apiKey != "" {
+		req.Header.Add("Authorization", "Bearer "+apiKey)
+	}
 
 	res, err := client.Do(req)
 
