@@ -9,7 +9,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	// Create a temp config file
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.txt")
+	configPath := filepath.Join(tmpDir, "config.conf")
 	content := `# This is a comment
 				AI_PROVIDER=deepseek
 				TEST_KEY_FROM_CONFIG=hello

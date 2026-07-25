@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -36,10 +37,10 @@ func loadConfig(configPath string) {
 
 	if configPath == "" {
 		defaultPaths := []string{
-			"config.txt",
+			"config.conf",
 		}
 		if homeDir, err := os.UserHomeDir(); err == nil {
-			defaultPaths = append(defaultPaths, filepath.Join(homeDir, ".config", "tgpt", "config.txt"))
+			defaultPaths = append(defaultPaths, filepath.Join(homeDir, ".config", "tgpt", "config.conf"))
 		}
 		for _, p := range defaultPaths {
 			if _, err := os.Stat(p); err == nil {
@@ -661,6 +662,20 @@ func main() {
 					utils.PrintError("You need to provide some text")
 					utils.PrintError(`Example: tgpt -f "What is the latest news about AI?"`)
 					return
+				}
+
+				// Validate search provider
+				supportedSearchProviders := []string{"google", "exa", ""}
+
+				searchProviderIsValid := false
+				for _, provider := range supportedSearchProviders {
+					if finalSearchProvider == provider {
+						searchProviderIsValid = true
+					}
+				}
+
+				if !searchProviderIsValid {
+					log.Fatal("Search provider is not valid")
 				}
 
 				extraOptions := structs.ExtraOptions{

@@ -925,7 +925,7 @@ func ShowHelpMessage() {
 	fmt.Println("Supported models: flux, turbo")
 
 	boldBlue.Println("\nConfiguration file")
-	fmt.Println("You can create a configuration file, ~/.config/tgpt/config.txt or in the directory where the tgpt binary is located. The configuration file supports all the environment variables supported by tgpt.")
+	fmt.Println(`You can create a configuration file - config.conf in ~/.config/tgpt (%USERPROFILE%\.config\tgpt on Windows) or in current directory (has higher priority). The configuration file supports all the environment variables supported by tgpt.`)
 	boldBlue.Println("\nExample config file:")
 	codeText.Println("POLLINATIONS_API_KEY=sk_xxxxx")
 	codeText.Println("ANYAPI_API_KEY=sk_xxxxxxxx")

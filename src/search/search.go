@@ -76,7 +76,12 @@ type GoogleSearchResponse struct {
 	} `json:"items"`
 }
 
-func PerformExaMCPSearch(userQuery string, verbose bool) (string, error) {
+func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
+	userQuery := params.Query
+	numResults := params.NumResults
+	if numResults <= 0 {
+		numResults = 5
+	}
 	apiKey := os.Getenv("EXA_API_KEY")
 
 	mcpEndpoint := "https://mcp.exa.ai/mcp"
@@ -94,8 +99,8 @@ func PerformExaMCPSearch(userQuery string, verbose bool) (string, error) {
 			"name": "web_search_exa",
 			"arguments": map[string]interface{}{
 				"query":      userQuery,
-				"numResults": 3,
-				"livecrawl": "fallback",
+				"numResults": numResults,
+				"livecrawl":  "fallback",
 			},
 		},
 	}
@@ -243,8 +248,6 @@ func PerformSearch(userQuery string, verbose bool) (string, error) {
 	// Format results for AI synthesis
 	return formatResultsForAI(results, userQuery), nil
 }
-
-// Perform search with exa mcp server
 
 // googleSearch performs the actual Google Custom Search API call
 func googleSearch(params SearchParams, apiKey, searchEngineID string, verbose bool) ([]SearchResult, error) {

@@ -10,5 +10,6 @@ CLAUDE.md
 # Tools directory - development/testing utilities
 tools/
 .opencode/
+config.conf
 config.txt
 *.jpg
