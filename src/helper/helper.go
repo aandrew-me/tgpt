@@ -246,26 +246,11 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 	}
 
 	var msgObjectNew []interface{}
-	if params.Provider == "phind" {
-		msgObjectNew = []interface{}{
-			structs.UserMessagePhind{
-				Content:  input,
-				Role:     "user",
-				Metadata: "{}",
-			},
-			structs.AssistantResponsePhind{
-				Content:  responseTxt,
-				Role:     "assistant",
-				Metadata: "{}",
-				Name:     "base",
-			},
-		}
-	} else {
-		msgObjectNew = []interface{}{
+	
+    msgObjectNew = []interface{}{
 			structs.DefaultMessage{Content: input, Role: "user"},
 			structs.DefaultMessage{Content: responseTxt, Role: "assistant"},
 		}
-	}
 
 	return msgObjectNew, responseTxt
 }

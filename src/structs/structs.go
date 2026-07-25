@@ -56,17 +56,3 @@ type DefaultMessage struct {
 	Content string `json:"content"`
 	Role    string `json:"role"`
 }
-
-type UserMessagePhind struct {
-	Content  string `json:"content"`
-	Role     string `json:"role"`
-	Metadata string `json:"metadata"`
-}
-
-type AssistantResponsePhind struct {
-	Content  string `json:"content"`
-	Role     string `json:"role"`
-	Metadata string `json:"metadata"`
-	Name     string `json:"name"`
-}
-
