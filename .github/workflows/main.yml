@@ -15,12 +15,12 @@ jobs:
 
         steps:
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v7
 
             - name: Set up Go
-              uses: actions/setup-go@v2
+              uses: actions/setup-go@v7
               with:
-                  go-version: "^1.22.1"
+                  go-version: "1.26.5"
 
             - name: Linux
               if: matrix.os == 'ubuntu-24.04'
@@ -83,7 +83,7 @@ jobs:
 
             - name: Upload Artifacts
               id: upload-artifacts
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@v3
               with:
                   files: |
                       tgpt-linux-amd64
@@ -114,36 +114,3 @@ jobs:
                   tag_name: v
                   name: tgpt
                   body_path: ${{ github.workspace }}-CHANGELOG.txt
-
-            # - name: Install Snapcraft
-            #   run: |
-            #     sudo apt update
-            #     sudo apt install snapd jq
-            #     sudo snap install core
-            #     sudo snap install snapcraft --classic
-
-            # - name: Build Snap package
-            #   run: |
-            #     snapcraft init
-            #     echo "name: Terminal GPT" >> snap/snapcraft.yaml
-            #     echo "version: $(jq ".version" < version.txt')" >> snap/snapcraft.yaml
-            #     echo "summary: CLI tool for ChatGPT 3.5" >> snap/snapcraft.yaml
-            #     echo "description: |" >> snap/snapcraft.yaml
-            #     echo "  gpt is a cross-platform command-line interface (CLI) tool that allows you to" >> snap/snapcraft.yaml
-            #     echo "  use ChatGPT 3.5 in your Terminal without requiring API keys." >> snap/snapcraft.yaml
-            #     echo "confinement: strict" >> snap/snapcraft.yaml
-            #     echo "parts:" >> snap/snapcraft.yaml
-            #     echo "  tgpt:" >> snap/snapcraft.yaml
-            #     echo "    plugin: go" >> snap/snapcraft.yaml
-            #     echo "    source: https://raw.githubusercontent.com/aandrew-me/tgpt/main/install" >> snap/snapcraft.yaml
-            #     echo "apps:" >> snap/snapcraft.yaml
-            #     echo "  tgpt:" >> snap/snapcraft.yaml
-            #     echo "    command: tgpt" >> snap/snapcraft.yaml
-            #     echo "    plugs: [home, network, network-bind]" >> snap/snapcraft.yaml
-            #     snapcraft
-
-            # - name: Publish to Snap Store
-            #   env:  
-            #     SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
-            #   run: |
-            #     snapcraft push --release=edge *.snap
