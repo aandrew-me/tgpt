@@ -14,7 +14,8 @@
             "url": "https://github.com/aandrew-me/tgpt/releases/download/v2.12.0/tgpt-arm64.exe"
         }
     },
-    "bin": "tgpt.exe",
+    
+	"bin": ["tgpt-amd64.exe", ["tgpt-amd64.exe", "tgpt"]],
     "checkver": {
         "github": "https://github.com/aandrew-me/tgpt"
     },
