@@ -31,7 +31,6 @@ jobs:
                   CGO_ENABLED=0 GOARCH=arm go build -ldflags="-s -w" -o tgpt-linux-arm
 
                   GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-amd64.exe
-                  GOOS=windows GOARCH=arm go build -ldflags="-s -w" -o tgpt-arm.exe
                   GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-arm64.exe
                   GOOS=windows GOARCH=386 go build -ldflags="-s -w" -o tgpt-i386.exe
 
