@@ -583,7 +583,7 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 		return PerformSearchWithParams(searchParams, verbose)
 	}
 
-	return PerformExaMCPSearch(searchParams.Query, verbose)
+	return PerformExaMCPSearch(searchParams, verbose)
 }
 
 // PerformSearchWithParams executes search with pre-built SearchParams
