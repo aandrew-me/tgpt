@@ -20,7 +20,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	model := "gpt-5.4-mini"
@@ -48,7 +48,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	if err != nil {
 		fmt.Println("\nSome error has occurred.")
 		fmt.Println("Error:", err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	// Setting all the required headers
