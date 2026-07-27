@@ -22,7 +22,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"", "anyapi", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain",
+	"anyapi", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -70,12 +70,16 @@ func GetMainText(line string, provider string, input string) string {
 }
 
 func NewRequest(input string, params structs.Params, extraOptions structs.ExtraOptions) (*http.Response, error) {
-	if !IsValidProvider(params.Provider) {
+	provider := params.Provider
+	if provider == "" {
+		provider = "opencode"
+	}
+	if !IsValidProvider(provider) {
 		fmt.Fprintln(os.Stderr, "Invalid provider")
 		os.Exit(1)
 	}
 
-	switch params.Provider {
+	switch provider {
 	case "anyapi":
 		return anyapi.NewRequest(input, params)
 	case "deepseek":
