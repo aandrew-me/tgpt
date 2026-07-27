@@ -813,13 +813,15 @@ func providersForRotation(params structs.Params) []string {
 		return []string{params.Provider}
 	}
 	raw := strings.Split(params.RotateProviders, ",")
+	seen := make(map[string]bool, len(raw))
 	list := make([]string, 0, len(raw))
 	for _, p := range raw {
 		p = strings.TrimSpace(p)
-		if p == "" {
+		if p == "" || seen[p] {
 			continue
 		}
 		if providers.IsValidProvider(p) {
+			seen[p] = true
 			list = append(list, p)
 		}
 	}
@@ -831,7 +833,7 @@ func providersForRotation(params structs.Params) []string {
 	// Prepend the primary provider as the first attempt, treating rotation
 	// entries as true fallbacks. Skip if empty (no explicit primary) or invalid.
 	if params.Provider != "" && providers.IsValidProvider(params.Provider) {
-		// Deduplicate: remove primary from rotation list if present
+		// Remove primary from rotation list if present (deduplicate)
 		deduped := make([]string, 0, len(list))
 		for _, p := range list {
 			if p != params.Provider {
