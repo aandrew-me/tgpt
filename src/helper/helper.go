@@ -219,7 +219,10 @@ func (f *interactiveFormatter) writeText(text string) {
 
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
-	responseTxt, _ := MakeRequestAndGetData(input, params, extraOptions)
+	responseTxt, err := MakeRequestAndGetData(input, params, extraOptions)
+	if err != nil {
+		return nil, ""
+	}
 
 	if !extraOptions.IsGetSilent {
 		fmt.Print("\n\n")
@@ -707,10 +710,10 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			}
 			respBody, _ := io.ReadAll(resp.Body)
 			resp.Body.Close()
-			fmt.Println("Some error has occurred, try again")
-			fmt.Println(string(respBody))
+			fmt.Fprintln(os.Stderr, "Some error has occurred, try again")
+			fmt.Fprintln(os.Stderr, string(respBody))
 
-			return "", nil
+			return "", fmt.Errorf("provider %s returned status %d", provider, code)
 		}
 
 		stopSpin.Store(true)
