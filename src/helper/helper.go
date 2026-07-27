@@ -689,11 +689,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			printConnectionErrorMsg(err)
 		}
 
-		if resp == nil {
-			stopSpin.Store(true)
-			continue
-		}
-
 		code := resp.StatusCode
 		hasMore := i < len(providersToTry)-1
 
