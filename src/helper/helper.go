@@ -689,11 +689,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			printConnectionErrorMsg(err)
 		}
 
-		if resp == nil {
-			stopSpin.Store(true)
-			continue
-		}
-
 		code := resp.StatusCode
 		hasMore := i < len(providersToTry)-1
 
@@ -824,6 +819,7 @@ func providersForRotation(params structs.Params) []string {
 		}
 	}
 	if len(list) == 0 {
+		fmt.Fprintf(os.Stderr, "\rWarning: all rotation providers are invalid, falling back to %s\n", params.Provider)
 		return []string{params.Provider}
 	}
 
