@@ -824,6 +824,7 @@ func providersForRotation(params structs.Params) []string {
 		}
 	}
 	if len(list) == 0 {
+		fmt.Fprintf(os.Stderr, "\rWarning: all rotation providers are invalid, falling back to %s\n", params.Provider)
 		list = []string{params.Provider}
 	}
 	return list
