@@ -822,9 +822,26 @@ func providersForRotation(params structs.Params) []string {
 	}
 	if len(list) == 0 {
 		fmt.Fprintf(os.Stderr, "\rWarning: all rotation providers are invalid, falling back to %s\n", params.Provider)
-		list = []string{params.Provider}
+		return []string{params.Provider}
 	}
-	return list
+
+	// Deduplicate all providers while preserving order, prepending
+	// the primary provider as the first attempt so rotation entries
+	// act as true fallbacks.
+	deduped := make([]string, 0, len(list)+1)
+	seen := make(map[string]struct{}, len(list)+1)
+	if params.Provider != "" && providers.IsValidProvider(params.Provider) {
+		deduped = append(deduped, params.Provider)
+		seen[params.Provider] = struct{}{}
+	}
+	for _, p := range list {
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		deduped = append(deduped, p)
+	}
+	return deduped
 }
 
 func ShowHelpMessage() {
