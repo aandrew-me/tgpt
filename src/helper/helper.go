@@ -825,6 +825,20 @@ func providersForRotation(params structs.Params) []string {
 	}
 	if len(list) == 0 {
 		list = []string{params.Provider}
+		return list
+	}
+
+	// Prepend the primary provider as the first attempt, treating rotation
+	// entries as true fallbacks. Skip if empty (no explicit primary) or invalid.
+	if params.Provider != "" && providers.IsValidProvider(params.Provider) {
+		// Deduplicate: remove primary from rotation list if present
+		deduped := make([]string, 0, len(list))
+		for _, p := range list {
+			if p != params.Provider {
+				deduped = append(deduped, p)
+			}
+		}
+		list = append([]string{params.Provider}, deduped...)
 	}
 	return list
 }
