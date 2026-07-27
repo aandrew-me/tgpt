@@ -1,12 +1,15 @@
 package helper
 
 import (
+	stdhttp "net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/aandrew-me/tgpt/v2/src/structs"
 	http "github.com/bogdanfinn/fhttp"
 )
 
@@ -97,4 +100,33 @@ func TestHandleStatus400ExitCode(t *testing.T) {
 	}
 }
 
+func TestInteractiveStatusErrorDoesNotAppendAssistantMessage(t *testing.T) {
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		w.WriteHeader(stdhttp.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":"rate limited"}`))
+	}))
+	defer server.Close()
 
+	params := structs.Params{
+		Provider: "openai",
+		Url:      server.URL,
+	}
+	extraOptions := structs.ExtraOptions{
+		IsInteractive: true,
+		IsGetSilent:   true,
+	}
+
+	if response, err := MakeRequestAndGetData("hello", params, extraOptions); err == nil {
+		t.Fatal("expected interactive 4xx response to return an error")
+	} else if response != "" {
+		t.Fatalf("expected empty response text on error, got %q", response)
+	}
+
+	messages, response := GetData("hello", params, extraOptions)
+	if response != "" {
+		t.Fatalf("expected empty response text from GetData on error, got %q", response)
+	}
+	if len(messages) != 0 {
+		t.Fatalf("expected no conversation history entries on interactive 4xx, got %#v", messages)
+	}
+}
