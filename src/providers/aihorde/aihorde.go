@@ -16,15 +16,17 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
 
+type TextGenParams struct {
+	MaxLength  int     `json:"max_length,omitempty"`
+	Temperature float64 `json:"temperature,omitempty"`
+	TopP       float64 `json:"top_p,omitempty"`
+	RepPen     float64 `json:"rep_pen,omitempty"`
+}
+
 type TextSubmitRequest struct {
-	Prompt string   `json:"prompt"`
-	Models []string `json:"models"`
-	Params *struct {
-		MaxLength  int     `json:"max_length,omitempty"`
-		Temperature float64 `json:"temperature,omitempty"`
-		TopP       float64 `json:"top_p,omitempty"`
-		RepPen     float64 `json:"rep_pen,omitempty"`
-	} `json:"params,omitempty"`
+	Prompt string         `json:"prompt"`
+	Models []string       `json:"models"`
+	Params *TextGenParams `json:"params,omitempty"`
 }
 
 type TextSubmitResponse struct {
@@ -75,11 +77,9 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	if len(params.PrevMessages) > 0 {
 		history := ""
 		for _, msg := range params.PrevMessages {
-			if m, ok := msg.(map[string]interface{}); ok {
-				role, _ := m["role"].(string)
-				content, _ := m["content"].(string)
-				if content != "" {
-					history += fmt.Sprintf("<|im_start|>%s\n%s<|im_end|>\n", role, content)
+			if m, ok := msg.(structs.DefaultMessage); ok {
+				if m.Content != "" {
+					history += fmt.Sprintf("<|im_start|>%s\n%s<|im_end|>\n", m.Role, m.Content)
 				}
 			}
 		}
@@ -105,12 +105,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	submitReq := TextSubmitRequest{
 		Prompt: prompt,
 		Models: []string{model},
-		Params: &struct {
-			MaxLength  int     `json:"max_length,omitempty"`
-			Temperature float64 `json:"temperature,omitempty"`
-			TopP       float64 `json:"top_p,omitempty"`
-			RepPen     float64 `json:"rep_pen,omitempty"`
-		}{
+		Params: &TextGenParams{
 			MaxLength:   maxLength,
 			Temperature: temperature,
 			TopP:        topP,
