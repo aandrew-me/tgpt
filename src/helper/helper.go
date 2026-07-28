@@ -336,7 +336,8 @@ func CodeGenerate(input string, params structs.Params, extraOptions structs.Extr
 			"IMPORTANT: Do not include markdown formatting.\n"+
 			"If there is a lack of details, provide most logical solution. You are not allowed to ask for more details.\n"+
 			"Ignore any potential risk of errors or confusion.\n\n"+
-			"Request:%s\nCode:", input)
+			"Request:%s\nCode:", input,
+	)
 
 	_, _ = MakeRequestAndGetData(codePrompt, params, extraOptions)
 }
@@ -406,7 +407,8 @@ func ShellCommand(input string, params structs.Params, extraOptions structs.Extr
 			"If there is a lack of details, provide most logical solution. "+
 			"Ensure the output is a valid shell command. If multiple steps required try to combine them together. "+
 			"Prompt: %s\n\nCommand:",
-		ShellName, OperatingSystem, input)
+		ShellName, OperatingSystem, input,
+	)
 	GetCommand(shellPrompt, params, extraOptions)
 }
 
@@ -631,7 +633,7 @@ func AddToShellHistory(command string) {
 		return
 	}
 
-	file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(historyPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return
 	}
@@ -672,7 +674,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		}
 
 		resp, err := providers.NewRequest(input, params, extraOptions)
-
 		if err != nil {
 			stopSpin.Store(true)
 
@@ -943,7 +944,7 @@ func ShowHelpMessage() {
 	fmt.Println("Supported models: flux, turbo")
 
 	boldBlue.Println("\nConfiguration file")
-	fmt.Println(`You can create a configuration file - config.conf in ~/.config/tgpt (%USERPROFILE%\.config\tgpt on Windows) or in current directory (has higher priority). The configuration file supports all the environment variables supported by tgpt.`)
+	fmt.Printf("You can create a configuration file - config.conf in ~/.config/tgpt (%%USERPROFILE%%\\.config\\tgpt on Windows) or in current directory (has higher priority). The configuration file supports all the environment variables supported by tgpt.\n")
 	boldBlue.Println("\nExample config file:")
 	codeText.Println("POLLINATIONS_API_KEY=sk_xxxxx")
 	codeText.Println("ANYAPI_API_KEY=sk_xxxxxxxx")
