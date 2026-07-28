@@ -58,7 +58,6 @@ var (
 
 var lastSuccessfulProvider string
 
-
 type streamFormatter struct {
 	tickCount       int
 	previousWasTick bool
@@ -146,7 +145,6 @@ func (f *streamFormatter) writeText(text string) {
 	}
 }
 
-
 var xmlTagTargets = []string{"cmd>", "/cmd>", "search>", "/search>"}
 
 func isXMLTagPrefix(s string) bool {
@@ -216,7 +214,6 @@ func (f *interactiveFormatter) writeText(text string) {
 		}
 	}
 }
-
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
 	responseTxt, err := MakeRequestAndGetData(input, params, extraOptions)
@@ -892,6 +889,9 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
 
+	bold.Println("Provider: aihorde")
+	fmt.Println("A free, community-powered generation service: volunteers share spare computer power so anyone can generate images and text. Supports AIHORDE_MODEL and AIHORDE_API_KEY env variables. Site: https://aihorde.net/")
+
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses DeepSeek-V4-Flash model by default. Requires API key. Recognizes DEEPSEEK_API_KEY and DEEPSEEK_MODEL env vars. Docs: https://api-docs.deepseek.com/")
 
@@ -993,7 +993,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 		IsGetSilent: isQuiet,
 	}
 
-    queryWithContext := fmt.Sprintf("Here is the output of the search results: %s\n\nBased on these search results, answer the user's question: %s", searchResults, input)
+	queryWithContext := fmt.Sprintf("Here is the output of the search results: %s\n\nBased on these search results, answer the user's question: %s", searchResults, input)
 
 	response, _ := MakeRequestAndGetData(queryWithContext, params, searchOptions)
 
