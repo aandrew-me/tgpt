@@ -16,8 +16,8 @@ import (
 )
 
 type GenerateRequest struct {
-	Prompt string `json:"prompt"`
-	Model  string `json:"model"`
+	Prompt string   `json:"prompt"`
+	Models []string `json:"models"`
 	Params *struct {
 		Width  int `json:"width,omitempty"`
 		Height int `json:"height,omitempty"`
@@ -72,7 +72,7 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 
 	genReq := GenerateRequest{
 		Prompt: prompt,
-		Model:  model,
+		Models: []string{model},
 		Params: &struct {
 			Width  int `json:"width,omitempty"`
 			Height int `json:"height,omitempty"`
@@ -98,7 +98,7 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 	}
 	req.Body = io.NopCloser(bytes.NewReader(jsonReq))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("apikey", apiKey)
 	req.Header.Set("Client-Agent", "tgpt:v2:")
 
 	res, err := client.Do(req)
@@ -125,8 +125,9 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 		os.Exit(1)
 	}
 
-	// Poll for status
-	for {
+	// Poll for status (max 60 attempts × 2s = ~2 min timeout)
+	const maxAttempts = 60
+	for attempt := 0; attempt < maxAttempts; attempt++ {
 		time.Sleep(2 * time.Second)
 
 		req, err := http.NewRequest("GET", "https://stablehorde.net/api/v2/generate/status/"+genResp.ID, nil)
@@ -134,7 +135,7 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 			fmt.Fprintln(os.Stderr, "Error checking status:", err)
 			os.Exit(1)
 		}
-		req.Header.Set("Authorization", "Bearer "+apiKey)
+		req.Header.Set("apikey", apiKey)
 		req.Header.Set("Client-Agent", "tgpt:v2:")
 
 		res, err := client.Do(req)
@@ -178,6 +179,12 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 			}
 			defer res.Body.Close()
 
+			if res.StatusCode != http.StatusOK {
+				body, _ := io.ReadAll(res.Body)
+				fmt.Fprintf(os.Stderr, "Error downloading image: HTTP %d: %s\n", res.StatusCode, string(body))
+				os.Exit(1)
+			}
+
 			filepath := params.Out
 			if filepath == "" {
 				filepath = utils.RandomString(20) + ".png"
@@ -199,4 +206,8 @@ func GenerateImage(prompt string, params structs.ImageParams) string {
 			return filepath
 		}
 	}
+
+	fmt.Fprintln(os.Stderr, "Timed out waiting for image generation (~2 min)")
+	os.Exit(1)
+	return ""
 }
