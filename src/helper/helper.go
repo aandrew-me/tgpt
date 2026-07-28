@@ -827,16 +827,16 @@ func providersForRotation(params structs.Params) []string {
 	// the primary provider as the first attempt so rotation entries
 	// act as true fallbacks.
 	deduped := make([]string, 0, len(list)+1)
-	seen2 := make(map[string]struct{}, len(list)+1)
+	seen := make(map[string]struct{}, len(list)+1)
 	if params.Provider != "" && providers.IsValidProvider(params.Provider) {
 		deduped = append(deduped, params.Provider)
-		seen2[params.Provider] = struct{}{}
+		seen[params.Provider] = struct{}{}
 	}
 	for _, p := range list {
-		if _, ok := seen2[p]; ok {
+		if _, ok := seen[p]; ok {
 			continue
 		}
-		seen2[p] = struct{}{}
+		seen[p] = struct{}{}
 		deduped = append(deduped, p)
 	}
 	return deduped
