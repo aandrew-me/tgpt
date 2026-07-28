@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,10 +42,9 @@ type TextStatusResponse struct {
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
-	client, err := client.NewClient()
+	c, err := client.NewClient()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
 
 	model := "koboldcpp/L3-8B-Stheno-v3.2"
@@ -64,7 +64,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	// Build prompt with chat format
-	prompt := input
+	var prompt string
 	if params.SystemPrompt != "" {
 		prompt = fmt.Sprintf("<|im_start|>system\n%s<|im_end|>\n<|im_start|>user\n%s<|im_end|>\n<|im_start|>assistant\n", params.SystemPrompt, input)
 	} else {
@@ -86,6 +86,22 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		prompt = history + prompt
 	}
 
+	// Parse user-configured generation params with safe defaults
+	maxLength := 200
+	if v, err := strconv.Atoi(params.Max_length); err == nil && v > 0 {
+		maxLength = v
+	}
+
+	temperature := 0.7
+	if v, err := strconv.ParseFloat(params.Temperature, 64); err == nil && v > 0 && v <= 2 {
+		temperature = v
+	}
+
+	topP := 0.9
+	if v, err := strconv.ParseFloat(params.Top_p, 64); err == nil && v > 0 && v <= 1 {
+		topP = v
+	}
+
 	submitReq := TextSubmitRequest{
 		Prompt: prompt,
 		Models: []string{model},
@@ -95,30 +111,28 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 			TopP       float64 `json:"top_p,omitempty"`
 			RepPen     float64 `json:"rep_pen,omitempty"`
 		}{
-			MaxLength:  200,
-			Temperature: 0.7,
-			TopP:       0.9,
+			MaxLength:   maxLength,
+			Temperature: temperature,
+			TopP:        topP,
 			RepPen:     1.1,
 		},
 	}
 
 	jsonReq, err := json.Marshal(submitReq)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Failed to build request")
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to build request: %w", err)
 	}
 
 	// Submit async text generation
 	req, err := http.NewRequest("POST", "https://stablehorde.net/api/v2/generate/text/async", bytes.NewBuffer(jsonReq))
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Some error has occurred.\nError:", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("apikey", apiKey)
 	req.Header.Set("Client-Agent", "tgpt:v2:")
 
-	res, err := client.Do(req)
+	res, err := c.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +164,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		req.Header.Set("apikey", apiKey)
 		req.Header.Set("Client-Agent", "tgpt:v2:")
 
-		res, err := client.Do(req)
+		res, err := c.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("error checking status: %w", err)
 		}
