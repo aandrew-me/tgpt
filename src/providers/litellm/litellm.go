@@ -18,6 +18,7 @@ type RequestBody struct {
 	Model    string `json:"model"`
 	Stream   bool   `json:"stream"`
 	Messages []any  `json:"messages"`
+	Tools    []any  `json:"tools,omitempty"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -64,16 +65,19 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 				Role:    "system",
 			},
 		},
+		Tools: params.Tools,
 	}
 
 	if len(params.PrevMessages) > 0 {
 		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
 	}
 
-	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
-		Role:    "user",
-		Content: input,
-	})
+	if input != "" {
+		requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+			Role:    "user",
+			Content: input,
+		})
+	}
 
 	jsonRequest, err := json.Marshal(requestInfo)
 	if err != nil {

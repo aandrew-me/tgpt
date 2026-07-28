@@ -126,7 +126,7 @@ func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}
 
-	httpClient, err := client.NewClient()
+	httpClient, err := client.NewClient(15)
 	if err != nil {
 		return "", fmt.Errorf("failed to create HTTP client: %w", err)
 	}

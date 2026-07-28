@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -18,7 +19,9 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
+	"github.com/aandrew-me/tgpt/v2/src/mcp"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
+	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	Prompt "github.com/c-bata/go-prompt"
 	tea "github.com/charmbracelet/bubbletea"
@@ -346,6 +349,11 @@ func main() {
 	isChangelog := flag.Bool("cl", false, "See changelog of versions")
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
 
+	mcpConfig := flag.String("mcp-config", os.Getenv("MCP_CONFIG"), "Path to MCP server configuration JSON file")
+	mcpServer := flag.String("mcp-server", "", "Command to run a stdio MCP server directly")
+	enableTools := flag.Bool("t", false, "Enable tools / MCP support")
+	flag.BoolVar(enableTools, "tools", false, "Enable tools / MCP support")
+
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
@@ -380,6 +388,39 @@ func main() {
 		finalSearchProvider = "exa"
 	}
 
+	var activeTools []any
+	mcpMgr := mcp.NewManager(tools.DefaultRegistry)
+	defer mcpMgr.Close()
+
+	if *mcpConfig != "" || *mcpServer != "" {
+		ctx := context.Background()
+		if *mcpConfig != "" {
+			cfg, err := mcp.LoadConfig(*mcpConfig)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to load MCP config: %v\n", err)
+			} else if cfg != nil {
+				for name, sc := range cfg.MCPServers {
+					if err := mcpMgr.InitServer(ctx, name, sc); err != nil {
+						fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", name, err)
+					}
+				}
+			}
+		}
+		if *mcpServer != "" {
+			parts := strings.Fields(*mcpServer)
+			if len(parts) > 0 {
+				sc := mcp.ServerConfig{Command: parts[0], Args: parts[1:]}
+				if err := mcpMgr.InitServer(ctx, "cli-mcp", sc); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", *mcpServer, err)
+				}
+			}
+		}
+	}
+
+	if *enableTools || *mcpConfig != "" || *mcpServer != "" {
+		activeTools = tools.DefaultRegistry.GetOpenAITools()
+	}
+
 	mainParams := structs.Params{
 		ApiKey:          *apiKey,
 		ApiModel:        *apiModel,
@@ -391,6 +432,7 @@ func main() {
 		Url:             *url,
 		PrevMessages:    []any{},
 		RotateProviders: rotateStr,
+		Tools:           activeTools,
 	}
 
 	imageParams := structs.ImageParams{
@@ -747,13 +789,13 @@ func main() {
 					utils.PrintError(`Example: tgpt -q "What is encryption?"`)
 					return
 				}
-				if _, err := helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
+				if _, _, err := helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
 					return
 				}
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				if _, err := helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
+				if _, _, err := helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
 					return
 				}
 			}
@@ -770,7 +812,7 @@ func main() {
 				*preprompt+formattedInput+contextText+pipedInput,
 				mainParams,
 				structs.ExtraOptions{
-					IsNormal: true, IsInteractive: false,
+					IsNormal: true, IsInteractive: false, Verbose: *isVerbose,
 				})
 		}
 	} else {
@@ -782,7 +824,7 @@ func main() {
 		}
 		input := scanner.Text()
 		formattedInput := strings.TrimSpace(input)
-		helper.GetData(*preprompt+formattedInput+pipedInput, mainParams, structs.ExtraOptions{IsInteractive: false, IsNormal: true})
+		helper.GetData(*preprompt+formattedInput+pipedInput, mainParams, structs.ExtraOptions{IsInteractive: false, IsNormal: true, Verbose: *isVerbose})
 	}
 }
 

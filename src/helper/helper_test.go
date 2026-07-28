@@ -116,7 +116,7 @@ func TestInteractiveStatusErrorDoesNotAppendAssistantMessage(t *testing.T) {
 		IsGetSilent:   true,
 	}
 
-	if response, err := MakeRequestAndGetData("hello", params, extraOptions); err == nil {
+	if response, _, err := MakeRequestAndGetData("hello", params, extraOptions); err == nil {
 		t.Fatal("expected interactive 4xx response to return an error")
 	} else if response != "" {
 		t.Fatalf("expected empty response text on error, got %q", response)

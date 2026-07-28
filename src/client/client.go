@@ -10,9 +10,14 @@ import (
 	"github.com/bogdanfinn/tls-client/profiles"
 )
 
-func NewClient() (tls_client.HttpClient, error) {
+func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
+	timeout := 600
+	if len(timeoutSeconds) > 0 && timeoutSeconds[0] > 0 {
+		timeout = timeoutSeconds[0]
+	}
+
 	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(600),
+		tls_client.WithTimeoutSeconds(timeout),
 		// Allow overriding TLS fingerprint via env; default stays Firefox_117.
 		tls_client.WithClientProfile(func() profiles.ClientProfile {
 			p := profiles.Firefox_148

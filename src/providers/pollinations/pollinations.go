@@ -15,10 +15,10 @@ import (
 )
 
 type RequestBody struct {
-	Model       string `json:"model"`
-	Stream      bool   `json:"stream"`
-	Messages    []any  `json:"messages"`
-
+	Model    string `json:"model"`
+	Stream   bool   `json:"stream"`
+	Messages []any  `json:"messages"`
+	Tools    []any  `json:"tools,omitempty"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -29,8 +29,9 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	requestInfo := RequestBody{
-		Model:       "openai",
-		Stream:      true,
+		Model:  "openai",
+		Stream: true,
+		Tools:  params.Tools,
 	}
 
 	apiKey := params.ApiKey
@@ -60,18 +61,18 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		Content: params.SystemPrompt,
 	}
 
-	mainMessage := structs.DefaultMessage{
-		Role:    "user",
-		Content: input,
-	}
-
 	messages := []any{systemMessage}
 
 	if len(params.PrevMessages) > 0 {
 		messages = append(messages, params.PrevMessages...)
 	}
 
-	messages = append(messages, mainMessage)
+	if input != "" {
+		messages = append(messages, structs.DefaultMessage{
+			Role:    "user",
+			Content: input,
+		})
+	}
 
 	requestInfo.Messages = messages
 
