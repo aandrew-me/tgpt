@@ -1,0 +1,100 @@
+package aihorde
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"strings"
+
+	http "github.com/bogdanfinn/fhttp"
+
+	"github.com/aandrew-me/tgpt/v2/src/client"
+	"github.com/aandrew-me/tgpt/v2/src/structs"
+)
+
+type RequestBody struct {
+	Model    string `json:"model"`
+	Stream   bool   `json:"stream"`
+	Messages []any  `json:"messages"`
+}
+
+func NewRequest(input string, params structs.Params) (*http.Response, error) {
+	client, err := client.NewClient()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	model := "koboldcpp/L3-8B-Stheno-v3.2"
+	if params.ApiModel != "" {
+		model = params.ApiModel
+	} else if envModel := os.Getenv("AIHORDE_MODEL"); envModel != "" {
+		model = envModel
+	}
+
+	apiKey := "0000000000"
+	if params.ApiKey != "" {
+		apiKey = params.ApiKey
+	} else if envKey := os.Getenv("AIHORDE_API_KEY"); envKey != "" {
+		apiKey = envKey
+	} else if envKey := os.Getenv("AI_API_KEY"); envKey != "" {
+		apiKey = envKey
+	}
+
+	url := "https://oai.aihorde.net/v1/chat/completions"
+
+	requestInfo := RequestBody{
+		Model:  model,
+		Stream: true,
+		Messages: []any{
+			structs.DefaultMessage{
+				Content: params.SystemPrompt,
+				Role:    "system",
+			},
+		},
+	}
+
+	if len(params.PrevMessages) > 0 {
+		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
+	}
+
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+		Role:    "user",
+		Content: input,
+	})
+
+	jsonRequest, err := json.Marshal(requestInfo)
+	if err != nil {
+		log.Fatal("Failed to build user request")
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonRequest))
+	if err != nil {
+		log.Fatal("Some error has occured.\nError:", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	return client.Do(req)
+}
+
+func GetMainText(line string) (mainText string) {
+	var obj = "{}"
+	if strings.Contains(line, "data: ") {
+		obj = strings.Split(line, "data: ")[1]
+	}
+
+	var d structs.CommonResponse
+	if err := json.Unmarshal([]byte(obj), &d); err != nil {
+		return ""
+	}
+
+	if len(d.Choices) > 0 {
+		mainText = d.Choices[0].Delta.Content
+		return mainText
+	}
+	return ""
+}

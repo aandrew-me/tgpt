@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aandrew-me/tgpt/v2/src/providers/aihorde"
 	"github.com/aandrew-me/tgpt/v2/src/providers/anyapi"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
@@ -22,7 +23,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -36,6 +37,8 @@ func IsValidProvider(name string) bool {
 
 func GetMainText(line string, provider string, input string) string {
 	switch provider {
+	case "aihorde":
+		return aihorde.GetMainText(line)
 	case "anyapi":
 		return anyapi.GetMainText(line)
 	case "deepseek":
@@ -80,6 +83,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	}
 
 	switch provider {
+	case "aihorde":
+		return aihorde.NewRequest(input, params)
 	case "anyapi":
 		return anyapi.NewRequest(input, params)
 	case "deepseek":
