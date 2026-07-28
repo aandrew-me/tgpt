@@ -808,15 +808,15 @@ func providersForRotation(params structs.Params) []string {
 		return []string{params.Provider}
 	}
 	raw := strings.Split(params.RotateProviders, ",")
-	seen := make(map[string]bool, len(raw))
+	seenRaw := make(map[string]bool, len(raw))
 	list := make([]string, 0, len(raw))
 	for _, p := range raw {
 		p = strings.TrimSpace(p)
-		if p == "" || seen[p] {
+		if p == "" || seenRaw[p] {
 			continue
 		}
 		if providers.IsValidProvider(p) {
-			seen[p] = true
+			seenRaw[p] = true
 			list = append(list, p)
 		}
 	}
