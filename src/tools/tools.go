@@ -56,7 +56,61 @@ type contextKey string
 
 const AutoExecKey contextKey = "auto_exec"
 
+// ConfirmedKey marks that any required user confirmation for the current
+// tool call has already been obtained (e.g. by PreConfirm), so the tool
+// handler should not prompt again.
+const ConfirmedKey contextKey = "confirmed"
+
 var bold = color.New(color.Bold)
+
+// confirmAction prompts the user with a yes/no question and returns true only
+// if the user explicitly answers "y" or "yes". A bare Enter (empty input) or
+// any other input is treated as "no" so that accidental keystrokes never
+// trigger a potentially destructive action.
+func confirmAction(prompt string) bool {
+	bold.Printf("%s", prompt)
+	reader := bufio.NewReader(os.Stdin)
+	userIn, _ := reader.ReadString('\n')
+	userIn = strings.TrimSpace(strings.ToLower(userIn))
+	return userIn == "y" || userIn == "yes"
+}
+
+// PreConfirm performs any interactive confirmation required for a tool call
+// before execution begins. Callers should invoke this on an undeadlined
+// context (i.e. before starting a per-execution timeout) so that the time
+// spent waiting on user input does not count against the tool's execution
+// budget. It returns (proceed, message): if proceed is false, message
+// contains the cancellation message that should be returned as the tool's
+// result without running the handler at all.
+func PreConfirm(ctx context.Context, name string, argsJSON string) (bool, string) {
+	if autoExec, _ := ctx.Value(AutoExecKey).(bool); autoExec {
+		return true, ""
+	}
+
+	var args map[string]any
+	if argsJSON != "" && argsJSON != "{}" {
+		_ = json.Unmarshal([]byte(argsJSON), &args)
+	}
+
+	switch name {
+	case "execute_command":
+		cmdStr, _ := args["command"].(string)
+		if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)) {
+			return false, "Command execution cancelled by user."
+		}
+	case "write_file":
+		filePath, _ := args["path"].(string)
+		if filePath != "" {
+			if _, err := os.Stat(filePath); err == nil {
+				if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it? [y/n]: ", filePath)) {
+					return false, "File overwrite cancelled by user."
+				}
+			}
+		}
+	}
+
+	return true, ""
+}
 
 func (r *Registry) Register(spec ToolSpec, handler ToolHandler) {
 	r.mu.Lock()
@@ -236,12 +290,9 @@ func (r *Registry) registerBuiltinTools() {
 		}
 
 		autoExec, _ := ctx.Value(AutoExecKey).(bool)
-		if !autoExec {
-			bold.Printf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)
-			reader := bufio.NewReader(os.Stdin)
-			userIn, _ := reader.ReadString('\n')
-			userIn = strings.TrimSpace(strings.ToLower(userIn))
-			if userIn != "y" && userIn != "yes" && userIn != "" {
+		confirmed, _ := ctx.Value(ConfirmedKey).(bool)
+		if !autoExec && !confirmed {
+			if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)) {
 				return "Command execution cancelled by user.", nil
 			}
 		}
@@ -371,6 +422,16 @@ func (r *Registry) registerBuiltinTools() {
 		content, ok := args["content"].(string)
 		if !ok {
 			return "", fmt.Errorf("content parameter is required")
+		}
+
+		autoExec, _ := ctx.Value(AutoExecKey).(bool)
+		confirmed, _ := ctx.Value(ConfirmedKey).(bool)
+		if !autoExec && !confirmed {
+			if _, err := os.Stat(filePath); err == nil {
+				if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it? [y/n]: ", filePath)) {
+					return "File overwrite cancelled by user.", nil
+				}
+			}
 		}
 
 		dir := filepath.Dir(filePath)

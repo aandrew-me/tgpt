@@ -395,7 +395,7 @@ func main() {
 	if *enableTools || *mcpConfig != "" || *mcpServer != "" {
 		ctx := context.Background()
 		cfg, err := mcp.LoadConfig(*mcpConfig)
-		if err != nil && *mcpConfig != "" {
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to load MCP config: %v\n", err)
 		} else if cfg != nil {
 			for name, sc := range cfg.MCPServers {

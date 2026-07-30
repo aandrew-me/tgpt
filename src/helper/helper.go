@@ -721,13 +721,29 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 					showStatus(statusOn, "Running "+tc.Function.Name)
 				}
 
-				execCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+				preConfirmCtx := context.Background()
 				if extraOptions.AutoExec {
-					execCtx = context.WithValue(execCtx, tools.AutoExecKey, true)
+					preConfirmCtx = context.WithValue(preConfirmCtx, tools.AutoExecKey, true)
 				}
 
-				toolOutput, err := tools.DefaultRegistry.Execute(execCtx, tc.Function.Name, tc.Function.Arguments)
-				cancel()
+				var toolOutput string
+				var err error
+				proceed, cancelMsg := tools.PreConfirm(preConfirmCtx, tc.Function.Name, tc.Function.Arguments)
+				if !proceed {
+					toolOutput = cancelMsg
+				} else {
+					// The confirmation (if any) has already been obtained above,
+					// so the 60s execution timeout starts only now and is not
+					// consumed by time spent waiting on user input.
+					execCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+					execCtx = context.WithValue(execCtx, tools.ConfirmedKey, true)
+					if extraOptions.AutoExec {
+						execCtx = context.WithValue(execCtx, tools.AutoExecKey, true)
+					}
+
+					toolOutput, err = tools.DefaultRegistry.Execute(execCtx, tc.Function.Name, tc.Function.Arguments)
+					cancel()
+				}
 				hideStatus()
 
 				if err != nil {
