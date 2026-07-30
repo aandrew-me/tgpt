@@ -173,11 +173,15 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 	}
 
 	// 4. Save to Config File
-	cfg, _ := LoadConfig(resolvedPath)
-	if cfg == nil {
-		cfg = &Config{
-			MCPServers: make(map[string]ServerConfig),
+	cfg, err := LoadConfig(resolvedPath)
+	if err != nil {
+		// File exists but couldn't be parsed; refuse to overwrite it.
+		if _, statErr := os.Stat(resolvedPath); statErr == nil {
+			return fmt.Errorf("existing config %s could not be parsed, refusing to overwrite: %w", resolvedPath, err)
 		}
+	}
+	if cfg == nil {
+		cfg = &Config{MCPServers: make(map[string]ServerConfig)}
 	}
 	if cfg.MCPServers == nil {
 		cfg.MCPServers = make(map[string]ServerConfig)
@@ -197,7 +201,7 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 func SaveConfig(path string, cfg *Config) error {
 	dir := filepath.Dir(path)
 	if dir != "" && dir != "." {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0700); err != nil {
 			return err
 		}
 	}
@@ -207,7 +211,7 @@ func SaveConfig(path string, cfg *Config) error {
 		return err
 	}
 	data = append(data, '\n')
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0600)
 }
 
 func readInput(reader *bufio.Reader) (string, error) {
