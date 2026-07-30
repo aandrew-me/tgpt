@@ -63,3 +63,34 @@ func TestInitServerInvalid(t *testing.T) {
 		t.Fatal("expected error for empty server config")
 	}
 }
+
+func TestLoadConfigWithHeaders(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "mcp_config.json")
+	content := `{
+		"mcpServers": {
+			"remote-server": {
+				"url": "https://example.com/mcp",
+				"headers": {
+					"Authorization": "Bearer test-token",
+					"X-Custom-Header": "custom-value"
+				}
+			}
+		}
+	}`
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write test config: %v", err)
+	}
+
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	sc, ok := cfg.MCPServers["remote-server"]
+	if !ok {
+		t.Fatalf("expected remote-server config")
+	}
+	if sc.Headers["Authorization"] != "Bearer test-token" || sc.Headers["X-Custom-Header"] != "custom-value" {
+		t.Fatalf("unexpected headers: %#v", sc.Headers)
+	}
+}

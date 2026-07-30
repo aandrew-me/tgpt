@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -17,11 +18,25 @@ import (
 )
 
 type ServerConfig struct {
-	Command string   `json:"command,omitempty"`
-	Args    []string `json:"args,omitempty"`
-	Env     []string `json:"env,omitempty"`
-	URL     string   `json:"url,omitempty"`
-	Type    string   `json:"type,omitempty"`
+	Command string            `json:"command,omitempty"`
+	Args    []string          `json:"args,omitempty"`
+	Env     []string          `json:"env,omitempty"`
+	URL     string            `json:"url,omitempty"`
+	Type    string            `json:"type,omitempty"`
+	Headers map[string]string `json:"headers,omitempty"`
+}
+
+type headerTransport struct {
+	base    http.RoundTripper
+	headers map[string]string
+}
+
+func (h *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req2 := req.Clone(req.Context())
+	for k, v := range h.headers {
+		req2.Header.Set(k, os.ExpandEnv(v))
+	}
+	return h.base.RoundTrip(req2)
 }
 
 type Config struct {
@@ -86,6 +101,16 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 
 	if sc.URL != "" {
 		httpClient := tgptclient.NewStandardHTTPClient(60)
+		if len(sc.Headers) > 0 {
+			baseTransport := httpClient.Transport
+			if baseTransport == nil {
+				baseTransport = http.DefaultTransport
+			}
+			httpClient.Transport = &headerTransport{
+				base:    baseTransport,
+				headers: sc.Headers,
+			}
+		}
 
 		switch sc.Type {
 		case "sse":
