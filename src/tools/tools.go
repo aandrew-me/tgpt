@@ -213,6 +213,14 @@ func (r *Registry) Execute(ctx context.Context, name string, argsJSON string) (s
 }
 
 func (r *Registry) registerBuiltinTools(selectedTools ...string) {
+	for _, t := range selectedTools {
+		trimmed := strings.ToLower(strings.TrimSpace(t))
+		if trimmed == "" || trimmed == "all" || IsBuiltinTool(trimmed) {
+			continue
+		}
+		fmt.Fprintf(os.Stderr, "Warning: unknown tool %q ignored. Available tools: %s\n", t, strings.Join(AllBuiltinTools, ", "))
+	}
+
 	shouldRegister := func(name string) bool {
 		if len(selectedTools) == 0 {
 			return true

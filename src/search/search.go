@@ -263,7 +263,12 @@ func parseFirecrawlResultText(text string) string {
 		builder.WriteString("\n")
 	}
 
-	return strings.TrimSpace(builder.String())
+	result := strings.TrimSpace(builder.String())
+	if len(result) > maxTotalContent {
+		result = result[:maxTotalContent] + "\n\n[Content truncated due to length...]"
+	}
+
+	return result
 }
 
 func PerformFirecrawlMCPSearch(params SearchParams, verbose bool) (string, error) {
@@ -391,7 +396,12 @@ func PerformFirecrawlMCPSearch(params SearchParams, verbose bool) (string, error
 		}
 	}
 
-	return strings.TrimSpace(builder.String()), nil
+	result := strings.TrimSpace(builder.String())
+	if len(result) > maxTotalContent {
+		result = result[:maxTotalContent] + "\n\n[Content truncated due to length...]"
+	}
+
+	return result, nil
 }
 
 // PerformSearch executes the complete search workflow
