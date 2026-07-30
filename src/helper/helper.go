@@ -330,7 +330,7 @@ func (s *Spinner) run() {
 	s.mu.Lock()
 	width := s.width
 	s.mu.Unlock()
-	fmt.Print("\r" + strings.Repeat(" ", width) + "\r")
+	fmt.Print("\r" + strings.Repeat(" ", width) + "\r\033[K")
 }
 
 func canWriteToDir(path string) bool {
@@ -580,6 +580,10 @@ func GetLastCodeBlock(markdown string) string {
 func formatToolArgs(rawArgs string) string {
 	var args map[string]any
 	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
+		if len(rawArgs) > 100 {
+			runes := []rune(rawArgs)
+			return string(runes[:100]) + "..."
+		}
 		return rawArgs
 	}
 
@@ -589,25 +593,42 @@ func formatToolArgs(rawArgs string) string {
 	}
 	sort.Strings(keys)
 
+	maxValLen := 60
 	parts := make([]string, 0, len(keys))
 	for _, k := range keys {
 		v := args[k]
 		var valStr string
 		switch val := v.(type) {
 		case string:
-			valStr = fmt.Sprintf("%q", val)
+			if len(val) > maxValLen {
+				runes := []rune(val)
+				valStr = fmt.Sprintf("%q...", string(runes[:maxValLen]))
+			} else {
+				valStr = fmt.Sprintf("%q", val)
+			}
 		default:
 			b, err := json.Marshal(val)
+			str := string(b)
 			if err != nil {
-				valStr = fmt.Sprintf("%v", val)
+				str = fmt.Sprintf("%v", val)
+			}
+			if len(str) > maxValLen {
+				runes := []rune(str)
+				valStr = string(runes[:maxValLen]) + "..."
 			} else {
-				valStr = string(b)
+				valStr = str
 			}
 		}
 		parts = append(parts, fmt.Sprintf("%s=%s", k, valStr))
 	}
 
-	return strings.Join(parts, ", ")
+	result := strings.Join(parts, ", ")
+	maxTotalLen := 120
+	if len(result) > maxTotalLen {
+		runes := []rune(result)
+		return string(runes[:maxTotalLen]) + "..."
+	}
+	return result
 }
 
 type toolCallAccumulator struct {
@@ -684,6 +705,10 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 
 		if len(toolCalls) > 0 {
 			resp.Body.Close()
+
+			if fullText != "" && !strings.HasSuffix(fullText, "\n") {
+				fmt.Println()
+			}
 
 			// Terminal follow-up: never process tool calls again.
 			if extraOptions.ToolDepth >= 5 && extraOptions.IsToolFollowUp {

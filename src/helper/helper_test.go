@@ -186,3 +186,16 @@ func TestToolDepthLimitClearsToolsAndReturnsResponse(t *testing.T) {
 	}
 }
 
+func TestFormatToolArgsTruncation(t *testing.T) {
+	longVal := strings.Repeat("a", 150)
+	rawArgs := `{"short":"hello","long":"` + longVal + `"}`
+	formatted := formatToolArgs(rawArgs)
+
+	if len(formatted) > 130 {
+		t.Fatalf("expected formatted string length <= 130, got %d: %q", len(formatted), formatted)
+	}
+	if !strings.Contains(formatted, "...") {
+		t.Fatalf("expected formatted string to contain '...', got %q", formatted)
+	}
+}
+
