@@ -2,13 +2,55 @@ package client
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
 )
+
+func GetProxyURL() string {
+	proxyAddr := os.Getenv("HTTP_PROXY")
+	if proxyAddr == "" {
+		proxyAddr = os.Getenv("http_proxy")
+	}
+	if proxyAddr == "" {
+		proxyAddr = os.Getenv("HTTPS_PROXY")
+		if proxyAddr == "" {
+			proxyAddr = os.Getenv("https_proxy")
+		}
+	}
+	if proxyAddr == "" {
+		proxyAddr = os.Getenv("ALL_PROXY")
+		if proxyAddr == "" {
+			proxyAddr = os.Getenv("all_proxy")
+		}
+	}
+
+	if proxyAddr == "" {
+		homeDir, _ := os.UserHomeDir()
+		proxyFiles := []string{
+			"proxy.txt",
+			filepath.Join(homeDir, ".config", "tgpt", "proxy.txt"),
+		}
+
+		for _, file := range proxyFiles {
+			if content, err := os.ReadFile(file); err == nil {
+				candidate := strings.TrimSpace(string(content))
+				if candidate != "" && !strings.HasPrefix(candidate, "#") {
+					proxyAddr = candidate
+					break
+				}
+			}
+		}
+	}
+
+	return proxyAddr
+}
 
 func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
 	timeout := 600
@@ -34,41 +76,7 @@ func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
 		// tls_client.WithInsecureSkipVerify(),
 	}
 
-	// proxy in environment variables
-	proxyAddr := os.Getenv("HTTP_PROXY")
-	if proxyAddr == "" {
-		proxyAddr = os.Getenv("http_proxy")
-	}
-	if proxyAddr == "" {
-		proxyAddr = os.Getenv("HTTPS_PROXY")
-		if proxyAddr == "" {
-			proxyAddr = os.Getenv("https_proxy")
-		}
-	}
-	if proxyAddr == "" {
-		proxyAddr = os.Getenv("ALL_PROXY")
-		if proxyAddr == "" {
-			proxyAddr = os.Getenv("all_proxy")
-		}
-	}
-
-	// No Proxy in env, try to load from configuration
-	if proxyAddr == "" {
-		homeDir, _ := os.UserHomeDir()
-		proxyFiles := []string{
-			"proxy.txt",
-			filepath.Join(homeDir, ".config", "tgpt", "proxy.txt"),
-		}
-
-		for _, file := range proxyFiles {
-			if content, err := os.ReadFile(file); err == nil {
-				proxyAddr = strings.TrimSpace(string(content))
-				break
-			}
-		}
-	}
-
-	// Set proxy options if valid proxy detected.
+	proxyAddr := GetProxyURL()
 	if proxyAddr != "" {
 		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") || strings.HasPrefix(proxyAddr, "socks5h://") {
 			options = append(options, tls_client.WithProxyUrl(proxyAddr))
@@ -80,4 +88,29 @@ func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
 	}
 
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+}
+
+func NewStandardHTTPClient(timeoutSeconds ...int) *http.Client {
+	timeout := 60 * time.Second
+	if len(timeoutSeconds) > 0 && timeoutSeconds[0] > 0 {
+		timeout = time.Duration(timeoutSeconds[0]) * time.Second
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+	}
+
+	proxyAddr := GetProxyURL()
+	if proxyAddr != "" {
+		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") || strings.HasPrefix(proxyAddr, "socks5h://") {
+			if parsedURL, err := url.Parse(proxyAddr); err == nil {
+				transport.Proxy = http.ProxyURL(parsedURL)
+			}
+		}
+	}
+
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
 }

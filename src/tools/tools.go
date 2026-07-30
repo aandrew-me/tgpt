@@ -44,12 +44,14 @@ type Registry struct {
 var DefaultRegistry = NewRegistry()
 
 func NewRegistry() *Registry {
-	r := &Registry{
+	return &Registry{
 		tools:    make(map[string]ToolSpec),
 		handlers: make(map[string]ToolHandler),
 	}
+}
+
+func (r *Registry) RegisterBuiltinTools() {
 	r.registerBuiltinTools()
-	return r
 }
 
 type contextKey string

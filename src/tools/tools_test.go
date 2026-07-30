@@ -10,6 +10,7 @@ import (
 
 func TestRegistryExecute(t *testing.T) {
 	r := NewRegistry()
+	r.RegisterBuiltinTools()
 
 	res, err := r.Execute(context.Background(), "read_directory", `{"path": "."}`)
 	if err != nil {
@@ -29,6 +30,7 @@ func TestReadFileTool(t *testing.T) {
 	}
 
 	r := NewRegistry()
+	r.RegisterBuiltinTools()
 	res, err := r.Execute(context.Background(), "read_file", `{"path": "`+strings.ReplaceAll(filePath, `\`, `\\`)+`"}`)
 	if err != nil {
 		t.Fatalf("unexpected error executing read_file: %v", err)
@@ -48,6 +50,7 @@ func TestExecuteNonExistentTool(t *testing.T) {
 
 func TestRegistryHas(t *testing.T) {
 	r := NewRegistry()
+	r.RegisterBuiltinTools()
 	if !r.Has("read_file") {
 		t.Fatal("expected registry to have built-in read_file tool")
 	}
@@ -58,6 +61,7 @@ func TestRegistryHas(t *testing.T) {
 
 func TestExecuteCommandAutoExec(t *testing.T) {
 	r := NewRegistry()
+	r.RegisterBuiltinTools()
 	ctx := context.WithValue(context.Background(), AutoExecKey, true)
 	res, err := r.Execute(ctx, "execute_command", `{"command": "echo hello"}`)
 	if err != nil {
@@ -74,6 +78,7 @@ func TestWriteFileTool(t *testing.T) {
 	expectedContent := "Hello from write_file tool!"
 
 	r := NewRegistry()
+	r.RegisterBuiltinTools()
 	if !r.Has("write_file") {
 		t.Fatal("expected registry to have write_file tool")
 	}

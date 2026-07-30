@@ -9,8 +9,10 @@ import (
 	"sync"
 	"time"
 
+	tgptclient "github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	mcpclient "github.com/mark3labs/mcp-go/client"
+	mcptransport "github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -79,51 +81,53 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	var client *mcpclient.Client
+	var mcpClient *mcpclient.Client
 	var err error
 
 	if sc.URL != "" {
+		httpClient := tgptclient.NewStandardHTTPClient(60)
+
 		switch sc.Type {
 		case "sse":
-			client, err = mcpclient.NewSSEMCPClient(sc.URL)
+			mcpClient, err = mcpclient.NewSSEMCPClient(sc.URL, mcpclient.WithHTTPClient(httpClient))
 			if err == nil {
-				err = client.Start(ctx)
+				err = mcpClient.Start(ctx)
 			}
 		case "http", "streamable-http":
-			client, err = mcpclient.NewStreamableHttpClient(sc.URL)
+			mcpClient, err = mcpclient.NewStreamableHttpClient(sc.URL, mcptransport.WithHTTPBasicClient(httpClient))
 			if err == nil {
-				err = client.Start(ctx)
+				err = mcpClient.Start(ctx)
 			}
 		default:
 			// Try Streamable HTTP first (modern MCP spec used by servers like Exa)
-			client, err = mcpclient.NewStreamableHttpClient(sc.URL)
+			mcpClient, err = mcpclient.NewStreamableHttpClient(sc.URL, mcptransport.WithHTTPBasicClient(httpClient))
 			if err == nil {
-				err = client.Start(ctx)
+				err = mcpClient.Start(ctx)
 			}
 			if err != nil {
-				if client != nil {
-					client.Close()
+				if mcpClient != nil {
+					mcpClient.Close()
 				}
 				// Fall back to SSE transport if Streamable HTTP fails
-				client, err = mcpclient.NewSSEMCPClient(sc.URL)
+				mcpClient, err = mcpclient.NewSSEMCPClient(sc.URL, mcpclient.WithHTTPClient(httpClient))
 				if err == nil {
-					err = client.Start(ctx)
+					err = mcpClient.Start(ctx)
 				}
 			}
 		}
 		if err != nil {
-			if client != nil {
-				client.Close()
+			if mcpClient != nil {
+				mcpClient.Close()
 			}
 			return fmt.Errorf("failed to start MCP client for %s: %w", name, err)
 		}
 	} else if sc.Command != "" {
-		client, err = mcpclient.NewStdioMCPClient(sc.Command, sc.Env, sc.Args...)
+		mcpClient, err = mcpclient.NewStdioMCPClient(sc.Command, sc.Env, sc.Args...)
 		if err != nil {
 			return fmt.Errorf("failed to create stdio MCP client for %s: %w", name, err)
 		}
-		if err := client.Start(ctx); err != nil {
-			client.Close()
+		if err := mcpClient.Start(ctx); err != nil {
+			mcpClient.Close()
 			return fmt.Errorf("failed to start MCP client for %s: %w", name, err)
 		}
 	} else {
@@ -137,17 +141,17 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 		Version: "1.0.0",
 	}
 
-	_, err = client.Initialize(ctx, initReq)
+	_, err = mcpClient.Initialize(ctx, initReq)
 	if err != nil {
-		client.Close()
+		mcpClient.Close()
 		return fmt.Errorf("failed to initialize MCP client for %s: %w", name, err)
 	}
 
-	m.clients[name] = client
+	m.clients[name] = mcpClient
 
 	// List tools and register them
 	listToolsReq := mcp.ListToolsRequest{}
-	res, err := client.ListTools(ctx, listToolsReq)
+	res, err := mcpClient.ListTools(ctx, listToolsReq)
 	if err != nil {
 		return fmt.Errorf("failed to list tools for %s: %w", name, err)
 	}
@@ -185,7 +189,7 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 		}
 
 		// Closure copy
-		clientObj := client
+		clientObj := mcpClient
 		mcpToolName := toolName
 
 		m.registry.Register(spec, func(execCtx context.Context, args map[string]any) (string, error) {

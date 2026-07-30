@@ -388,11 +388,22 @@ func main() {
 		finalSearchProvider = "exa"
 	}
 
+	var mcpConfigSet bool
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "mcp-config" {
+			mcpConfigSet = true
+		}
+	})
+
 	var activeTools []any
 	mcpMgr := mcp.NewManager(tools.DefaultRegistry)
 	defer mcpMgr.Close()
 
-	if *enableTools || *mcpConfig != "" || *mcpServer != "" {
+	if *enableTools {
+		tools.DefaultRegistry.RegisterBuiltinTools()
+	}
+
+	if mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
 		ctx := context.Background()
 		cfg, err := mcp.LoadConfig(*mcpConfig)
 		if err != nil {
@@ -413,6 +424,9 @@ func main() {
 				}
 			}
 		}
+	}
+
+	if *enableTools || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
 		activeTools = tools.DefaultRegistry.GetOpenAITools()
 	}
 

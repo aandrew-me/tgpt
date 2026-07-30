@@ -1253,8 +1253,7 @@ func ShowHelpMessage() {
 
 	bold.Println("\nMCP servers:")
 	fmt.Println("Use --mcp-config to load one or more MCP servers from a JSON file, or --mcp-server to run a single stdio MCP server directly.")
-	fmt.Println("Passing --mcp-config or --mcp-server automatically enables tool calling, so -t/--tools is optional in that case.")
-	fmt.Println("Tools discovered from MCP servers are merged with the built-in tools and made available to the model the same way.")
+	fmt.Println("Tools discovered from MCP servers are made available to the model for tool calling.")
 	fmt.Println("If no path is given to --mcp-config, tgpt looks for mcp_config.json in the current directory, then ~/.config/tgpt/mcp_config.json.")
 
 	boldBlue.Println("\nExample MCP config file (mcp_config.json):")
@@ -1274,6 +1273,7 @@ func ShowHelpMessage() {
 	fmt.Println(`tgpt -t "What files are in the current directory?"`)
 	fmt.Println(`tgpt --mcp-server "npx -y @modelcontextprotocol/server-filesystem /path/to/dir" "List the files in /path/to/dir"`)
 	fmt.Println(`tgpt --mcp-config mcp_config.json "Use the filesystem tool to read README.md"`)
+	fmt.Println(`tgpt -t --mcp-config mcp_config.json "Use both built-in tools and MCP tools"`)
 
 	boldBlue.Println("\nConfiguration file")
 	userProfileEnv := "%USERPROFILE%"
