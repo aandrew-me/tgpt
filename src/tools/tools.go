@@ -51,7 +51,8 @@ func NewRegistry() *Registry {
 }
 
 var AllBuiltinTools = []string{
-	"web_search",
+	"web_search_exa",
+	"web_search_firecrawl",
 	"read_directory",
 	"read_file",
 	"execute_command",
@@ -225,13 +226,13 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 		return false
 	}
 
-	// 1. web_search
-	if shouldRegister("web_search") {
+	// 1. web_search_exa
+	if shouldRegister("web_search_exa") {
 		r.Register(ToolSpec{
 			Type: "function",
 			Function: FunctionSpec{
-				Name:        "web_search",
-				Description: "Search the web for up-to-date information on any topic",
+				Name:        "web_search_exa",
+				Description: "Search the web for up-to-date information on any topic using Exa",
 				Parameters: map[string]any{
 					"type": "object",
 					"properties": map[string]any{
@@ -250,6 +251,38 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			}
 			params := search.SearchParams{Query: query, NumResults: 5}
 			res, err := search.PerformExaMCPSearch(params, false)
+			if err != nil {
+				return "", fmt.Errorf("search failed: %w", err)
+			}
+			return res, nil
+		})
+	}
+
+	// 2. web_search_firecrawl
+	if shouldRegister("web_search_firecrawl") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "web_search_firecrawl",
+				Description: "Search the web for up-to-date information on any topic using Firecrawl",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"query": map[string]any{
+							"type":        "string",
+							"description": "The search query",
+						},
+					},
+					"required": []string{"query"},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			query, _ := args["query"].(string)
+			if query == "" {
+				return "", fmt.Errorf("query parameter is required")
+			}
+			params := search.SearchParams{Query: query, NumResults: 5}
+			res, err := search.PerformFirecrawlMCPSearch(params, false)
 			if err != nil {
 				return "", fmt.Errorf("search failed: %w", err)
 			}
@@ -414,7 +447,7 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 				fetchURL = "https://" + fetchURL
 			}
 
-			httpClient, err := client.NewClient()
+			httpClient, err := client.NewClient(15)
 			if err != nil {
 				return "", fmt.Errorf("failed to create HTTP client: %w", err)
 			}

@@ -104,13 +104,16 @@ func TestWriteFileTool(t *testing.T) {
 
 func TestRegisterIndividualTools(t *testing.T) {
 	r := NewRegistry()
-	r.RegisterBuiltinTools("web_search", "read_file")
+	r.RegisterBuiltinTools("web_search_exa", "read_file")
 
-	if !r.Has("web_search") {
-		t.Error("expected registry to have web_search")
+	if !r.Has("web_search_exa") {
+		t.Error("expected registry to have web_search_exa")
 	}
 	if !r.Has("read_file") {
 		t.Error("expected registry to have read_file")
+	}
+	if r.Has("web_search_firecrawl") {
+		t.Error("expected registry to NOT have web_search_firecrawl")
 	}
 	if r.Has("execute_command") {
 		t.Error("expected registry to NOT have execute_command")
@@ -127,8 +130,8 @@ func TestRegisterIndividualTools(t *testing.T) {
 }
 
 func TestParseToolList(t *testing.T) {
-	tools, ok := ParseToolList("web_search, read_file")
-	if !ok || len(tools) != 2 || tools[0] != "web_search" || tools[1] != "read_file" {
+	tools, ok := ParseToolList("web_search_exa, read_file")
+	if !ok || len(tools) != 2 || tools[0] != "web_search_exa" || tools[1] != "read_file" {
 		t.Fatalf("unexpected ParseToolList result: %v, %v", tools, ok)
 	}
 
