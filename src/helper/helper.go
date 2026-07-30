@@ -661,9 +661,16 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 	}
 
 	if len(toolCallMap) > 0 {
+		keys := make([]int, 0, len(toolCallMap))
+		for k := range toolCallMap {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+
 		var toolCalls []structs.ToolCall
-		for i := 0; i < len(toolCallMap); i++ {
-			if acc, ok := toolCallMap[i]; ok && acc.name != "" {
+		for _, k := range keys {
+			acc := toolCallMap[k]
+			if acc != nil && acc.name != "" {
 				toolCalls = append(toolCalls, structs.ToolCall{
 					ID:   acc.id,
 					Type: "function",
@@ -678,17 +685,28 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 		if len(toolCalls) > 0 {
 			resp.Body.Close()
 
-			if input != "" {
-				params.PrevMessages = append(params.PrevMessages, structs.DefaultMessage{
-					Role:    "user",
-					Content: input,
-				})
+			if extraOptions.ToolDepth >= 5 {
+				fmt.Fprintln(os.Stderr, "\nReached maximum tool execution depth. Stopping tool calls.")
+				return fullText, nil
 			}
 
-			params.PrevMessages = append(params.PrevMessages, structs.AssistantToolCallMessage{
+			turnMessages := make([]any, 0)
+
+			if input != "" {
+				userMsg := structs.DefaultMessage{
+					Role:    "user",
+					Content: input,
+				}
+				params.PrevMessages = append(params.PrevMessages, userMsg)
+				turnMessages = append(turnMessages, userMsg)
+			}
+
+			assistantMsg := structs.AssistantToolCallMessage{
 				Role:      "assistant",
 				ToolCalls: toolCalls,
-			})
+			}
+			params.PrevMessages = append(params.PrevMessages, assistantMsg)
+			turnMessages = append(turnMessages, assistantMsg)
 
 			statusOn := statusEnabled(extraOptions)
 
@@ -697,8 +715,19 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 					boldBlue.Printf("\n[Tool Call] %s(%s)\n", tc.Function.Name, tc.Function.Arguments)
 				}
 
-				showStatus(statusOn, "Running "+tc.Function.Name)
-				toolOutput, err := tools.DefaultRegistry.Execute(context.Background(), tc.Function.Name, tc.Function.Arguments)
+				if tc.Function.Name == "execute_command" && !extraOptions.AutoExec {
+					hideStatus()
+				} else {
+					showStatus(statusOn, "Running "+tc.Function.Name)
+				}
+
+				execCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+				if extraOptions.AutoExec {
+					execCtx = context.WithValue(execCtx, tools.AutoExecKey, true)
+				}
+
+				toolOutput, err := tools.DefaultRegistry.Execute(execCtx, tc.Function.Name, tc.Function.Arguments)
+				cancel()
 				hideStatus()
 
 				if err != nil {
@@ -717,28 +746,34 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 					bold.Printf("[Tool Output] %s\n", toolOutput)
 				}
 
-				params.PrevMessages = append(params.PrevMessages, structs.ToolMessage{
+				toolMsg := structs.ToolMessage{
 					Role:       "tool",
 					ToolCallID: tc.ID,
 					Name:       tc.Function.Name,
 					Content:    toolOutput,
-				})
+				}
+				params.PrevMessages = append(params.PrevMessages, toolMsg)
+				turnMessages = append(turnMessages, toolMsg)
 			}
 
 			followUpOptions := extraOptions
 			followUpOptions.IsToolFollowUp = true
+			followUpOptions.ToolDepth++
 
-			followUpText, followUpMessages, _ := MakeRequestAndGetData("", params, followUpOptions)
+			followUpText, followUpTurnMessages, _ := MakeRequestAndGetData("", params, followUpOptions)
 
-			if len(followUpMessages) > 0 {
-				return fullText + followUpText, followUpMessages
+			if len(followUpTurnMessages) > 0 {
+				turnMessages = append(turnMessages, followUpTurnMessages...)
+				return fullText + followUpText, turnMessages
 			}
 
-			finalMessages := append(params.PrevMessages, structs.DefaultMessage{
+			finalAssistantMsg := structs.DefaultMessage{
 				Role:    "assistant",
 				Content: followUpText,
-			})
-			return fullText + followUpText, finalMessages
+			}
+			turnMessages = append(turnMessages, finalAssistantMsg)
+
+			return fullText + followUpText, turnMessages
 		}
 	}
 
@@ -874,7 +909,21 @@ func AddToShellHistory(command string) {
 	_, _ = file.WriteString(prefix + command + "\n")
 }
 
+func GetToolsSystemPrompt() string {
+	SetShellAndOSVars()
+	today := time.Now().Format("2006-01-02")
+	return fmt.Sprintf(
+		"You are tgpt, a terminal assistant. Today is %s. "+
+			"The shell environment you are in is %s. The operating system you are on is %s.",
+		today, ShellName, OperatingSystem,
+	)
+}
+
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, []interface{}, error) {
+	if len(params.Tools) > 0 && params.SystemPrompt == "" {
+		params.SystemPrompt = GetToolsSystemPrompt()
+	}
+
 	providersToTry := providersForRotation(params)
 
 	isInteractive := extraOptions.IsInteractive || extraOptions.IsInteractiveShell || extraOptions.IsInteractiveFind

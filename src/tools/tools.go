@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/search"
 	http "github.com/bogdanfinn/fhttp"
+	"github.com/fatih/color"
 )
 
 type FunctionSpec struct {
@@ -49,11 +51,24 @@ func NewRegistry() *Registry {
 	return r
 }
 
+type contextKey string
+
+const AutoExecKey contextKey = "auto_exec"
+
+var bold = color.New(color.Bold)
+
 func (r *Registry) Register(spec ToolSpec, handler ToolHandler) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.tools[spec.Function.Name] = spec
 	r.handlers[spec.Function.Name] = handler
+}
+
+func (r *Registry) Has(name string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	_, exists := r.handlers[name]
+	return exists
 }
 
 func (r *Registry) GetOpenAITools() []any {
@@ -189,8 +204,9 @@ func (r *Registry) registerBuiltinTools() {
 			return "", fmt.Errorf("failed to read file: %w", err)
 		}
 		str := string(content)
-		if len(str) > 10000 {
-			str = str[:10000] + "\n... [content truncated]"
+		runes := []rune(str)
+		if len(runes) > 10000 {
+			str = string(runes[:10000]) + "\n... [content truncated]"
 		}
 		return str, nil
 	})
@@ -217,6 +233,18 @@ func (r *Registry) registerBuiltinTools() {
 		if cmdStr == "" {
 			return "", fmt.Errorf("command parameter is required")
 		}
+
+		autoExec, _ := ctx.Value(AutoExecKey).(bool)
+		if !autoExec {
+			bold.Printf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)
+			reader := bufio.NewReader(os.Stdin)
+			userIn, _ := reader.ReadString('\n')
+			userIn = strings.TrimSpace(strings.ToLower(userIn))
+			if userIn != "y" && userIn != "yes" && userIn != "" {
+				return "Command execution cancelled by user.", nil
+			}
+		}
+
 		var cmd *exec.Cmd
 		if runtime.GOOS == "windows" {
 			cmd = exec.CommandContext(ctx, "cmd.exe", "/C", cmdStr)
@@ -305,8 +333,9 @@ func (r *Registry) registerBuiltinTools() {
 		}
 
 		maxLen := 12000
-		if len(markdown) > maxLen {
-			markdown = markdown[:maxLen] + "\n\n... [content truncated]"
+		rMarkdown := []rune(markdown)
+		if len(rMarkdown) > maxLen {
+			markdown = string(rMarkdown[:maxLen]) + "\n\n... [content truncated]"
 		}
 
 		return markdown, nil

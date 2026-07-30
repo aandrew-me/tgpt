@@ -50,16 +50,19 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 	}
 
+	messages := make([]any, 0, len(params.PrevMessages)+2)
+	if params.SystemPrompt != "" {
+		messages = append(messages, structs.DefaultMessage{
+			Content: params.SystemPrompt,
+			Role:    "system",
+		})
+	}
+
 	requestInfo := RequestBody{
-		Model:  model,
-		Stream: true,
-		Messages: []any{
-			structs.DefaultMessage{
-				Content: params.SystemPrompt,
-				Role:    "system",
-			},
-		},
-		Tools: params.Tools,
+		Model:    model,
+		Stream:   true,
+		Messages: messages,
+		Tools:    params.Tools,
 	}
 
 	if len(params.PrevMessages) > 0 {

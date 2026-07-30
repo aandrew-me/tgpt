@@ -56,12 +56,13 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	// 	requestInfo.Top_p = params.Top_p
 	// }
 
-	systemMessage := structs.DefaultMessage{
-		Role:    "system",
-		Content: params.SystemPrompt,
+	messages := make([]any, 0, len(params.PrevMessages)+2)
+	if params.SystemPrompt != "" {
+		messages = append(messages, structs.DefaultMessage{
+			Role:    "system",
+			Content: params.SystemPrompt,
+		})
 	}
-
-	messages := []any{systemMessage}
 
 	if len(params.PrevMessages) > 0 {
 		messages = append(messages, params.PrevMessages...)

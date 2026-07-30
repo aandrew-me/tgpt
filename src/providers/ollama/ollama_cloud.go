@@ -37,19 +37,22 @@ func NewCloudRequest(input string, params structs.Params) (*http.Response, error
 		apiKey = os.Getenv("AI_API_KEY")
 	}
 
+	messages := make([]any, 0, len(params.PrevMessages)+2)
+	if params.SystemPrompt != "" {
+		messages = append(messages, structs.DefaultMessage{
+			Content: params.SystemPrompt,
+			Role:    "system",
+		})
+	}
+
 	requestInfo := struct {
 		Model    string `json:"model"`
 		Stream   bool   `json:"stream"`
 		Messages []any  `json:"messages"`
 	}{
-		Model:  model,
-		Stream: true,
-		Messages: []any{
-			structs.DefaultMessage{
-				Content: params.SystemPrompt,
-				Role:    "system",
-			},
-		},
+		Model:    model,
+		Stream:   true,
+		Messages: messages,
 	}
 
 	if len(params.PrevMessages) > 0 {

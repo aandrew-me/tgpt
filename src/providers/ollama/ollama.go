@@ -42,16 +42,19 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		url = "http://localhost:11434/v1/chat/completions"
 	}
 
+	messages := make([]any, 0, len(params.PrevMessages)+2)
+	if params.SystemPrompt != "" {
+		messages = append(messages, structs.DefaultMessage{
+			Content: params.SystemPrompt,
+			Role:    "system",
+		})
+	}
+
 	requestInfo := RequestBody{
-		Model:  model,
-		Stream: true,
-		Messages: []any{
-			structs.DefaultMessage{
-				Content: params.SystemPrompt,
-				Role:    "system",
-			},
-		},
-		Tools: params.Tools,
+		Model:    model,
+		Stream:   true,
+		Messages: messages,
+		Tools:    params.Tools,
 	}
 
 	if len(params.PrevMessages) > 0 {
@@ -88,8 +91,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
-	if len(line) > 1 {
-		obj = strings.Split(line, "data: ")[1]
+	if after, ok := strings.CutPrefix(line, "data: "); ok {
+		obj = after
 	}
 
 	var d structs.CommonResponse

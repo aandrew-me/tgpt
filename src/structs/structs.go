@@ -30,6 +30,7 @@ type ExtraOptions struct {
 	Verbose            bool   // Verbose enable detailed search output
 	SearchProvider     string // Search provider: "exa" (default) or "google"
 	IsToolFollowUp     bool   // IsToolFollowUp marks a request made to continue after tool execution
+	ToolDepth          int    // ToolDepth tracks recursion depth of tool execution loops
 }
 
 type ToolCallFunction struct {

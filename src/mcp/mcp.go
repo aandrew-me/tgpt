@@ -121,18 +121,29 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 		toolName := tool.Name
 
 		var paramsMap map[string]any
-		if tool.InputSchema.Properties != nil || tool.InputSchema.Type != "" {
-			schemaBytes, _ := json.Marshal(tool.InputSchema)
-			_ = json.Unmarshal(schemaBytes, &paramsMap)
-		}
+		schemaBytes, _ := json.Marshal(tool.InputSchema)
+		_ = json.Unmarshal(schemaBytes, &paramsMap)
+
 		if paramsMap == nil {
-			paramsMap = map[string]any{"type": "object", "properties": map[string]any{}}
+			paramsMap = make(map[string]any)
+		}
+		if _, ok := paramsMap["type"]; !ok {
+			paramsMap["type"] = "object"
+		}
+		if _, ok := paramsMap["properties"]; !ok {
+			paramsMap["properties"] = map[string]any{}
+		}
+
+		registeredName := toolName
+		if m.registry.Has(toolName) {
+			registeredName = fmt.Sprintf("%s_%s", name, toolName)
+			fmt.Fprintf(os.Stderr, "Warning: MCP tool %q from server %q conflicts with an existing tool; registering as %q\n", toolName, name, registeredName)
 		}
 
 		spec := tools.ToolSpec{
 			Type: "function",
 			Function: tools.FunctionSpec{
-				Name:        toolName,
+				Name:        registeredName,
 				Description: tool.Description,
 				Parameters:  paramsMap,
 			},
@@ -140,11 +151,11 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 
 		// Closure copy
 		clientObj := c
-		targetName := toolName
+		mcpToolName := toolName
 
 		m.registry.Register(spec, func(execCtx context.Context, args map[string]any) (string, error) {
 			callReq := mcp.CallToolRequest{}
-			callReq.Params.Name = targetName
+			callReq.Params.Name = mcpToolName
 			callReq.Params.Arguments = args
 
 			callCtx, cancel := context.WithTimeout(execCtx, 60*time.Second)
@@ -157,9 +168,12 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 
 			var out string
 			for _, item := range callRes.Content {
-				if textContent, ok := item.(mcp.TextContent); ok {
-					out += textContent.Text
-				} else {
+				switch v := item.(type) {
+				case mcp.TextContent:
+					out += v.Text
+				case *mcp.TextContent:
+					out += v.Text
+				default:
 					b, _ := json.Marshal(item)
 					out += string(b)
 				}

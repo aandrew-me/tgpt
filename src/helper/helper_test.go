@@ -130,3 +130,16 @@ func TestInteractiveStatusErrorDoesNotAppendAssistantMessage(t *testing.T) {
 		t.Fatalf("expected no conversation history entries on interactive 4xx, got %#v", messages)
 	}
 }
+
+func TestGetToolsSystemPrompt(t *testing.T) {
+	prompt := GetToolsSystemPrompt()
+	if !strings.Contains(prompt, "You are tgpt, a terminal assistant. Today is") {
+		t.Fatalf("expected prompt to contain assistant identity and date, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "The shell environment you are in is") {
+		t.Fatalf("expected prompt to contain shell info, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "The operating system you are on is") {
+		t.Fatalf("expected prompt to contain OS info, got %q", prompt)
+	}
+}

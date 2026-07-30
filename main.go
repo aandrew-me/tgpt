@@ -392,17 +392,15 @@ func main() {
 	mcpMgr := mcp.NewManager(tools.DefaultRegistry)
 	defer mcpMgr.Close()
 
-	if *mcpConfig != "" || *mcpServer != "" {
+	if *enableTools || *mcpConfig != "" || *mcpServer != "" {
 		ctx := context.Background()
-		if *mcpConfig != "" {
-			cfg, err := mcp.LoadConfig(*mcpConfig)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to load MCP config: %v\n", err)
-			} else if cfg != nil {
-				for name, sc := range cfg.MCPServers {
-					if err := mcpMgr.InitServer(ctx, name, sc); err != nil {
-						fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", name, err)
-					}
+		cfg, err := mcp.LoadConfig(*mcpConfig)
+		if err != nil && *mcpConfig != "" {
+			fmt.Fprintf(os.Stderr, "Warning: failed to load MCP config: %v\n", err)
+		} else if cfg != nil {
+			for name, sc := range cfg.MCPServers {
+				if err := mcpMgr.InitServer(ctx, name, sc); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", name, err)
 				}
 			}
 		}
@@ -415,9 +413,6 @@ func main() {
 				}
 			}
 		}
-	}
-
-	if *enableTools || *mcpConfig != "" || *mcpServer != "" {
 		activeTools = tools.DefaultRegistry.GetOpenAITools()
 	}
 
