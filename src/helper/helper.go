@@ -687,7 +687,19 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 
 			if extraOptions.ToolDepth >= 5 {
 				fmt.Fprintln(os.Stderr, "\nReached maximum tool execution depth. Stopping tool calls.")
-				return fullText, nil
+				noToolsParams := params
+				noToolsParams.Tools = nil
+				followUpOptions := extraOptions
+				followUpOptions.IsToolFollowUp = true
+				followUpText, followUpTurnMessages, _ := MakeRequestAndGetData("", noToolsParams, followUpOptions)
+				if len(followUpTurnMessages) > 0 {
+					return fullText + followUpText, followUpTurnMessages
+				}
+				finalAssistantMsg := structs.DefaultMessage{
+					Role:    "assistant",
+					Content: followUpText,
+				}
+				return fullText + followUpText, []any{finalAssistantMsg}
 			}
 
 			turnMessages := make([]any, 0)
@@ -937,6 +949,10 @@ func GetToolsSystemPrompt() string {
 }
 
 func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, []interface{}, error) {
+	if extraOptions.ToolDepth >= 5 {
+		params.Tools = nil
+	}
+
 	if len(params.Tools) > 0 && params.SystemPrompt == "" {
 		params.SystemPrompt = GetToolsSystemPrompt()
 	}

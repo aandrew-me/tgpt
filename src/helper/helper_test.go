@@ -143,3 +143,46 @@ func TestGetToolsSystemPrompt(t *testing.T) {
 		t.Fatalf("expected prompt to contain OS info, got %q", prompt)
 	}
 }
+
+func TestToolDepthLimitClearsToolsAndReturnsResponse(t *testing.T) {
+	var receivedToolsField string
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		buf := make([]byte, r.ContentLength)
+		_, _ = r.Body.Read(buf)
+		bodyStr := string(buf)
+
+		if strings.Contains(bodyStr, `"tools":`) {
+			receivedToolsField = "present"
+		} else {
+			receivedToolsField = "absent"
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"Final summary response\"}}]}\n\n"))
+	}))
+	defer server.Close()
+
+	params := structs.Params{
+		Provider: "openai",
+		Url:      server.URL,
+		Tools:    []any{"dummy_tool"},
+	}
+	extraOptions := structs.ExtraOptions{
+		IsNormal:  true,
+		ToolDepth: 5,
+	}
+
+	res, _, err := MakeRequestAndGetData("hello", params, extraOptions)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedToolsField != "absent" {
+		t.Errorf("expected tools field to be absent in request payload when ToolDepth >= 5, got %s", receivedToolsField)
+	}
+
+	if res != "Final summary response" {
+		t.Errorf("expected response 'Final summary response', got %q", res)
+	}
+}
+
