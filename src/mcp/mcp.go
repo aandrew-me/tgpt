@@ -15,10 +15,11 @@ import (
 )
 
 type ServerConfig struct {
-	Command string            `json:"command,omitempty"`
-	Args    []string          `json:"args,omitempty"`
-	Env     []string          `json:"env,omitempty"`
-	URL     string            `json:"url,omitempty"`
+	Command string   `json:"command,omitempty"`
+	Args    []string `json:"args,omitempty"`
+	Env     []string `json:"env,omitempty"`
+	URL     string   `json:"url,omitempty"`
+	Type    string   `json:"type,omitempty"`
 }
 
 type Config struct {
@@ -78,18 +79,52 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	var c mcpclient.MCPClient
+	var client *mcpclient.Client
 	var err error
 
 	if sc.URL != "" {
-		c, err = mcpclient.NewSSEMCPClient(sc.URL)
+		switch sc.Type {
+		case "sse":
+			client, err = mcpclient.NewSSEMCPClient(sc.URL)
+			if err == nil {
+				err = client.Start(ctx)
+			}
+		case "http", "streamable-http":
+			client, err = mcpclient.NewStreamableHttpClient(sc.URL)
+			if err == nil {
+				err = client.Start(ctx)
+			}
+		default:
+			// Try Streamable HTTP first (modern MCP spec used by servers like Exa)
+			client, err = mcpclient.NewStreamableHttpClient(sc.URL)
+			if err == nil {
+				err = client.Start(ctx)
+			}
+			if err != nil {
+				if client != nil {
+					client.Close()
+				}
+				// Fall back to SSE transport if Streamable HTTP fails
+				client, err = mcpclient.NewSSEMCPClient(sc.URL)
+				if err == nil {
+					err = client.Start(ctx)
+				}
+			}
+		}
 		if err != nil {
-			return fmt.Errorf("failed to create SSE MCP client for %s: %w", name, err)
+			if client != nil {
+				client.Close()
+			}
+			return fmt.Errorf("failed to start MCP client for %s: %w", name, err)
 		}
 	} else if sc.Command != "" {
-		c, err = mcpclient.NewStdioMCPClient(sc.Command, sc.Env, sc.Args...)
+		client, err = mcpclient.NewStdioMCPClient(sc.Command, sc.Env, sc.Args...)
 		if err != nil {
 			return fmt.Errorf("failed to create stdio MCP client for %s: %w", name, err)
+		}
+		if err := client.Start(ctx); err != nil {
+			client.Close()
+			return fmt.Errorf("failed to start MCP client for %s: %w", name, err)
 		}
 	} else {
 		return fmt.Errorf("invalid server config for %s: missing command or url", name)
@@ -102,17 +137,17 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 		Version: "1.0.0",
 	}
 
-	_, err = c.Initialize(ctx, initReq)
+	_, err = client.Initialize(ctx, initReq)
 	if err != nil {
-		c.Close()
+		client.Close()
 		return fmt.Errorf("failed to initialize MCP client for %s: %w", name, err)
 	}
 
-	m.clients[name] = c
+	m.clients[name] = client
 
 	// List tools and register them
 	listToolsReq := mcp.ListToolsRequest{}
-	res, err := c.ListTools(ctx, listToolsReq)
+	res, err := client.ListTools(ctx, listToolsReq)
 	if err != nil {
 		return fmt.Errorf("failed to list tools for %s: %w", name, err)
 	}
@@ -150,7 +185,7 @@ func (m *Manager) InitServer(ctx context.Context, name string, sc ServerConfig) 
 		}
 
 		// Closure copy
-		clientObj := c
+		clientObj := client
 		mcpToolName := toolName
 
 		m.registry.Register(spec, func(execCtx context.Context, args map[string]any) (string, error) {

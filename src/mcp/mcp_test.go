@@ -55,3 +55,11 @@ func TestNewManagerDefaults(t *testing.T) {
 		t.Fatal("expected default registry to be used when nil passed")
 	}
 }
+
+func TestInitServerInvalid(t *testing.T) {
+	mgr := NewManager(tools.NewRegistry())
+	err := mgr.InitServer(t.Context(), "invalid", ServerConfig{})
+	if err == nil {
+		t.Fatal("expected error for empty server config")
+	}
+}
