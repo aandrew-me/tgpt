@@ -67,3 +67,32 @@ func TestExecuteCommandAutoExec(t *testing.T) {
 		t.Fatalf("expected output to contain 'hello', got %q", res)
 	}
 }
+
+func TestWriteFileTool(t *testing.T) {
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "sub", "test_write.txt")
+	expectedContent := "Hello from write_file tool!"
+
+	r := NewRegistry()
+	if !r.Has("write_file") {
+		t.Fatal("expected registry to have write_file tool")
+	}
+
+	escapedPath := strings.ReplaceAll(filePath, `\`, `\\`)
+	argsJSON := `{"path": "` + escapedPath + `", "content": "` + expectedContent + `"}`
+	res, err := r.Execute(context.Background(), "write_file", argsJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing write_file: %v", err)
+	}
+	if !strings.Contains(res, "Successfully wrote") {
+		t.Fatalf("expected success message, got %q", res)
+	}
+
+	readBack, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("failed to read back written file: %v", err)
+	}
+	if string(readBack) != expectedContent {
+		t.Fatalf("expected %q, got %q", expectedContent, string(readBack))
+	}
+}

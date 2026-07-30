@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -339,5 +340,50 @@ func (r *Registry) registerBuiltinTools() {
 		}
 
 		return markdown, nil
+	})
+
+	// 6. write_file
+	r.Register(ToolSpec{
+		Type: "function",
+		Function: FunctionSpec{
+			Name:        "write_file",
+			Description: "Write content to a file",
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"path": map[string]any{
+						"type":        "string",
+						"description": "Path to the file to write",
+					},
+					"content": map[string]any{
+						"type":        "string",
+						"description": "Content to write to the file",
+					},
+				},
+				"required": []string{"path", "content"},
+			},
+		},
+	}, func(ctx context.Context, args map[string]any) (string, error) {
+		filePath, _ := args["path"].(string)
+		if filePath == "" {
+			return "", fmt.Errorf("path parameter is required")
+		}
+		content, ok := args["content"].(string)
+		if !ok {
+			return "", fmt.Errorf("content parameter is required")
+		}
+
+		dir := filepath.Dir(filePath)
+		if dir != "" && dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return "", fmt.Errorf("failed to create parent directories: %w", err)
+			}
+		}
+
+		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+			return "", fmt.Errorf("failed to write file: %w", err)
+		}
+
+		return fmt.Sprintf("Successfully wrote to %s", filePath), nil
 	})
 }
