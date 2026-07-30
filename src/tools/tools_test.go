@@ -101,3 +101,44 @@ func TestWriteFileTool(t *testing.T) {
 		t.Fatalf("expected %q, got %q", expectedContent, string(readBack))
 	}
 }
+
+func TestRegisterIndividualTools(t *testing.T) {
+	r := NewRegistry()
+	r.RegisterBuiltinTools("web_search", "read_file")
+
+	if !r.Has("web_search") {
+		t.Error("expected registry to have web_search")
+	}
+	if !r.Has("read_file") {
+		t.Error("expected registry to have read_file")
+	}
+	if r.Has("execute_command") {
+		t.Error("expected registry to NOT have execute_command")
+	}
+	if r.Has("read_directory") {
+		t.Error("expected registry to NOT have read_directory")
+	}
+	if r.Has("web_fetch") {
+		t.Error("expected registry to NOT have web_fetch")
+	}
+	if r.Has("write_file") {
+		t.Error("expected registry to NOT have write_file")
+	}
+}
+
+func TestParseToolList(t *testing.T) {
+	tools, ok := ParseToolList("web_search, read_file")
+	if !ok || len(tools) != 2 || tools[0] != "web_search" || tools[1] != "read_file" {
+		t.Fatalf("unexpected ParseToolList result: %v, %v", tools, ok)
+	}
+
+	_, ok = ParseToolList("invalid_tool")
+	if ok {
+		t.Fatal("expected ParseToolList to return false for invalid_tool")
+	}
+
+	tools, ok = ParseToolList("all")
+	if !ok || len(tools) != 1 || tools[0] != "all" {
+		t.Fatalf("unexpected ParseToolList result for 'all': %v, %v", tools, ok)
+	}
+}

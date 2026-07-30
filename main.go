@@ -35,6 +35,44 @@ var blue = color.New(color.FgBlue)
 
 var programLoop = true
 
+type toolsFlagValue struct {
+	enabled   bool
+	toolNames []string
+}
+
+func (f *toolsFlagValue) String() string {
+	if !f.enabled {
+		return "false"
+	}
+	if len(f.toolNames) == 0 {
+		return "true"
+	}
+	return strings.Join(f.toolNames, ",")
+}
+
+func (f *toolsFlagValue) Set(s string) error {
+	f.enabled = true
+	if s == "true" || s == "1" || s == "" {
+		return nil
+	}
+	if s == "false" || s == "0" {
+		f.enabled = false
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			f.toolNames = append(f.toolNames, p)
+		}
+	}
+	return nil
+}
+
+func (f *toolsFlagValue) IsBoolFlag() bool {
+	return true
+}
+
 func restoreTerminal() {
 	if runtime.GOOS != "windows" {
 		rawModeOff := exec.Command("stty", "-raw", "echo")
@@ -352,13 +390,22 @@ func main() {
 	mcpConfig := flag.String("mcp-config", os.Getenv("MCP_CONFIG"), "Path to MCP server configuration JSON file")
 	mcpServer := flag.String("mcp-server", "", "Command to run a stdio MCP server directly")
 	mcpAdd := flag.Bool("mcp-add", false, "Interactively add a new MCP server to mcp_config.json")
-	enableTools := flag.Bool("t", false, "Enable tools / MCP support")
-	flag.BoolVar(enableTools, "tools", false, "Enable tools / MCP support")
+	var toolsFlag toolsFlagValue
+	flag.Var(&toolsFlag, "t", "Enable tools / MCP support")
+	flag.Var(&toolsFlag, "tools", "Enable tools / MCP support")
 
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
 	flag.Parse()
+
+	promptArgIndex := 0
+	if toolsFlag.enabled && len(toolsFlag.toolNames) == 0 && flag.NArg() > 0 {
+		if parsedTools, ok := tools.ParseToolList(flag.Arg(0)); ok {
+			toolsFlag.toolNames = parsedTools
+			promptArgIndex = 1
+		}
+	}
 
 	if *mcpAdd {
 		if err := mcp.AddServerInteractive(context.Background(), *mcpConfig); err != nil {
@@ -408,8 +455,8 @@ func main() {
 	mcpMgr := mcp.NewManager(tools.DefaultRegistry)
 	defer mcpMgr.Close()
 
-	if *enableTools {
-		tools.DefaultRegistry.RegisterBuiltinTools()
+	if toolsFlag.enabled {
+		tools.DefaultRegistry.RegisterBuiltinTools(toolsFlag.toolNames...)
 	}
 
 	if mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
@@ -435,7 +482,7 @@ func main() {
 		}
 	}
 
-	if *enableTools || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
+	if toolsFlag.enabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
 		activeTools = tools.DefaultRegistry.GetOpenAITools()
 	}
 
@@ -463,7 +510,7 @@ func main() {
 		Params:            mainParams,
 	}
 
-	prompt := flag.Arg(0)
+	prompt := flag.Arg(promptArgIndex)
 
 	pipedInput := ""
 	cleanPipedInput := ""

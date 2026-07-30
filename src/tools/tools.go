@@ -50,8 +50,50 @@ func NewRegistry() *Registry {
 	}
 }
 
-func (r *Registry) RegisterBuiltinTools() {
-	r.registerBuiltinTools()
+var AllBuiltinTools = []string{
+	"web_search",
+	"read_directory",
+	"read_file",
+	"execute_command",
+	"web_fetch",
+	"write_file",
+}
+
+func IsBuiltinTool(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	for _, t := range AllBuiltinTools {
+		if t == name {
+			return true
+		}
+	}
+	return false
+}
+
+func ParseToolList(input string) ([]string, bool) {
+	if input == "" {
+		return nil, false
+	}
+	parts := strings.Split(input, ",")
+	var toolsList []string
+	for _, p := range parts {
+		trimmed := strings.ToLower(strings.TrimSpace(p))
+		if trimmed == "" {
+			continue
+		}
+		if trimmed == "all" || IsBuiltinTool(trimmed) {
+			toolsList = append(toolsList, trimmed)
+		} else {
+			return nil, false
+		}
+	}
+	if len(toolsList) == 0 {
+		return nil, false
+	}
+	return toolsList, true
+}
+
+func (r *Registry) RegisterBuiltinTools(selectedTools ...string) {
+	r.registerBuiltinTools(selectedTools...)
 }
 
 type contextKey string
@@ -169,294 +211,319 @@ func (r *Registry) Execute(ctx context.Context, name string, argsJSON string) (s
 	return handler(ctx, args)
 }
 
-func (r *Registry) registerBuiltinTools() {
+func (r *Registry) registerBuiltinTools(selectedTools ...string) {
+	shouldRegister := func(name string) bool {
+		if len(selectedTools) == 0 {
+			return true
+		}
+		for _, t := range selectedTools {
+			trimmed := strings.ToLower(strings.TrimSpace(t))
+			if trimmed == "all" || trimmed == name {
+				return true
+			}
+		}
+		return false
+	}
+
 	// 1. web_search
-	r.Register(ToolSpec{
-		Type: "function",
-		Function: FunctionSpec{
-			Name:        "web_search",
-			Description: "Search the web for up-to-date information on any topic",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"query": map[string]any{
-						"type":        "string",
-						"description": "The search query",
+	if shouldRegister("web_search") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "web_search",
+				Description: "Search the web for up-to-date information on any topic",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"query": map[string]any{
+							"type":        "string",
+							"description": "The search query",
+						},
 					},
+					"required": []string{"query"},
 				},
-				"required": []string{"query"},
 			},
-		},
-	}, func(ctx context.Context, args map[string]any) (string, error) {
-		query, _ := args["query"].(string)
-		if query == "" {
-			return "", fmt.Errorf("query parameter is required")
-		}
-		params := search.SearchParams{Query: query, NumResults: 5}
-		res, err := search.PerformExaMCPSearch(params, false)
-		if err != nil {
-			return "", fmt.Errorf("search failed: %w", err)
-		}
-		return res, nil
-	})
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			query, _ := args["query"].(string)
+			if query == "" {
+				return "", fmt.Errorf("query parameter is required")
+			}
+			params := search.SearchParams{Query: query, NumResults: 5}
+			res, err := search.PerformExaMCPSearch(params, false)
+			if err != nil {
+				return "", fmt.Errorf("search failed: %w", err)
+			}
+			return res, nil
+		})
+	}
 
 	// 2. read_directory
-	r.Register(ToolSpec{
-		Type: "function",
-		Function: FunctionSpec{
-			Name:        "read_directory",
-			Description: "List the contents of a directory",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"path": map[string]any{
-						"type":        "string",
-						"description": "Directory path (defaults to current directory if empty)",
+	if shouldRegister("read_directory") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "read_directory",
+				Description: "List the contents of a directory",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{
+							"type":        "string",
+							"description": "Directory path (defaults to current directory if empty)",
+						},
 					},
 				},
 			},
-		},
-	}, func(ctx context.Context, args map[string]any) (string, error) {
-		dirPath, _ := args["path"].(string)
-		if dirPath == "" {
-			dirPath = "."
-		}
-		entries, err := os.ReadDir(dirPath)
-		if err != nil {
-			return "", fmt.Errorf("failed to read directory: %w", err)
-		}
-		var out string
-		for _, entry := range entries {
-			kind := "file"
-			if entry.IsDir() {
-				kind = "dir"
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			dirPath, _ := args["path"].(string)
+			if dirPath == "" {
+				dirPath = "."
 			}
-			info, _ := entry.Info()
-			size := int64(0)
-			if info != nil {
-				size = info.Size()
+			entries, err := os.ReadDir(dirPath)
+			if err != nil {
+				return "", fmt.Errorf("failed to read directory: %w", err)
 			}
-			out += fmt.Sprintf("[%s] %s (%d bytes)\n", kind, entry.Name(), size)
-		}
-		if out == "" {
-			return "Directory is empty.", nil
-		}
-		return out, nil
-	})
+			var out string
+			for _, entry := range entries {
+				kind := "file"
+				if entry.IsDir() {
+					kind = "dir"
+				}
+				info, _ := entry.Info()
+				size := int64(0)
+				if info != nil {
+					size = info.Size()
+				}
+				out += fmt.Sprintf("[%s] %s (%d bytes)\n", kind, entry.Name(), size)
+			}
+			if out == "" {
+				return "Directory is empty.", nil
+			}
+			return out, nil
+		})
+	}
 
 	// 3. read_file
-	r.Register(ToolSpec{
-		Type: "function",
-		Function: FunctionSpec{
-			Name:        "read_file",
-			Description: "Read content from a text file",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"path": map[string]any{
-						"type":        "string",
-						"description": "Path to the file to read",
+	if shouldRegister("read_file") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "read_file",
+				Description: "Read content from a text file",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{
+							"type":        "string",
+							"description": "Path to the file to read",
+						},
 					},
+					"required": []string{"path"},
 				},
-				"required": []string{"path"},
 			},
-		},
-	}, func(ctx context.Context, args map[string]any) (string, error) {
-		filePath, _ := args["path"].(string)
-		if filePath == "" {
-			return "", fmt.Errorf("path parameter is required")
-		}
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return "", fmt.Errorf("failed to read file: %w", err)
-		}
-		str := string(content)
-		runes := []rune(str)
-		if len(runes) > 10000 {
-			str = string(runes[:10000]) + "\n... [content truncated]"
-		}
-		return str, nil
-	})
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			filePath, _ := args["path"].(string)
+			if filePath == "" {
+				return "", fmt.Errorf("path parameter is required")
+			}
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return "", fmt.Errorf("failed to read file: %w", err)
+			}
+			str := string(content)
+			runes := []rune(str)
+			if len(runes) > 10000 {
+				str = string(runes[:10000]) + "\n... [content truncated]"
+			}
+			return str, nil
+		})
+	}
 
 	// 4. execute_command
-	r.Register(ToolSpec{
-		Type: "function",
-		Function: FunctionSpec{
-			Name:        "execute_command",
-			Description: "Execute a shell command",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"command": map[string]any{
-						"type":        "string",
-						"description": "The shell command line to execute",
+	if shouldRegister("execute_command") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "execute_command",
+				Description: "Execute a shell command",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"command": map[string]any{
+							"type":        "string",
+							"description": "The shell command line to execute",
+						},
 					},
+					"required": []string{"command"},
 				},
-				"required": []string{"command"},
 			},
-		},
-	}, func(ctx context.Context, args map[string]any) (string, error) {
-		cmdStr, _ := args["command"].(string)
-		if cmdStr == "" {
-			return "", fmt.Errorf("command parameter is required")
-		}
-
-		autoExec, _ := ctx.Value(AutoExecKey).(bool)
-		confirmed, _ := ctx.Value(ConfirmedKey).(bool)
-		if !autoExec && !confirmed {
-			if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)) {
-				return "Command execution cancelled by user.", nil
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			cmdStr, _ := args["command"].(string)
+			if cmdStr == "" {
+				return "", fmt.Errorf("command parameter is required")
 			}
-		}
 
-		var cmd *exec.Cmd
-		if runtime.GOOS == "windows" {
-			cmd = exec.CommandContext(ctx, "cmd.exe", "/C", cmdStr)
-		} else {
-			cmd = exec.CommandContext(ctx, "sh", "-c", cmdStr)
-		}
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Sprintf("Command failed with error: %v\nOutput: %s", err, string(out)), nil
-		}
-		return string(out), nil
-	})
+			autoExec, _ := ctx.Value(AutoExecKey).(bool)
+			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
+			if !autoExec && !confirmed {
+				if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)) {
+					return "Command execution cancelled by user.", nil
+				}
+			}
+
+			var cmd *exec.Cmd
+			if runtime.GOOS == "windows" {
+				cmd = exec.CommandContext(ctx, "cmd.exe", "/C", cmdStr)
+			} else {
+				cmd = exec.CommandContext(ctx, "sh", "-c", cmdStr)
+			}
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				return fmt.Sprintf("Command failed with error: %v\nOutput: %s", err, string(out)), nil
+			}
+			return string(out), nil
+		})
+	}
 
 	// 5. web_fetch
 	// Fetches content of site, then converts the html to markdown
-	r.Register(ToolSpec{
-		Type: "function",
-		Function: FunctionSpec{
-			Name:        "web_fetch",
-			Description: "Fetch and clean webpage content into structured Markdown",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"url": map[string]any{
-						"type":        "string",
-						"description": "The URL to fetch content from",
+	if shouldRegister("web_fetch") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "web_fetch",
+				Description: "Fetch and clean webpage content into structured Markdown",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"url": map[string]any{
+							"type":        "string",
+							"description": "The URL to fetch content from",
+						},
 					},
+					"required": []string{"url"},
 				},
-				"required": []string{"url"},
 			},
-		},
-	}, func(ctx context.Context, args map[string]any) (string, error) {
-		fetchURL, _ := args["url"].(string)
-		if fetchURL == "" {
-			return "", fmt.Errorf("url parameter is required")
-		}
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			fetchURL, _ := args["url"].(string)
+			if fetchURL == "" {
+				return "", fmt.Errorf("url parameter is required")
+			}
 
-		if !strings.HasPrefix(fetchURL, "http://") && !strings.HasPrefix(fetchURL, "https://") {
-			fetchURL = "https://" + fetchURL
-		}
+			if !strings.HasPrefix(fetchURL, "http://") && !strings.HasPrefix(fetchURL, "https://") {
+				fetchURL = "https://" + fetchURL
+			}
 
-		httpClient, err := client.NewClient()
-		if err != nil {
-			return "", fmt.Errorf("failed to create HTTP client: %w", err)
-		}
+			httpClient, err := client.NewClient()
+			if err != nil {
+				return "", fmt.Errorf("failed to create HTTP client: %w", err)
+			}
 
-		req, err := http.NewRequestWithContext(ctx, "GET", fetchURL, nil)
-		if err != nil {
-			return "", fmt.Errorf("failed to create request: %w", err)
-		}
-		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+			req, err := http.NewRequestWithContext(ctx, "GET", fetchURL, nil)
+			if err != nil {
+				return "", fmt.Errorf("failed to create request: %w", err)
+			}
+			req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-		res, err := httpClient.Do(req)
-		if err != nil {
-			return "", fmt.Errorf("failed to fetch URL: %w", err)
-		}
-		defer res.Body.Close()
+			res, err := httpClient.Do(req)
+			if err != nil {
+				return "", fmt.Errorf("failed to fetch URL: %w", err)
+			}
+			defer res.Body.Close()
 
-		if res.StatusCode >= 400 {
-			return "", fmt.Errorf("HTTP error %d: %s", res.StatusCode, res.Status)
-		}
+			if res.StatusCode >= 400 {
+				return "", fmt.Errorf("HTTP error %d: %s", res.StatusCode, res.Status)
+			}
 
-		bodyBytes, err := io.ReadAll(res.Body)
-		if err != nil {
-			return "", fmt.Errorf("failed to read response body: %w", err)
-		}
+			bodyBytes, err := io.ReadAll(res.Body)
+			if err != nil {
+				return "", fmt.Errorf("failed to read response body: %w", err)
+			}
 
-		conv := converter.NewConverter(
-			converter.WithPlugins(
-				base.NewBasePlugin(),
-				commonmark.NewCommonmarkPlugin(),
-			),
-		)
+			conv := converter.NewConverter(
+				converter.WithPlugins(
+					base.NewBasePlugin(),
+					commonmark.NewCommonmarkPlugin(),
+				),
+			)
 
-		tagsToRemove := []string{"nav", "footer", "header", "aside", "iframe", "svg"}
-		for _, tag := range tagsToRemove {
-			conv.Register.TagType(tag, converter.TagTypeRemove, converter.PriorityStandard)
-		}
+			tagsToRemove := []string{"nav", "footer", "header", "aside", "iframe", "svg"}
+			for _, tag := range tagsToRemove {
+				conv.Register.TagType(tag, converter.TagTypeRemove, converter.PriorityStandard)
+			}
 
-		markdown, err := conv.ConvertString(
-			string(bodyBytes),
-			converter.WithDomain(fetchURL),
-		)
-		if err != nil {
-			return string(bodyBytes), nil
-		}
+			markdown, err := conv.ConvertString(
+				string(bodyBytes),
+				converter.WithDomain(fetchURL),
+			)
+			if err != nil {
+				return string(bodyBytes), nil
+			}
 
-		maxLen := 12000
-		rMarkdown := []rune(markdown)
-		if len(rMarkdown) > maxLen {
-			markdown = string(rMarkdown[:maxLen]) + "\n\n... [content truncated]"
-		}
+			maxLen := 12000
+			rMarkdown := []rune(markdown)
+			if len(rMarkdown) > maxLen {
+				markdown = string(rMarkdown[:maxLen]) + "\n\n... [content truncated]"
+			}
 
-		return markdown, nil
-	})
+			return markdown, nil
+		})
+	}
 
 	// 6. write_file
-	r.Register(ToolSpec{
-		Type: "function",
-		Function: FunctionSpec{
-			Name:        "write_file",
-			Description: "Write content to a file",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"path": map[string]any{
-						"type":        "string",
-						"description": "Path to the file to write",
+	if shouldRegister("write_file") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "write_file",
+				Description: "Write content to a file",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{
+							"type":        "string",
+							"description": "Path to the file to write",
+						},
+						"content": map[string]any{
+							"type":        "string",
+							"description": "Content to write to the file",
+						},
 					},
-					"content": map[string]any{
-						"type":        "string",
-						"description": "Content to write to the file",
-					},
+					"required": []string{"path", "content"},
 				},
-				"required": []string{"path", "content"},
 			},
-		},
-	}, func(ctx context.Context, args map[string]any) (string, error) {
-		filePath, _ := args["path"].(string)
-		if filePath == "" {
-			return "", fmt.Errorf("path parameter is required")
-		}
-		content, ok := args["content"].(string)
-		if !ok {
-			return "", fmt.Errorf("content parameter is required")
-		}
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			filePath, _ := args["path"].(string)
+			if filePath == "" {
+				return "", fmt.Errorf("path parameter is required")
+			}
+			content, ok := args["content"].(string)
+			if !ok {
+				return "", fmt.Errorf("content parameter is required")
+			}
 
-		autoExec, _ := ctx.Value(AutoExecKey).(bool)
-		confirmed, _ := ctx.Value(ConfirmedKey).(bool)
-		if !autoExec && !confirmed {
-			if _, err := os.Stat(filePath); err == nil {
-				if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it? [y/n]: ", filePath)) {
-					return "File overwrite cancelled by user.", nil
+			autoExec, _ := ctx.Value(AutoExecKey).(bool)
+			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
+			if !autoExec && !confirmed {
+				if _, err := os.Stat(filePath); err == nil {
+					if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it? [y/n]: ", filePath)) {
+						return "File overwrite cancelled by user.", nil
+					}
 				}
 			}
-		}
 
-		dir := filepath.Dir(filePath)
-		if dir != "" && dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				return "", fmt.Errorf("failed to create parent directories: %w", err)
+			dir := filepath.Dir(filePath)
+			if dir != "" && dir != "." {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return "", fmt.Errorf("failed to create parent directories: %w", err)
+				}
 			}
-		}
 
-		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-			return "", fmt.Errorf("failed to write file: %w", err)
-		}
+			if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+				return "", fmt.Errorf("failed to write file: %w", err)
+			}
 
-		return fmt.Sprintf("Successfully wrote to %s", filePath), nil
-	})
+			return fmt.Sprintf("Successfully wrote to %s", filePath), nil
+		})
+	}
 }
