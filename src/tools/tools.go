@@ -138,6 +138,16 @@ func (r *Registry) GetOpenAITools() []any {
 	return res
 }
 
+func (r *Registry) ListSpecs() []ToolSpec {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	res := make([]ToolSpec, 0, len(r.tools))
+	for _, t := range r.tools {
+		res = append(res, t)
+	}
+	return res
+}
+
 func (r *Registry) Execute(ctx context.Context, name string, argsJSON string) (string, error) {
 	r.mu.RLock()
 	handler, exists := r.handlers[name]

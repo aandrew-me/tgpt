@@ -94,3 +94,44 @@ func TestLoadConfigWithHeaders(t *testing.T) {
 		t.Fatalf("unexpected headers: %#v", sc.Headers)
 	}
 }
+
+func TestSaveConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "sub", "mcp_config.json")
+	cfg := &Config{
+		MCPServers: map[string]ServerConfig{
+			"test-srv": {
+				Command: "npx",
+				Args:    []string{"-y", "mcp-package"},
+				Env:     []string{"ENV1=VAL1"},
+			},
+		},
+	}
+
+	if err := SaveConfig(configPath, cfg); err != nil {
+		t.Fatalf("unexpected error saving config: %v", err)
+	}
+
+	loaded, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("failed to load saved config: %v", err)
+	}
+
+	sc, ok := loaded.MCPServers["test-srv"]
+	if !ok || sc.Command != "npx" || len(sc.Args) != 2 || len(sc.Env) != 1 {
+		t.Fatalf("unexpected loaded config: %#v", loaded)
+	}
+}
+
+func TestParseArgs(t *testing.T) {
+	parsed := parseArgs(`-y "@modelcontextprotocol/server-filesystem" "/path with space"`)
+	expected := []string{"-y", "@modelcontextprotocol/server-filesystem", "/path with space"}
+	if len(parsed) != len(expected) {
+		t.Fatalf("expected %d args, got %d: %#v", len(expected), len(parsed), parsed)
+	}
+	for i, arg := range parsed {
+		if arg != expected[i] {
+			t.Errorf("arg[%d] expected %q, got %q", i, expected[i], arg)
+		}
+	}
+}

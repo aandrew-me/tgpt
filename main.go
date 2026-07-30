@@ -351,6 +351,7 @@ func main() {
 
 	mcpConfig := flag.String("mcp-config", os.Getenv("MCP_CONFIG"), "Path to MCP server configuration JSON file")
 	mcpServer := flag.String("mcp-server", "", "Command to run a stdio MCP server directly")
+	mcpAdd := flag.Bool("mcp-add", false, "Interactively add a new MCP server to mcp_config.json")
 	enableTools := flag.Bool("t", false, "Enable tools / MCP support")
 	flag.BoolVar(enableTools, "tools", false, "Enable tools / MCP support")
 
@@ -358,6 +359,14 @@ func main() {
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
 	flag.Parse()
+
+	if *mcpAdd {
+		if err := mcp.AddServerInteractive(context.Background(), *mcpConfig); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 
 	var rotateProvidersSet bool
 	flag.Visit(func(f *flag.Flag) {

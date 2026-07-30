@@ -1152,6 +1152,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Enable built-in tool calling (web search, file read, directory listing, command execution, web fetch)\n", "-t, --tools")
 	fmt.Printf("%-50v Path to MCP server configuration JSON file (Env: MCP_CONFIG). See 'Tool calling & MCP' section below.\n", "--mcp-config")
 	fmt.Printf("%-50v Command to run a stdio MCP server directly, e.g. --mcp-server \"npx -y some-mcp-server\"\n", "--mcp-server")
+	fmt.Printf("%-50v Interactively configure and test a new MCP server in mcp_config.json\n", "--mcp-add")
 
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
@@ -1278,6 +1279,7 @@ func ShowHelpMessage() {
 	codeText.Println(`}`)
 
 	boldBlue.Println("\nTool calling & MCP examples:")
+	fmt.Println(`tgpt --mcp-add                                           # Interactively configure a new MCP server`)
 	fmt.Println(`tgpt -t "What files are in the current directory?"`)
 	fmt.Println(`tgpt --mcp-server "npx -y @modelcontextprotocol/server-filesystem /path/to/dir" "List the files in /path/to/dir"`)
 	fmt.Println(`tgpt --mcp-config mcp_config.json "Use the filesystem tool to read README.md"`)
