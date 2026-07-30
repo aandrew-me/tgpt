@@ -685,6 +685,11 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 		if len(toolCalls) > 0 {
 			resp.Body.Close()
 
+			// Terminal follow-up: never process tool calls again.
+			if extraOptions.ToolDepth >= 5 && extraOptions.IsToolFollowUp {
+				return fullText, nil
+			}
+
 			if extraOptions.ToolDepth >= 5 {
 				fmt.Fprintln(os.Stderr, "\nReached maximum tool execution depth. Stopping tool calls.")
 				noToolsParams := params
