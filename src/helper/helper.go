@@ -731,6 +731,7 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 				proceed, cancelMsg := tools.PreConfirm(preConfirmCtx, tc.Function.Name, tc.Function.Arguments)
 				if !proceed {
 					toolOutput = cancelMsg
+					err = fmt.Errorf("%s", cancelMsg)
 				} else {
 					// The confirmation (if any) has already been obtained above,
 					// so the 60s execution timeout starts only now and is not
@@ -746,7 +747,7 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 				}
 				hideStatus()
 
-				if err != nil {
+				if err != nil && proceed {
 					toolOutput = fmt.Sprintf("Error executing tool: %v", err)
 				}
 
