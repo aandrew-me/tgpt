@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/aandrew-me/tgpt/v2/src/tools"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 type selectModel struct {
@@ -53,7 +53,7 @@ func (m selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m selectModel) View() string {
+func (m selectModel) View() tea.View {
 	var s strings.Builder
 	if m.title != "" {
 		s.WriteString(m.title + "\n")
@@ -66,7 +66,7 @@ func (m selectModel) View() string {
 		}
 	}
 	s.WriteString("\n\033[90m(Use ↑/↓ arrow keys to select, Enter to confirm, Esc to cancel)\033[0m\n")
-	return s.String()
+	return tea.NewView(s.String())
 }
 
 // SelectMenu runs an interactive selection menu using arrow keys and Enter.

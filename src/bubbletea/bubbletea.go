@@ -9,8 +9,8 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/atotto/clipboard"
 	Prompt "github.com/c-bata/go-prompt"
-	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textarea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/olekukonko/ts"
 )
 
@@ -57,24 +57,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEsc:
+		switch msg.String() {
+		case "esc":
 			if m.textarea.Focused() {
 				m.textarea.Blur()
 			}
-		case tea.KeyCtrlC:
+		case "ctrl+c":
 			*loop = false
 			*userInput = ""
 			return m, tea.Quit
 
-		case tea.KeyCtrlD:
+		case "ctrl+d":
 			*userInput = m.textarea.Value()
 
 			if len(*userInput) > 1 {
 				m.textarea.Blur()
 				return m, tea.Quit
 			}
-		case tea.KeyTab:
+		case "tab":
 			if m.textarea.Focused() {
 				m.textarea.InsertString("\t")
 			}
@@ -111,14 +111,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "p":
 				m.textarea.Focus()
 				clip, err := clipboard.ReadAll()
-				msg.Runes = []rune(clip)
 				if err != nil {
 					fmt.Println("Could not read from clipboard")
+					break
 				}
-				*userInput = clip
-				m.textarea, cmd = m.textarea.Update(msg)
+				m.textarea.InsertString(clip)
 				m.textarea.SetHeight(min(20, max(6, m.textarea.LineCount()+1)))
-				cmds = append(cmds, cmd)
 			}
 		}
 
@@ -131,8 +129,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
-	return m.textarea.View()
+func (m model) View() tea.View {
+	return tea.NewView(m.textarea.View())
 }
 
 func GetFormattedInputStdin() (formattedInput string) {

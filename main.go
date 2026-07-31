@@ -24,7 +24,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	Prompt "github.com/c-bata/go-prompt"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/fatih/color"
 )
 
