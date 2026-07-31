@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/clipboard"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
@@ -552,29 +553,7 @@ func GetWholeText(input string, extraOptions structs.ExtraOptions, params struct
 }
 
 func GetLastCodeBlock(markdown string) string {
-	lines := strings.Split(markdown, "\n")
-	var codeBlock []string
-	capturing := false
-
-	for i := len(lines) - 1; i >= 0; i-- {
-		if strings.HasPrefix(lines[i], "```") {
-			if capturing {
-				capturing = false
-				break
-			}
-			capturing = true
-			continue
-		}
-		if capturing {
-			codeBlock = append([]string{lines[i]}, codeBlock...)
-		}
-	}
-
-	if capturing || len(codeBlock) == 0 {
-		return ""
-	}
-
-	return strings.Join(codeBlock, "\n")
+	return utils.GetLastCodeBlock(markdown)
 }
 
 func formatToolArgs(rawArgs string) string {
@@ -1123,11 +1102,8 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 					fmt.Println()
 					ExecuteCommand(ShellName, ShellOptions, fullText)
 				} else {
-					bold.Print("\n\nExecute shell command? [y/n]: ")
-					reader := bufio.NewReader(os.Stdin)
-					userInput, _ := reader.ReadString('\n')
-					userInput = strings.TrimSpace(userInput)
-					if userInput == "y" || userInput == "" {
+					confirmed, _ := bubbletea.ConfirmMenu("\nExecute shell command?", true)
+					if confirmed {
 						ExecuteCommand(ShellName, ShellOptions, fullText)
 					} else {
 						clipboard.CopyToClipboard(fullText)

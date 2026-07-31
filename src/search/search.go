@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -719,36 +720,29 @@ func ConfirmSearchExecution(params SearchParams, autoConfirm bool, isQuiet bool,
 	}
 
 	// Interactive mode: show confirmation prompt
-	fmt.Printf("Execute search query: '%s'", params.Query)
+	var title strings.Builder
+	title.WriteString(fmt.Sprintf("Execute search query: '%s'", params.Query))
 
 	// Show additional parameters if relevant
 	if params.SiteFilter != "" {
-		fmt.Printf(" (site:%s)", params.SiteFilter)
+		title.WriteString(fmt.Sprintf(" (site:%s)", params.SiteFilter))
 	}
 	if params.NumResults != 5 {
-		fmt.Printf(" (%d results)", params.NumResults)
+		title.WriteString(fmt.Sprintf(" (%d results)", params.NumResults))
 	}
-
-	fmt.Print(" [y/n]: ")
-
-	// Read user response using custom inputReader or default
-	var response string
-	var err error
 
 	if inputReader != nil {
-		response, err = inputReader()
-	} else {
-		reader := bufio.NewReader(os.Stdin)
-		response, err = reader.ReadString('\n')
+		fmt.Print(title.String() + " [y/n]: ")
+		response, err := inputReader()
+		if err != nil {
+			return false
+		}
+		response = strings.ToLower(strings.TrimSpace(response))
+		return response == "y" || response == "yes"
 	}
 
-	if err != nil {
-		return false
-	}
-
-	// Check response
-	response = strings.ToLower(strings.TrimSpace(response))
-	return response == "y" || response == "yes"
+	confirmed, _ := bubbletea.ConfirmMenu(title.String(), true)
+	return confirmed
 }
 
 // ProcessSearchWithConfirmation handles the full search flow with optimization and confirmation
