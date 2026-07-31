@@ -113,11 +113,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				clip, err := clipboard.ReadAll()
 				if err != nil {
 					fmt.Println("Could not read from clipboard")
+					break
 				}
-				*userInput = clip
-				m.textarea, cmd = m.textarea.Update(msg)
+				m.textarea.InsertString(clip)
 				m.textarea.SetHeight(min(20, max(6, m.textarea.LineCount()+1)))
-				cmds = append(cmds, cmd)
 			}
 		}
 
