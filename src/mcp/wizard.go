@@ -10,94 +10,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/tools"
-	tea "charm.land/bubbletea/v2"
 )
-
-type selectModel struct {
-	title    string
-	options  []string
-	cursor   int
-	selected int
-	canceled bool
-}
-
-func (m selectModel) Init() tea.Cmd {
-	return nil
-}
-
-func (m selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "esc", "q":
-			m.canceled = true
-			return m, tea.Quit
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			} else {
-				m.cursor = len(m.options) - 1
-			}
-		case "down", "j":
-			if m.cursor < len(m.options)-1 {
-				m.cursor++
-			} else {
-				m.cursor = 0
-			}
-		case "enter", " ":
-			m.selected = m.cursor
-			return m, tea.Quit
-		}
-	}
-	return m, nil
-}
-
-func (m selectModel) View() tea.View {
-	var s strings.Builder
-	if m.title != "" {
-		s.WriteString(m.title + "\n")
-	}
-	for i, option := range m.options {
-		if m.cursor == i {
-			s.WriteString(fmt.Sprintf("  \033[36m❯ %s\033[0m\n", option))
-		} else {
-			s.WriteString(fmt.Sprintf("    %s\n", option))
-		}
-	}
-	s.WriteString("\n\033[90m(Use ↑/↓ arrow keys to select, Enter to confirm, Esc to cancel)\033[0m\n")
-	return tea.NewView(s.String())
-}
 
 // SelectMenu runs an interactive selection menu using arrow keys and Enter.
 // Returns the selected index, selected option string, or error if canceled.
 func SelectMenu(title string, options []string, defaultIndex int) (int, string, error) {
-	if len(options) == 0 {
-		return -1, "", fmt.Errorf("no options provided")
-	}
-	if defaultIndex < 0 || defaultIndex >= len(options) {
-		defaultIndex = 0
-	}
-
-	m := selectModel{
-		title:    title,
-		options:  options,
-		cursor:   defaultIndex,
-		selected: -1,
-	}
-
-	p := tea.NewProgram(m)
-	finalModel, err := p.Run()
-	if err != nil {
-		return -1, "", err
-	}
-
-	res, ok := finalModel.(selectModel)
-	if !ok || res.canceled || res.selected < 0 {
-		return -1, "", fmt.Errorf("selection canceled")
-	}
-
-	return res.selected, res.options[res.selected], nil
+	return bubbletea.SelectMenu(title, options, defaultIndex)
 }
 
 // RemoveServerInteractive lists configured MCP servers in an interactive arrow-key menu
@@ -295,10 +215,8 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 			}
 		}
 
-		fmt.Print("▶ Add Authorization Bearer Token / API Key? [y/N]: ")
-		addAuth, _ := readInput(reader)
-		addAuth = strings.TrimSpace(strings.ToLower(addAuth))
-		if addAuth == "y" || addAuth == "yes" {
+		addAuth, _ := bubbletea.ConfirmMenu("▶ Add Authorization Bearer Token / API Key?", false)
+		if addAuth {
 			fmt.Print("  Enter Bearer Token / API Key: ")
 			token, _ := readInput(reader)
 			token = strings.TrimSpace(token)
@@ -314,10 +232,8 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 			}
 		}
 
-		fmt.Print("▶ Add additional custom HTTP headers? [y/N]: ")
-		addHeaders, _ := readInput(reader)
-		addHeaders = strings.TrimSpace(strings.ToLower(addHeaders))
-		if addHeaders == "y" || addHeaders == "yes" {
+		addHeaders, _ := bubbletea.ConfirmMenu("▶ Add additional custom HTTP headers?", false)
+		if addHeaders {
 			for {
 				fmt.Print("  Header Name (or press Enter to finish): ")
 				hName, _ := readInput(reader)
@@ -344,10 +260,8 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 	initErr := testMgr.InitServer(ctx, name, sc)
 	if initErr != nil {
 		fmt.Printf("\n⚠️  Connection test warning: %v\n", initErr)
-		fmt.Print("Do you still want to save this server configuration? [y/N]: ")
-		saveAnyway, _ := readInput(reader)
-		saveAnyway = strings.TrimSpace(strings.ToLower(saveAnyway))
-		if saveAnyway != "y" && saveAnyway != "yes" {
+		saveAnyway, _ := bubbletea.ConfirmMenu("Do you still want to save this server configuration?", false)
+		if !saveAnyway {
 			fmt.Println("Aborted without saving.")
 			return nil
 		}

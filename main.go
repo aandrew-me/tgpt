@@ -221,17 +221,8 @@ func runInteractiveShellMode(
 			output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, useAliases)
 			executed = true
 		} else {
-			bold.Printf("\n\nExecute shell command: `%s` ? [y/n]: ", cmd)
-			userIn := Prompt.Input("", bubbletea.HistoryCompleter,
-				Prompt.OptionPrefixTextColor(Prompt.Blue),
-				Prompt.OptionAddKeyBind(Prompt.KeyBind{
-					Key: Prompt.ControlC,
-					Fn:  exit,
-				}),
-			)
-			userIn = strings.TrimSpace(userIn)
-
-			if userIn == "y" || userIn == "" {
+			confirmed, _ := bubbletea.ConfirmMenu(fmt.Sprintf("\nExecute shell command: `%s` ?", cmd), true)
+			if confirmed {
 				output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, useAliases)
 				executed = true
 			}
@@ -812,17 +803,7 @@ func main() {
 				SearchProvider:    finalSearchProvider,
 			}
 
-			promptInputReader := func() (string, error) {
-				return Prompt.Input("", bubbletea.HistoryCompleter,
-					Prompt.OptionPrefixTextColor(Prompt.Blue),
-					Prompt.OptionAddKeyBind(Prompt.KeyBind{
-						Key: Prompt.ControlC,
-						Fn:  exit,
-					}),
-				), nil
-			}
-
-			getAndPrintFindResponse := helper.InteractiveFindSession(mainParams, extraOptions, *logFile, promptInputReader)
+			getAndPrintFindResponse := helper.InteractiveFindSession(mainParams, extraOptions, *logFile, nil)
 			history := []string{}
 
 			input := strings.TrimSpace(prompt)

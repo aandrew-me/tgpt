@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
 	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/search"
 	http "github.com/bogdanfinn/fhttp"
@@ -108,16 +108,10 @@ const ConfirmedKey contextKey = "confirmed"
 
 var bold = color.New(color.Bold)
 
-// confirmAction prompts the user with a yes/no question and returns true only
-// if the user explicitly answers "y" or "yes". A bare Enter (empty input) or
-// any other input is treated as "no" so that accidental keystrokes never
-// trigger a potentially destructive action.
+// confirmAction prompts the user with an interactive yes/no question using Bubble Tea.
 func confirmAction(prompt string) bool {
-	bold.Printf("%s", prompt)
-	reader := bufio.NewReader(os.Stdin)
-	userIn, _ := reader.ReadString('\n')
-	userIn = strings.TrimSpace(strings.ToLower(userIn))
-	return userIn == "y" || userIn == "yes"
+	confirmed, _ := bubbletea.ConfirmMenu(prompt, true)
+	return confirmed
 }
 
 // PreConfirm performs any interactive confirmation required for a tool call
@@ -140,14 +134,14 @@ func PreConfirm(ctx context.Context, name string, argsJSON string) (bool, string
 	switch name {
 	case "execute_command":
 		cmdStr, _ := args["command"].(string)
-		if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)) {
+		if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ?", cmdStr)) {
 			return false, "Command execution cancelled by user."
 		}
 	case "write_file":
 		filePath, _ := args["path"].(string)
 		if filePath != "" {
 			if _, err := os.Stat(filePath); err == nil {
-				if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it? [y/n]: ", filePath)) {
+				if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath)) {
 					return false, "File overwrite cancelled by user."
 				}
 			}
@@ -407,7 +401,7 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			autoExec, _ := ctx.Value(AutoExecKey).(bool)
 			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
 			if !autoExec && !confirmed {
-				if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ? [y/n]: ", cmdStr)) {
+				if !confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ?", cmdStr)) {
 					return "Command execution cancelled by user.", nil
 				}
 			}
@@ -547,7 +541,7 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
 			if !autoExec && !confirmed {
 				if _, err := os.Stat(filePath); err == nil {
-					if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it? [y/n]: ", filePath)) {
+					if !confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath)) {
 						return "File overwrite cancelled by user.", nil
 					}
 				}

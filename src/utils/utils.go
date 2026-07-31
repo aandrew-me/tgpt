@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	http "github.com/bogdanfinn/fhttp"
@@ -105,3 +106,29 @@ func OpenImage(path string) error {
 		return exec.ErrNotFound
 	}
 }
+
+func GetLastCodeBlock(markdown string) string {
+	lines := strings.Split(markdown, "\n")
+	var codeBlock []string
+	capturing := false
+
+	for i := len(lines) - 1; i >= 0; i-- {
+		if strings.HasPrefix(lines[i], "```") {
+			if capturing {
+				capturing = false
+				break
+			}
+			capturing = true
+			continue
+		}
+		if capturing {
+			codeBlock = append([]string{lines[i]}, codeBlock...)
+		}
+	}
+
+	if capturing || len(codeBlock) == 0 {
+		return ""
+	}
+
+	return strings.Join(codeBlock, "\n")
+}

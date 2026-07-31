@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aandrew-me/tgpt/v2/src/helper"
+	"github.com/aandrew-me/tgpt/v2/src/utils"
 	"github.com/atotto/clipboard"
 	Prompt "github.com/c-bata/go-prompt"
 	"charm.land/bubbles/v2/textarea"
@@ -103,7 +103,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(*lastResp) == 0 {
 					break
 				}
-				lastCodeBlock := helper.GetLastCodeBlock(*lastResp)
+				lastCodeBlock := utils.GetLastCodeBlock(*lastResp)
 				err := clipboard.WriteAll(lastCodeBlock)
 				if err != nil {
 					fmt.Println("Could not write to clipboard")
