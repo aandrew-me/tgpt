@@ -13,6 +13,7 @@ type Params struct {
 	PrevMessages    []any
 	SystemPrompt    string
 	RotateProviders string
+	Tools           []any
 }
 
 type ExtraOptions struct {
@@ -28,15 +29,50 @@ type ExtraOptions struct {
 	IsInteractiveFind  bool   // IsInteractiveFind enable interactive web search mode
 	Verbose            bool   // Verbose enable detailed search output
 	SearchProvider     string // Search provider: "exa" (default) or "google"
+	IsToolFollowUp     bool   // IsToolFollowUp marks a request made to continue after tool execution
+	ToolDepth          int    // ToolDepth tracks recursion depth of tool execution loops
+}
+
+type ToolCallFunction struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
+}
+
+type ToolCallDelta struct {
+	Index    int              `json:"index"`
+	ID       string           `json:"id,omitempty"`
+	Type     string           `json:"type,omitempty"`
+	Function ToolCallFunction `json:"function"`
+}
+
+type ToolCall struct {
+	ID       string           `json:"id"`
+	Type     string           `json:"type"`
+	Function ToolCallFunction `json:"function"`
 }
 
 type CommonResponse struct {
 	ID      string `json:"id"`
 	Choices []struct {
 		Delta struct {
-			Content string `json:"content"`
+			Content   string          `json:"content"`
+			ToolCalls []ToolCallDelta `json:"tool_calls,omitempty"`
 		} `json:"delta"`
+		FinishReason string `json:"finish_reason,omitempty"`
 	} `json:"choices"`
+}
+
+type ToolMessage struct {
+	Role       string `json:"role"`
+	ToolCallID string `json:"tool_call_id"`
+	Name       string `json:"name"`
+	Content    string `json:"content"`
+}
+
+type AssistantToolCallMessage struct {
+	Role      string     `json:"role"`
+	Content   any        `json:"content"`
+	ToolCalls []ToolCall `json:"tool_calls"`
 }
 
 type PowerBrainResponse struct {

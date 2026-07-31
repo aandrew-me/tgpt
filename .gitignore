@@ -7,9 +7,8 @@ CLAUDE.md
 .mcp.json
 .claude
 
-# Tools directory - development/testing utilities
-tools/
 .opencode/
 config.conf
 config.txt
 *.jpg
+mcp_config.json

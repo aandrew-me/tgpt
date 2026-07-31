@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +11,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +22,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/search"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
+	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/fatih/color"
@@ -216,7 +220,7 @@ func (f *interactiveFormatter) writeText(text string) {
 }
 
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
-	responseTxt, err := MakeRequestAndGetData(input, params, extraOptions)
+	responseTxt, turnMessages, err := MakeRequestAndGetData(input, params, extraOptions)
 	if err != nil {
 		return nil, ""
 	}
@@ -225,25 +229,108 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 		fmt.Print("\n\n")
 	}
 
-	var msgObjectNew []interface{}
-
-	msgObjectNew = []interface{}{
-		structs.DefaultMessage{Content: input, Role: "user"},
-		structs.DefaultMessage{Content: responseTxt, Role: "assistant"},
+	// turnMessages holds the fully-ordered messages for this turn (user input,
+	// any tool call/tool result pairs, and the final assistant response) when
+	// tool calling was involved. Fall back to a plain user/assistant pair
+	// otherwise.
+	if len(turnMessages) > 0 {
+		return turnMessages, responseTxt
 	}
 
-	return msgObjectNew, responseTxt
+	return []interface{}{
+		structs.DefaultMessage{Content: input, Role: "user"},
+		structs.DefaultMessage{Content: responseTxt, Role: "assistant"},
+	}, responseTxt
 }
 
-func Loading(stop *atomic.Bool) {
-	spinChars := []string{"⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "}
+var spinChars = []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
+
+type Spinner struct {
+	stop    atomic.Bool
+	done    chan struct{}
+	mu      sync.Mutex
+	message string
+	width   int
+}
+
+func StartSpinner(message string) *Spinner {
+	s := &Spinner{
+		message: message,
+		done:    make(chan struct{}),
+	}
+	go s.run()
+	return s
+}
+
+func (s *Spinner) SetMessage(message string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.message = message
+	s.mu.Unlock()
+}
+
+func (s *Spinner) Stop() {
+	if s == nil {
+		return
+	}
+	s.stop.Store(true)
+	<-s.done
+}
+
+var (
+	spinnerMu     sync.Mutex
+	activeSpinner *Spinner
+)
+
+// Whether to show status during tool calls
+func statusEnabled(extraOptions structs.ExtraOptions) bool {
+	return !extraOptions.IsGetSilent && !extraOptions.IsGetWhole
+}
+
+func showStatus(enabled bool, message string) {
+	if !enabled {
+		return
+	}
+	spinnerMu.Lock()
+	defer spinnerMu.Unlock()
+	if activeSpinner == nil {
+		activeSpinner = StartSpinner(message)
+		return
+	}
+	activeSpinner.SetMessage(message)
+}
+
+func hideStatus() {
+	spinnerMu.Lock()
+	s := activeSpinner
+	activeSpinner = nil
+	spinnerMu.Unlock()
+	s.Stop()
+}
+
+func (s *Spinner) run() {
+	defer close(s.done)
+
 	i := 0
-	for !stop.Load() {
-		fmt.Printf("\r%s Loading", spinChars[i])
+	for !s.stop.Load() {
+		s.mu.Lock()
+		line := spinChars[i] + " " + s.message
+		if runes := len([]rune(line)); runes > s.width {
+			s.width = runes
+		}
+		s.mu.Unlock()
+
+		fmt.Print("\r" + line)
 		i = (i + 1) % len(spinChars)
 		time.Sleep(80 * time.Millisecond)
 	}
-	fmt.Print("\r           \r")
+
+	s.mu.Lock()
+	width := s.width
+	s.mu.Unlock()
+	fmt.Print("\r" + strings.Repeat(" ", width) + "\r\033[K")
 }
 
 func canWriteToDir(path string) bool {
@@ -339,7 +426,7 @@ func CodeGenerate(input string, params structs.Params, extraOptions structs.Extr
 			"Request:%s\nCode:", input,
 	)
 
-	_, _ = MakeRequestAndGetData(codePrompt, params, extraOptions)
+	_, _, _ = MakeRequestAndGetData(codePrompt, params, extraOptions)
 }
 
 func SetShellAndOSVars() {
@@ -413,7 +500,7 @@ func ShellCommand(input string, params structs.Params, extraOptions structs.Extr
 }
 
 func GetCommand(shellPrompt string, params structs.Params, extraOptions structs.ExtraOptions) {
-	_, _ = MakeRequestAndGetData(shellPrompt, params, extraOptions)
+	_, _, _ = MakeRequestAndGetData(shellPrompt, params, extraOptions)
 }
 
 type RESPONSE struct {
@@ -461,7 +548,7 @@ func GetVersionHistory() {
 }
 
 func GetWholeText(input string, extraOptions structs.ExtraOptions, params structs.Params) {
-	_, _ = MakeRequestAndGetData(input, params, extraOptions)
+	_, _, _ = MakeRequestAndGetData(input, params, extraOptions)
 }
 
 func GetLastCodeBlock(markdown string) string {
@@ -490,18 +577,103 @@ func GetLastCodeBlock(markdown string) string {
 	return strings.Join(codeBlock, "\n")
 }
 
-func HandleEachPart(resp *http.Response, input string, params structs.Params) string {
+func formatToolArgs(rawArgs string) string {
+	var args map[string]any
+	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
+		if len(rawArgs) > 100 {
+			runes := []rune(rawArgs)
+			return string(runes[:100]) + "..."
+		}
+		return rawArgs
+	}
+
+	keys := make([]string, 0, len(args))
+	for k := range args {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	maxValLen := 60
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		v := args[k]
+		var valStr string
+		switch val := v.(type) {
+		case string:
+			if len(val) > maxValLen {
+				runes := []rune(val)
+				valStr = fmt.Sprintf("%q...", string(runes[:maxValLen]))
+			} else {
+				valStr = fmt.Sprintf("%q", val)
+			}
+		default:
+			b, err := json.Marshal(val)
+			str := string(b)
+			if err != nil {
+				str = fmt.Sprintf("%v", val)
+			}
+			if len(str) > maxValLen {
+				runes := []rune(str)
+				valStr = string(runes[:maxValLen]) + "..."
+			} else {
+				valStr = str
+			}
+		}
+		parts = append(parts, fmt.Sprintf("%s=%s", k, valStr))
+	}
+
+	result := strings.Join(parts, ", ")
+	maxTotalLen := 120
+	if len(result) > maxTotalLen {
+		runes := []rune(result)
+		return string(runes[:maxTotalLen]) + "..."
+	}
+	return result
+}
+
+type toolCallAccumulator struct {
+	id   string
+	name string
+	args strings.Builder
+}
+
+func HandleEachPart(resp *http.Response, input string, params structs.Params, extraOptions structs.ExtraOptions) (string, []interface{}) {
 	scanner := bufio.NewScanner(resp.Body)
 	formatter := newStreamFormatter(params.Provider)
 	fullText := ""
+	toolCallMap := make(map[int]*toolCallAccumulator)
 
 	for scanner.Scan() {
-		mainText := providers.GetMainText(scanner.Text(), params.Provider, input)
-		if len(mainText) < 1 {
-			continue
+		line := scanner.Text()
+		mainText := providers.GetMainText(line, params.Provider, input)
+		if len(mainText) > 0 {
+			fullText += mainText
+			formatter.writeText(mainText)
 		}
-		fullText += mainText
-		formatter.writeText(mainText)
+
+		var obj = "{}"
+		if after, ok := strings.CutPrefix(line, "data: "); ok {
+			obj = after
+		}
+		var d structs.CommonResponse
+		if err := json.Unmarshal([]byte(obj), &d); err == nil && len(d.Choices) > 0 {
+			for _, tcDelta := range d.Choices[0].Delta.ToolCalls {
+				acc, ok := toolCallMap[tcDelta.Index]
+				if !ok {
+					acc = &toolCallAccumulator{}
+					toolCallMap[tcDelta.Index] = acc
+				}
+				if tcDelta.ID != "" {
+					acc.id = tcDelta.ID
+				}
+				if tcDelta.Function.Name != "" {
+					acc.name = tcDelta.Function.Name
+				}
+				if tcDelta.Function.Arguments != "" {
+					acc.args.WriteString(tcDelta.Function.Arguments)
+				}
+			}
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -509,7 +681,162 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params) st
 		os.Exit(1)
 	}
 
-	return fullText
+	if len(toolCallMap) > 0 {
+		keys := make([]int, 0, len(toolCallMap))
+		for k := range toolCallMap {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+
+		var toolCalls []structs.ToolCall
+		for _, k := range keys {
+			acc := toolCallMap[k]
+			if acc != nil && acc.name != "" {
+				toolCalls = append(toolCalls, structs.ToolCall{
+					ID:   acc.id,
+					Type: "function",
+					Function: structs.ToolCallFunction{
+						Name:      acc.name,
+						Arguments: acc.args.String(),
+					},
+				})
+			}
+		}
+
+		if len(toolCalls) > 0 {
+			resp.Body.Close()
+
+			if fullText != "" && !strings.HasSuffix(fullText, "\n") {
+				fmt.Println()
+			}
+
+			// Terminal follow-up: never process tool calls again.
+			if extraOptions.ToolDepth >= 5 && extraOptions.IsToolFollowUp {
+				return fullText, nil
+			}
+
+			if extraOptions.ToolDepth >= 5 {
+				fmt.Fprintln(os.Stderr, "\nReached maximum tool execution depth. Stopping tool calls.")
+				noToolsParams := params
+				noToolsParams.Tools = nil
+				followUpOptions := extraOptions
+				followUpOptions.IsToolFollowUp = true
+				followUpText, followUpTurnMessages, _ := MakeRequestAndGetData("", noToolsParams, followUpOptions)
+				if len(followUpTurnMessages) > 0 {
+					return fullText + followUpText, followUpTurnMessages
+				}
+				finalAssistantMsg := structs.DefaultMessage{
+					Role:    "assistant",
+					Content: followUpText,
+				}
+				return fullText + followUpText, []any{finalAssistantMsg}
+			}
+
+			turnMessages := make([]any, 0)
+
+			if input != "" {
+				userMsg := structs.DefaultMessage{
+					Role:    "user",
+					Content: input,
+				}
+				params.PrevMessages = append(params.PrevMessages, userMsg)
+				turnMessages = append(turnMessages, userMsg)
+			}
+
+			assistantMsg := structs.AssistantToolCallMessage{
+				Role:      "assistant",
+				ToolCalls: toolCalls,
+			}
+			params.PrevMessages = append(params.PrevMessages, assistantMsg)
+			turnMessages = append(turnMessages, assistantMsg)
+
+			statusOn := statusEnabled(extraOptions)
+
+			for _, tc := range toolCalls {
+				if extraOptions.Verbose {
+					boldBlue.Printf("\n[Tool Call] %s(%s)\n", tc.Function.Name, tc.Function.Arguments)
+				}
+
+				if tc.Function.Name == "execute_command" && !extraOptions.AutoExec {
+					hideStatus()
+				} else {
+					showStatus(statusOn, "Running "+tc.Function.Name)
+				}
+
+				preConfirmCtx := context.Background()
+				if extraOptions.AutoExec {
+					preConfirmCtx = context.WithValue(preConfirmCtx, tools.AutoExecKey, true)
+				}
+
+				var toolOutput string
+				var err error
+				proceed, cancelMsg := tools.PreConfirm(preConfirmCtx, tc.Function.Name, tc.Function.Arguments)
+				if !proceed {
+					toolOutput = cancelMsg
+					err = fmt.Errorf("%s", cancelMsg)
+				} else {
+					// The confirmation (if any) has already been obtained above,
+					// so the 60s execution timeout starts only now and is not
+					// consumed by time spent waiting on user input.
+					execCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+					execCtx = context.WithValue(execCtx, tools.ConfirmedKey, true)
+					if extraOptions.AutoExec {
+						execCtx = context.WithValue(execCtx, tools.AutoExecKey, true)
+					}
+
+					toolOutput, err = tools.DefaultRegistry.Execute(execCtx, tc.Function.Name, tc.Function.Arguments)
+					cancel()
+				}
+				hideStatus()
+
+				if err != nil && proceed {
+					toolOutput = fmt.Sprintf("Error executing tool: %v", err)
+				}
+
+				if !extraOptions.Verbose && extraOptions.IsNormal {
+					mark := "\u2705"
+					if err != nil {
+						mark = "\u274c"
+					}
+					boldViolet.Printf("Used Tool %s(%s) %s\n", tc.Function.Name, formatToolArgs(tc.Function.Arguments), mark)
+				}
+
+				if extraOptions.Verbose {
+					bold.Printf("[Tool Output] %s\n", toolOutput)
+				}
+
+				toolMsg := structs.ToolMessage{
+					Role:       "tool",
+					ToolCallID: tc.ID,
+					Name:       tc.Function.Name,
+					Content:    toolOutput,
+				}
+				params.PrevMessages = append(params.PrevMessages, toolMsg)
+				turnMessages = append(turnMessages, toolMsg)
+			}
+
+			followUpOptions := extraOptions
+			followUpOptions.IsToolFollowUp = true
+			followUpOptions.ToolDepth++
+
+			followUpText, followUpTurnMessages, _ := MakeRequestAndGetData("", params, followUpOptions)
+
+			if len(followUpTurnMessages) > 0 {
+				turnMessages = append(turnMessages, followUpTurnMessages...)
+				return fullText + followUpText, turnMessages
+			}
+
+			finalAssistantMsg := structs.DefaultMessage{
+				Role:    "assistant",
+				Content: followUpText,
+			}
+			turnMessages = append(turnMessages, finalAssistantMsg)
+
+			return fullText + followUpText, turnMessages
+		}
+	}
+
+	return fullText, nil
 }
 
 func HandleEachPartInteractiveShell(resp *http.Response, input string, params structs.Params) string {
@@ -641,7 +968,25 @@ func AddToShellHistory(command string) {
 	_, _ = file.WriteString(prefix + command + "\n")
 }
 
-func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, error) {
+func GetToolsSystemPrompt() string {
+	SetShellAndOSVars()
+	today := time.Now().Format("2006-01-02")
+	return fmt.Sprintf(
+		"You are tgpt, a terminal assistant. Today is %s. "+
+			"The shell environment you are in is %s. The operating system you are on is %s.",
+		today, ShellName, OperatingSystem,
+	)
+}
+
+func MakeRequestAndGetData(input string, params structs.Params, extraOptions structs.ExtraOptions) (string, []interface{}, error) {
+	if extraOptions.ToolDepth >= 5 {
+		params.Tools = nil
+	}
+
+	if len(params.Tools) > 0 && params.SystemPrompt == "" {
+		params.SystemPrompt = GetToolsSystemPrompt()
+	}
+
 	providersToTry := providersForRotation(params)
 
 	isInteractive := extraOptions.IsInteractive || extraOptions.IsInteractiveShell || extraOptions.IsInteractiveFind
@@ -657,8 +1002,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 	}
 
 	originalModel := params.ApiModel
-	var stopSpin atomic.Bool
-	showSpinner := !extraOptions.IsGetSilent && !extraOptions.IsGetWhole && !isInteractive
 
 	for i, provider := range providersToTry {
 		params.Provider = provider
@@ -669,13 +1012,11 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			params.ApiModel = alias
 		}
 
-		if showSpinner {
-			go Loading(&stopSpin)
-		}
+		showStatus(statusEnabled(extraOptions), "Loading")
 
 		resp, err := providers.NewRequest(input, params, extraOptions)
 		if err != nil {
-			stopSpin.Store(true)
+			hideStatus()
 
 			if resp != nil {
 				resp.Body.Close()
@@ -691,8 +1032,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		hasMore := i < len(providersToTry)-1
 
 		if code >= 400 {
-			stopSpin.Store(true)
-			fmt.Print("\r")
+			hideStatus()
 			if hasMore {
 				resp.Body.Close()
 				fmt.Fprintf(os.Stderr, "\rProvider %s failed (status %d)\n", provider, code)
@@ -706,11 +1046,10 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			fmt.Fprintln(os.Stderr, "Some error has occurred, try again")
 			fmt.Fprintln(os.Stderr, string(respBody))
 
-			return "", fmt.Errorf("provider %s returned status %d", provider, code)
+			return "", nil, fmt.Errorf("provider %s returned status %d", provider, code)
 		}
 
-		stopSpin.Store(true)
-		fmt.Print("\r")
+		hideStatus()
 
 		if isInteractive {
 			lastSuccessfulProvider = provider
@@ -722,7 +1061,9 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 		// --- Normal path (formatted output) ---
 		if extraOptions.IsNormal {
-			if !isInteractive {
+			if extraOptions.IsToolFollowUp {
+				// no header
+			} else if !isInteractive {
 				fmt.Print("\r          \r")
 				bold.Println()
 			} else {
@@ -733,11 +1074,11 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			if extraOptions.IsInteractiveShell || extraOptions.IsInteractiveFind {
 				result := HandleEachPartInteractiveShell(resp, input, params)
 				resp.Body.Close()
-				return result, nil
+				return result, nil, nil
 			}
-			result := HandleEachPart(resp, input, params)
+			resultText, resultMessages := HandleEachPart(resp, input, params, extraOptions)
 			resp.Body.Close()
-			return result, nil
+			return resultText, resultMessages, nil
 		}
 
 		// --- Non-normal path (raw streaming) ---
@@ -764,7 +1105,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "Some error has occurred. Error:", err)
-			return "", err
+			return "", nil, err
 		}
 
 		if extraOptions.IsGetWhole {
@@ -795,10 +1136,10 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			}
 		}
 
-		return fullText, nil
+		return fullText, nil, nil
 	}
 
-	return "", nil
+	return "", nil, nil
 }
 
 func providersForRotation(params structs.Params) []string {
@@ -854,6 +1195,11 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER for chat and IMG_PROVIDER for image gen.)\n", "--provider")
 	fmt.Printf("%-50v Find information using web search \n", "-f, --find")
 	fmt.Printf("%-50v Search provider for web search: exa (default) or google (Env: SEARCH_PROVIDER).\n%-50v Exa works without api key with rate limits and supports EXA_API_KEY env variable.\n%-50v google requires TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID env variables.\n%-50s Check SEARCH_SETUP.md for google: https://github.com/aandrew-me/tgpt/blob/main/SEARCH_SETUP.md\n", "--search-provider", "", "", "")
+	fmt.Printf("%-50v Enable built-in tool calling (all or comma-separated list: web_search_exa, web_search_firecrawl, read_directory, read_file, execute_command, web_fetch, write_file)\n", "-t, --tools [tools]")
+	fmt.Printf("%-50v Path to MCP server configuration JSON file (Env: MCP_CONFIG). See 'Tool calling & MCP' section below.\n", "--mcp-config")
+	fmt.Printf("%-50v Command to run a stdio MCP server directly, e.g. --mcp-server \"npx -y some-mcp-server\"\n", "--mcp-server")
+	fmt.Printf("%-50v Interactively configure and test a new MCP server in mcp_config.json\n", "--mcp-add")
+	fmt.Printf("%-50v Interactively remove an existing MCP server from mcp_config.json\n", "--mcp-remove")
 
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
@@ -943,9 +1289,59 @@ func ShowHelpMessage() {
 	bold.Println("\nProvider: pollinations")
 	fmt.Println("Supported models: flux, turbo")
 
+	boldBlue.Println("\nTool calling & MCP:")
+	fmt.Println("tgpt can let the model call tools (functions) while answering, and can also connect to Model Context Protocol (MCP) servers to add more tools at runtime.")
+	fmt.Println("Not all providers support tool calling; unsupported providers will just ignore the tool definitions.")
+
+	bold.Println("\nBuilt-in tools (enabled with -t / --tools [tools]):")
+	fmt.Println("web_search_exa       Search the web using Exa (supports EXA_API_KEY env var)")
+	fmt.Println("web_search_firecrawl Search the web using Firecrawl (supports FIRECRAWL_API_KEY env var)")
+	fmt.Println("read_directory       List the contents of a directory")
+	fmt.Println("read_file            Read content from a text file")
+	fmt.Println("execute_command      Execute a shell command")
+	fmt.Println("web_fetch            Fetch the contents of a webpage or URL")
+	fmt.Println("write_file           Write content to a file")
+
+	bold.Println("\nMCP servers:")
+	fmt.Println("Use --mcp-config to load one or more MCP servers from a JSON file, or --mcp-server to run a single stdio MCP server directly.")
+	fmt.Println("Tools discovered from MCP servers are made available to the model for tool calling.")
+	fmt.Println("\nSupported server fields in mcp_config.json:")
+	fmt.Println("  • Stdio servers:     \"command\", \"args\" (array), \"env\" (array of KEY=VALUE strings)")
+	fmt.Println("  • HTTP/SSE servers:  \"url\", \"type\" (\"streamable-http\"|\"sse\"), \"headers\" (map of key-value pairs)")
+	fmt.Println("  • Authentication:    Pass Bearer tokens or API keys via \"headers\" (e.g., \"Authorization\": \"Bearer <key>\")")
+
+	boldBlue.Println("\nExample MCP config file (mcp_config.json):")
+	codeText.Println(`{`)
+	codeText.Println(`  "mcpServers": {`)
+	codeText.Println(`    "filesystem": {`)
+	codeText.Println(`      "command": "npx",`)
+	codeText.Println(`      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"],`)
+	codeText.Println(`      "env": ["LOG_LEVEL=info"]`)
+	codeText.Println(`    },`)
+	codeText.Println(`    "firecrawl": {`)
+	codeText.Println(`      "url": "https://mcp.firecrawl.dev/v2/mcp",`)
+	codeText.Println(`      "headers": {`)
+	codeText.Println(`        "Authorization": "Bearer YOUR_FIRECRAWL_API_KEY"`)
+	codeText.Println(`      }`)
+	codeText.Println(`    }`)
+	codeText.Println(`  }`)
+	codeText.Println(`}`)
+
+	boldBlue.Println("\nTool calling & MCP examples:")
+	fmt.Println(`tgpt --mcp-add                                           # Interactively configure a new MCP server`)
+	fmt.Println(`tgpt --mcp-remove                                        # Interactively remove an MCP server`)
+	fmt.Println(`tgpt -t "What files are in the current directory?"`)
+	fmt.Println(`tgpt -t web_search_exa,read_file "Search and read specified file"`)
+	fmt.Println(`tgpt --mcp-server "npx -y @modelcontextprotocol/server-filesystem /path/to/dir" "List the files in /path/to/dir"`)
+	fmt.Println(`tgpt --mcp-config mcp_config.json "Use the filesystem tool to read README.md"`)
+	fmt.Println(`tgpt -t --mcp-config mcp_config.json "Use both built-in tools and MCP tools"`)
+
 	boldBlue.Println("\nConfiguration file")
-	fmt.Printf("You can create a configuration file - config.conf in ~/.config/tgpt (%%USERPROFILE%%\\.config\\tgpt on Windows) or in current directory (has higher priority). The configuration file supports all the environment variables supported by tgpt.\n")
+	userProfileEnv := "%USERPROFILE%"
+	fmt.Println("You can create a configuration file - config.conf in ~/.config/tgpt (" + userProfileEnv + "\\.config\\tgpt on Windows) or in current directory (has higher priority). The configuration file supports all the environment variables supported by tgpt.")
 	boldBlue.Println("\nExample config file:")
+	codeText.Println("EXA_API_KEY=sk_xxxxx")
+	codeText.Println("FIRECRAWL_API_KEY=fc_xxxxx")
 	codeText.Println("POLLINATIONS_API_KEY=sk_xxxxx")
 	codeText.Println("ANYAPI_API_KEY=sk_xxxxxxxx")
 	codeText.Println("GROQ_API_KEY=gsk_xxxx")
@@ -996,7 +1392,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 
 	queryWithContext := fmt.Sprintf("Here is the output of the search results: %s\n\nBased on these search results, answer the user's question: %s", searchResults, input)
 
-	response, _ := MakeRequestAndGetData(queryWithContext, params, searchOptions)
+	response, _, _ := MakeRequestAndGetData(queryWithContext, params, searchOptions)
 
 	if len(logFile) > 0 {
 		utils.LogToFile(response, "SEARCH_RESPONSE", logFile)

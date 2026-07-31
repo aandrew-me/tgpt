@@ -126,7 +126,7 @@ func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}
 
-	httpClient, err := client.NewClient()
+	httpClient, err := client.NewClient(15)
 	if err != nil {
 		return "", fmt.Errorf("failed to create HTTP client: %w", err)
 	}
@@ -201,6 +201,207 @@ func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
 	}
 
 	return strings.TrimSpace(builder.String()), nil
+}
+
+func parseFirecrawlResultText(text string) string {
+	text = strings.TrimSpace(text)
+	if !strings.HasPrefix(text, "{") {
+		return text
+	}
+
+	var generic map[string]interface{}
+	if err := json.Unmarshal([]byte(text), &generic); err != nil {
+		return text
+	}
+
+	dataVal, ok := generic["data"]
+	if !ok {
+		return text
+	}
+
+	var items []map[string]interface{}
+	if dataMap, ok := dataVal.(map[string]interface{}); ok {
+		if webList, ok := dataMap["web"].([]interface{}); ok {
+			for _, w := range webList {
+				if m, ok := w.(map[string]interface{}); ok {
+					items = append(items, m)
+				}
+			}
+		}
+	} else if dataList, ok := dataVal.([]interface{}); ok {
+		for _, w := range dataList {
+			if m, ok := w.(map[string]interface{}); ok {
+				items = append(items, m)
+			}
+		}
+	}
+
+	if len(items) == 0 {
+		return text
+	}
+
+	var builder strings.Builder
+	for i, item := range items {
+		title, _ := item["title"].(string)
+		url, _ := item["url"].(string)
+		desc, _ := item["description"].(string)
+		if desc == "" {
+			desc, _ = item["markdown"].(string)
+		}
+		if desc == "" {
+			desc, _ = item["content"].(string)
+		}
+
+		builder.WriteString(fmt.Sprintf("### %d. %s\n", i+1, title))
+		if url != "" {
+			builder.WriteString(fmt.Sprintf("**URL:** %s\n", url))
+		}
+		if desc != "" {
+			builder.WriteString(desc)
+			builder.WriteString("\n")
+		}
+		builder.WriteString("\n")
+	}
+
+	result := strings.TrimSpace(builder.String())
+	if len([]rune(result)) > maxTotalContent {
+		result = string([]rune(result)[:maxTotalContent]) + "\n\n[Content truncated due to length...]"
+	}
+
+	return result
+}
+
+func PerformFirecrawlMCPSearch(params SearchParams, verbose bool) (string, error) {
+	userQuery := params.Query
+	numResults := params.NumResults
+	if numResults <= 0 {
+		numResults = 5
+	}
+	apiKey := os.Getenv("FIRECRAWL_API_KEY")
+
+	mcpEndpoint := "https://mcp.firecrawl.dev/v2/mcp"
+
+	if verbose {
+		fmt.Printf("[Firecrawl MCP] Sending search request: %q to %s\n", userQuery, mcpEndpoint)
+	}
+
+	payload := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params": map[string]interface{}{
+			"name": "firecrawl_search",
+			"arguments": map[string]interface{}{
+				"query": userQuery,
+				"limit": numResults,
+				"scrapeOptions": map[string]interface{}{
+					"formats":         []string{"markdown"},
+					"onlyMainContent": true,
+				},
+			},
+		},
+	}
+
+	reqBody, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JSON-RPC request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", mcpEndpoint, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to build request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Connection", "keep-alive")
+
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	httpClient, err := client.NewClient(15)
+	if err != nil {
+		return "", fmt.Errorf("failed to create HTTP client: %w", err)
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("server error HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	rawStr := strings.TrimSpace(string(bodyBytes))
+	var rawDataPayload []byte
+	lines := strings.Split(rawStr, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "data:") {
+			dataStr := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+			if dataStr != "" {
+				rawDataPayload = []byte(dataStr)
+				break
+			}
+		}
+	}
+
+	if len(rawDataPayload) == 0 {
+		if strings.HasPrefix(rawStr, "{") || strings.HasPrefix(rawStr, "[") {
+			rawDataPayload = bodyBytes
+		} else {
+			return "", fmt.Errorf("no 'data:' event or valid JSON payload found in response: %s", rawStr)
+		}
+	}
+
+	if len(rawDataPayload) == 0 {
+		return "", fmt.Errorf("empty response payload received from Firecrawl MCP")
+	}
+
+	var mcpResp MCPResponse
+	if err := json.Unmarshal(rawDataPayload, &mcpResp); err != nil {
+		return "", fmt.Errorf("failed to unmarshal JSON payload (%d bytes): %w", len(rawDataPayload), err)
+	}
+
+	if mcpResp.Error != nil {
+		return "", fmt.Errorf("MCP RPC Error [%d]: %s", mcpResp.Error.Code, mcpResp.Error.Message)
+	}
+
+	if mcpResp.Result == nil || len(mcpResp.Result.Content) == 0 {
+		return "No search results returned.", nil
+	}
+
+	if mcpResp.Result.IsError {
+		return "", fmt.Errorf("MCP Tool execution error: %s", mcpResp.Result.Content[0].Text)
+	}
+
+	var builder strings.Builder
+	for i, item := range mcpResp.Result.Content {
+		if item.Type == "text" {
+			if verbose {
+				fmt.Printf("[Firecrawl MCP] Received content block %d (%d bytes)\n", i+1, len(item.Text))
+			}
+			formattedText := parseFirecrawlResultText(item.Text)
+			builder.WriteString(formattedText)
+			builder.WriteString("\n\n")
+		}
+	}
+
+	result := strings.TrimSpace(builder.String())
+	if len([]rune(result)) > maxTotalContent {
+		result = string([]rune(result)[:maxTotalContent]) + "\n\n[Content truncated due to length...]"
+	}
+
+	return result, nil
 }
 
 // PerformSearch executes the complete search workflow

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -18,7 +19,9 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
+	"github.com/aandrew-me/tgpt/v2/src/mcp"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
+	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	Prompt "github.com/c-bata/go-prompt"
 	tea "github.com/charmbracelet/bubbletea"
@@ -31,6 +34,44 @@ var bold = color.New(color.Bold)
 var blue = color.New(color.FgBlue)
 
 var programLoop = true
+
+type toolsFlagValue struct {
+	enabled   bool
+	toolNames []string
+}
+
+func (f *toolsFlagValue) String() string {
+	if !f.enabled {
+		return "false"
+	}
+	if len(f.toolNames) == 0 {
+		return "true"
+	}
+	return strings.Join(f.toolNames, ",")
+}
+
+func (f *toolsFlagValue) Set(s string) error {
+	f.enabled = true
+	if s == "true" || s == "1" || s == "" {
+		return nil
+	}
+	if s == "false" || s == "0" {
+		f.enabled = false
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			f.toolNames = append(f.toolNames, p)
+		}
+	}
+	return nil
+}
+
+func (f *toolsFlagValue) IsBoolFlag() bool {
+	return true
+}
 
 func restoreTerminal() {
 	if runtime.GOOS != "windows" {
@@ -346,10 +387,42 @@ func main() {
 	isChangelog := flag.Bool("cl", false, "See changelog of versions")
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
 
+	mcpConfig := flag.String("mcp-config", os.Getenv("MCP_CONFIG"), "Path to MCP server configuration JSON file")
+	mcpServer := flag.String("mcp-server", "", "Command to run a stdio MCP server directly")
+	mcpAdd := flag.Bool("mcp-add", false, "Interactively add a new MCP server to mcp_config.json")
+	mcpRemove := flag.Bool("mcp-remove", false, "Interactively remove an MCP server from mcp_config.json")
+	var toolsFlag toolsFlagValue
+	flag.Var(&toolsFlag, "t", "Enable tools / MCP support")
+	flag.Var(&toolsFlag, "tools", "Enable tools / MCP support")
+
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
 	flag.Parse()
+
+	promptArgIndex := 0
+	if toolsFlag.enabled && len(toolsFlag.toolNames) == 0 && flag.NArg() > 0 {
+		if parsedTools, ok := tools.ParseToolList(flag.Arg(0)); ok {
+			toolsFlag.toolNames = parsedTools
+			promptArgIndex = 1
+		}
+	}
+
+	if *mcpAdd {
+		if err := mcp.AddServerInteractive(context.Background(), *mcpConfig); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	if *mcpRemove {
+		if err := mcp.RemoveServerInteractive(context.Background(), *mcpConfig); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 
 	var rotateProvidersSet bool
 	flag.Visit(func(f *flag.Flag) {
@@ -380,6 +453,48 @@ func main() {
 		finalSearchProvider = "exa"
 	}
 
+	var mcpConfigSet bool
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "mcp-config" {
+			mcpConfigSet = true
+		}
+	})
+
+	var activeTools []any
+	mcpMgr := mcp.NewManager(tools.DefaultRegistry)
+	defer mcpMgr.Close()
+
+	if toolsFlag.enabled {
+		tools.DefaultRegistry.RegisterBuiltinTools(toolsFlag.toolNames...)
+	}
+
+	if mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
+		ctx := context.Background()
+		cfg, err := mcp.LoadConfig(*mcpConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to load MCP config: %v\n", err)
+		} else if cfg != nil {
+			for name, sc := range cfg.MCPServers {
+				if err := mcpMgr.InitServer(ctx, name, sc); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", name, err)
+				}
+			}
+		}
+		if *mcpServer != "" {
+			parts := strings.Fields(*mcpServer)
+			if len(parts) > 0 {
+				sc := mcp.ServerConfig{Command: parts[0], Args: parts[1:]}
+				if err := mcpMgr.InitServer(ctx, "cli-mcp", sc); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", *mcpServer, err)
+				}
+			}
+		}
+	}
+
+	if toolsFlag.enabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
+		activeTools = tools.DefaultRegistry.GetOpenAITools()
+	}
+
 	mainParams := structs.Params{
 		ApiKey:          *apiKey,
 		ApiModel:        *apiModel,
@@ -391,6 +506,7 @@ func main() {
 		Url:             *url,
 		PrevMessages:    []any{},
 		RotateProviders: rotateStr,
+		Tools:           activeTools,
 	}
 
 	imageParams := structs.ImageParams{
@@ -403,7 +519,7 @@ func main() {
 		Params:            mainParams,
 	}
 
-	prompt := flag.Arg(0)
+	prompt := flag.Arg(promptArgIndex)
 
 	pipedInput := ""
 	cleanPipedInput := ""
@@ -747,13 +863,13 @@ func main() {
 					utils.PrintError(`Example: tgpt -q "What is encryption?"`)
 					return
 				}
-				if _, err := helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
+				if _, _, err := helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
 					return
 				}
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				if _, err := helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
+				if _, _, err := helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
 					return
 				}
 			}
@@ -770,7 +886,7 @@ func main() {
 				*preprompt+formattedInput+contextText+pipedInput,
 				mainParams,
 				structs.ExtraOptions{
-					IsNormal: true, IsInteractive: false,
+					IsNormal: true, IsInteractive: false, Verbose: *isVerbose,
 				})
 		}
 	} else {
@@ -782,7 +898,7 @@ func main() {
 		}
 		input := scanner.Text()
 		formattedInput := strings.TrimSpace(input)
-		helper.GetData(*preprompt+formattedInput+pipedInput, mainParams, structs.ExtraOptions{IsInteractive: false, IsNormal: true})
+		helper.GetData(*preprompt+formattedInput+pipedInput, mainParams, structs.ExtraOptions{IsInteractive: false, IsNormal: true, Verbose: *isVerbose})
 	}
 }
 

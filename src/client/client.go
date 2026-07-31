@@ -2,34 +2,18 @@ package client
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
 )
 
-func NewClient() (tls_client.HttpClient, error) {
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(600),
-		// Allow overriding TLS fingerprint via env; default stays Firefox_117.
-		tls_client.WithClientProfile(func() profiles.ClientProfile {
-			p := profiles.Firefox_148
-			switch strings.ToLower(os.Getenv("TLS_CLIENT_PROFILE")) {
-			case "firefox_133", "ff133":
-				p = profiles.Firefox_133
-			case "firefox_117", "ff117", "":
-				// keep default
-			}
-			return p
-		}()),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(tls_client.NewCookieJar()),
-		// tls_client.WithInsecureSkipVerify(),
-	}
-
-	// proxy in environment variables
+func GetProxyURL() string {
 	proxyAddr := os.Getenv("HTTP_PROXY")
 	if proxyAddr == "" {
 		proxyAddr = os.Getenv("http_proxy")
@@ -47,7 +31,6 @@ func NewClient() (tls_client.HttpClient, error) {
 		}
 	}
 
-	// No Proxy in env, try to load from configuration
 	if proxyAddr == "" {
 		homeDir, _ := os.UserHomeDir()
 		proxyFiles := []string{
@@ -57,13 +40,43 @@ func NewClient() (tls_client.HttpClient, error) {
 
 		for _, file := range proxyFiles {
 			if content, err := os.ReadFile(file); err == nil {
-				proxyAddr = strings.TrimSpace(string(content))
-				break
+				candidate := strings.TrimSpace(string(content))
+				if candidate != "" && !strings.HasPrefix(candidate, "#") {
+					proxyAddr = candidate
+					break
+				}
 			}
 		}
 	}
 
-	// Set proxy options if valid proxy detected.
+	return proxyAddr
+}
+
+func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
+	timeout := 600
+	if len(timeoutSeconds) > 0 && timeoutSeconds[0] > 0 {
+		timeout = timeoutSeconds[0]
+	}
+
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(timeout),
+		// Allow overriding TLS fingerprint via env; default stays Firefox_117.
+		tls_client.WithClientProfile(func() profiles.ClientProfile {
+			p := profiles.Firefox_148
+			switch strings.ToLower(os.Getenv("TLS_CLIENT_PROFILE")) {
+			case "firefox_133", "ff133":
+				p = profiles.Firefox_133
+			case "firefox_117", "ff117", "":
+				// keep default
+			}
+			return p
+		}()),
+		tls_client.WithNotFollowRedirects(),
+		tls_client.WithCookieJar(tls_client.NewCookieJar()),
+		// tls_client.WithInsecureSkipVerify(),
+	}
+
+	proxyAddr := GetProxyURL()
 	if proxyAddr != "" {
 		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") || strings.HasPrefix(proxyAddr, "socks5h://") {
 			options = append(options, tls_client.WithProxyUrl(proxyAddr))
@@ -75,4 +88,29 @@ func NewClient() (tls_client.HttpClient, error) {
 	}
 
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+}
+
+func NewStandardHTTPClient(timeoutSeconds ...int) *http.Client {
+	timeout := 60 * time.Second
+	if len(timeoutSeconds) > 0 && timeoutSeconds[0] > 0 {
+		timeout = time.Duration(timeoutSeconds[0]) * time.Second
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+	}
+
+	proxyAddr := GetProxyURL()
+	if proxyAddr != "" {
+		if strings.HasPrefix(proxyAddr, "http://") || strings.HasPrefix(proxyAddr, "socks5://") || strings.HasPrefix(proxyAddr, "socks5h://") {
+			if parsedURL, err := url.Parse(proxyAddr); err == nil {
+				transport.Proxy = http.ProxyURL(parsedURL)
+			}
+		}
+	}
+
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
 }

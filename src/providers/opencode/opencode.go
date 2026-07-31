@@ -18,6 +18,7 @@ type RequestBody struct {
 	Model    string `json:"model"`
 	Stream   bool   `json:"stream"`
 	Messages []any  `json:"messages"`
+	Tools    []any  `json:"tools,omitempty"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -54,25 +55,31 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		url = "https://opencode.ai/zen/v1/chat/completions"
 	}
 
+	messages := make([]any, 0, len(params.PrevMessages)+2)
+	if params.SystemPrompt != "" {
+		messages = append(messages, structs.DefaultMessage{
+			Content: params.SystemPrompt,
+			Role:    "system",
+		})
+	}
+
 	requestInfo := RequestBody{
-		Model:  model,
-		Stream: true,
-		Messages: []any{
-			structs.DefaultMessage{
-				Content: params.SystemPrompt,
-				Role:    "system",
-			},
-		},
+		Model:    model,
+		Stream:   true,
+		Messages: messages,
+		Tools:    params.Tools,
 	}
 
 	if len(params.PrevMessages) > 0 {
 		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
 	}
 
-	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
-		Role:    "user",
-		Content: input,
-	})
+	if input != "" {
+		requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+			Role:    "user",
+			Content: input,
+		})
+	}
 
 	jsonRequest, err := json.Marshal(requestInfo)
 

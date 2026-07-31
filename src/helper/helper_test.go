@@ -116,7 +116,7 @@ func TestInteractiveStatusErrorDoesNotAppendAssistantMessage(t *testing.T) {
 		IsGetSilent:   true,
 	}
 
-	if response, err := MakeRequestAndGetData("hello", params, extraOptions); err == nil {
+	if response, _, err := MakeRequestAndGetData("hello", params, extraOptions); err == nil {
 		t.Fatal("expected interactive 4xx response to return an error")
 	} else if response != "" {
 		t.Fatalf("expected empty response text on error, got %q", response)
@@ -130,3 +130,72 @@ func TestInteractiveStatusErrorDoesNotAppendAssistantMessage(t *testing.T) {
 		t.Fatalf("expected no conversation history entries on interactive 4xx, got %#v", messages)
 	}
 }
+
+func TestGetToolsSystemPrompt(t *testing.T) {
+	prompt := GetToolsSystemPrompt()
+	if !strings.Contains(prompt, "You are tgpt, a terminal assistant. Today is") {
+		t.Fatalf("expected prompt to contain assistant identity and date, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "The shell environment you are in is") {
+		t.Fatalf("expected prompt to contain shell info, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "The operating system you are on is") {
+		t.Fatalf("expected prompt to contain OS info, got %q", prompt)
+	}
+}
+
+func TestToolDepthLimitClearsToolsAndReturnsResponse(t *testing.T) {
+	var receivedToolsField string
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		buf := make([]byte, r.ContentLength)
+		_, _ = r.Body.Read(buf)
+		bodyStr := string(buf)
+
+		if strings.Contains(bodyStr, `"tools":`) {
+			receivedToolsField = "present"
+		} else {
+			receivedToolsField = "absent"
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"Final summary response\"}}]}\n\n"))
+	}))
+	defer server.Close()
+
+	params := structs.Params{
+		Provider: "openai",
+		Url:      server.URL,
+		Tools:    []any{"dummy_tool"},
+	}
+	extraOptions := structs.ExtraOptions{
+		IsNormal:  true,
+		ToolDepth: 5,
+	}
+
+	res, _, err := MakeRequestAndGetData("hello", params, extraOptions)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedToolsField != "absent" {
+		t.Errorf("expected tools field to be absent in request payload when ToolDepth >= 5, got %s", receivedToolsField)
+	}
+
+	if res != "Final summary response" {
+		t.Errorf("expected response 'Final summary response', got %q", res)
+	}
+}
+
+func TestFormatToolArgsTruncation(t *testing.T) {
+	longVal := strings.Repeat("a", 150)
+	rawArgs := `{"short":"hello","long":"` + longVal + `"}`
+	formatted := formatToolArgs(rawArgs)
+
+	if len(formatted) > 130 {
+		t.Fatalf("expected formatted string length <= 130, got %d: %q", len(formatted), formatted)
+	}
+	if !strings.Contains(formatted, "...") {
+		t.Fatalf("expected formatted string to contain '...', got %q", formatted)
+	}
+}
+
