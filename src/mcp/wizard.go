@@ -7,10 +7,170 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/aandrew-me/tgpt/v2/src/tools"
+	tea "github.com/charmbracelet/bubbletea"
 )
+
+type selectModel struct {
+	title    string
+	options  []string
+	cursor   int
+	selected int
+	canceled bool
+}
+
+func (m selectModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc", "q":
+			m.canceled = true
+			return m, tea.Quit
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			} else {
+				m.cursor = len(m.options) - 1
+			}
+		case "down", "j":
+			if m.cursor < len(m.options)-1 {
+				m.cursor++
+			} else {
+				m.cursor = 0
+			}
+		case "enter", " ":
+			m.selected = m.cursor
+			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+func (m selectModel) View() string {
+	var s strings.Builder
+	if m.title != "" {
+		s.WriteString(m.title + "\n")
+	}
+	for i, option := range m.options {
+		if m.cursor == i {
+			s.WriteString(fmt.Sprintf("  \033[36m❯ %s\033[0m\n", option))
+		} else {
+			s.WriteString(fmt.Sprintf("    %s\n", option))
+		}
+	}
+	s.WriteString("\n\033[90m(Use ↑/↓ arrow keys to select, Enter to confirm, Esc to cancel)\033[0m\n")
+	return s.String()
+}
+
+// SelectMenu runs an interactive selection menu using arrow keys and Enter.
+// Returns the selected index, selected option string, or error if canceled.
+func SelectMenu(title string, options []string, defaultIndex int) (int, string, error) {
+	if len(options) == 0 {
+		return -1, "", fmt.Errorf("no options provided")
+	}
+	if defaultIndex < 0 || defaultIndex >= len(options) {
+		defaultIndex = 0
+	}
+
+	m := selectModel{
+		title:    title,
+		options:  options,
+		cursor:   defaultIndex,
+		selected: -1,
+	}
+
+	p := tea.NewProgram(m)
+	finalModel, err := p.Run()
+	if err != nil {
+		return -1, "", err
+	}
+
+	res, ok := finalModel.(selectModel)
+	if !ok || res.canceled || res.selected < 0 {
+		return -1, "", fmt.Errorf("selection canceled")
+	}
+
+	return res.selected, res.options[res.selected], nil
+}
+
+// RemoveServerInteractive lists configured MCP servers in an interactive arrow-key menu
+// and allows the user to select and remove one.
+func RemoveServerInteractive(ctx context.Context, configPath string) error {
+	resolvedPath := configPath
+	if resolvedPath == "" {
+		resolvedPath = "mcp_config.json"
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			userConfig := filepath.Join(homeDir, ".config", "tgpt", "mcp_config.json")
+			if _, err := os.Stat("mcp_config.json"); os.IsNotExist(err) {
+				if _, err := os.Stat(userConfig); err == nil {
+					resolvedPath = userConfig
+				}
+			}
+		}
+	}
+
+	cfg, err := LoadConfig(resolvedPath)
+	if err != nil {
+		return fmt.Errorf("failed to load MCP config from %s: %w", resolvedPath, err)
+	}
+
+	if cfg == nil || len(cfg.MCPServers) == 0 {
+		fmt.Printf("No MCP servers found in configuration file (%s).\n", resolvedPath)
+		return nil
+	}
+
+	var serverNames []string
+	for name := range cfg.MCPServers {
+		serverNames = append(serverNames, name)
+	}
+	sort.Strings(serverNames)
+
+	var displayItems []string
+	for _, name := range serverNames {
+		sc := cfg.MCPServers[name]
+		var detail string
+		if sc.URL != "" {
+			detail = sc.URL
+		} else if sc.Command != "" {
+			detail = "stdio: " + sc.Command
+			if len(sc.Args) > 0 {
+				detail += " " + strings.Join(sc.Args, " ")
+			}
+		}
+		if detail != "" {
+			displayItems = append(displayItems, fmt.Sprintf("%s (%s)", name, detail))
+		} else {
+			displayItems = append(displayItems, name)
+		}
+	}
+
+	serverNames = append(serverNames, "Cancel")
+	displayItems = append(displayItems, "Cancel (abort without removing)")
+
+	title := fmt.Sprintf("\n╭─ Remove MCP Server (%s)\n│ Select an MCP server to remove:", resolvedPath)
+	idx, _, err := SelectMenu(title, displayItems, 0)
+	if err != nil || idx < 0 || idx >= len(serverNames)-1 {
+		fmt.Println("Aborted without removing.")
+		return nil
+	}
+
+	selectedName := serverNames[idx]
+	delete(cfg.MCPServers, selectedName)
+
+	if err := SaveConfig(resolvedPath, cfg); err != nil {
+		return fmt.Errorf("failed to save MCP config to %s: %w", resolvedPath, err)
+	}
+
+	fmt.Printf("\n✓ MCP Server %q successfully removed from %s\n", selectedName, resolvedPath)
+	return nil
+}
 
 // AddServerInteractive prompts the user for server details, tests the connection,
 // and saves the server configuration to the specified config file.
@@ -47,12 +207,27 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 	}
 
 	// 2. Connection Type
-	fmt.Println("\n▶ Server Connection Type:")
-	fmt.Println("  1) Remote URL (HTTP / SSE endpoint)")
-	fmt.Println("  2) Local Command (stdio subprocess, e.g. npx, uvx)")
-	fmt.Print("Choose option [1/2] (default 1): ")
-	connTypeChoice, _ := readInput(reader)
-	connTypeChoice = strings.TrimSpace(connTypeChoice)
+	connTypeChoice := "1"
+	connOptions := []string{
+		"Remote URL (HTTP / SSE endpoint)",
+		"Local Command (stdio subprocess, e.g. npx, uvx)",
+	}
+	connIdx, _, err := SelectMenu("▶ Server Connection Type:", connOptions, 0)
+	if err == nil {
+		if connIdx == 1 {
+			connTypeChoice = "2"
+		}
+	} else {
+		fmt.Println("\n▶ Server Connection Type:")
+		fmt.Println("  1) Remote URL (HTTP / SSE endpoint)")
+		fmt.Println("  2) Local Command (stdio subprocess, e.g. npx, uvx)")
+		fmt.Print("Choose option [1/2] (default 1): ")
+		val, _ := readInput(reader)
+		val = strings.TrimSpace(val)
+		if val == "2" {
+			connTypeChoice = "2"
+		}
+	}
 
 	var sc ServerConfig
 
@@ -99,11 +274,25 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 			return fmt.Errorf("server URL cannot be empty")
 		}
 
-		fmt.Print("▶ Transport Type [auto / streamable-http / sse] (default auto): ")
-		tType, _ := readInput(reader)
-		tType = strings.TrimSpace(tType)
-		if tType != "" && tType != "auto" {
-			sc.Type = tType
+		tOptions := []string{
+			"auto (default - try Streamable HTTP, fallback to SSE)",
+			"streamable-http",
+			"sse",
+		}
+		tIdx, _, err := SelectMenu("▶ Transport Type:", tOptions, 0)
+		if err == nil {
+			if tIdx == 1 {
+				sc.Type = "streamable-http"
+			} else if tIdx == 2 {
+				sc.Type = "sse"
+			}
+		} else {
+			fmt.Print("▶ Transport Type [auto / streamable-http / sse] (default auto): ")
+			tType, _ := readInput(reader)
+			tType = strings.TrimSpace(tType)
+			if tType != "" && tType != "auto" {
+				sc.Type = tType
+			}
 		}
 
 		fmt.Print("▶ Add Authorization Bearer Token / API Key? [y/N]: ")
@@ -258,3 +447,4 @@ func parseArgs(argsStr string) []string {
 
 	return args
 }
+

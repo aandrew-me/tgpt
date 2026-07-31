@@ -390,6 +390,7 @@ func main() {
 	mcpConfig := flag.String("mcp-config", os.Getenv("MCP_CONFIG"), "Path to MCP server configuration JSON file")
 	mcpServer := flag.String("mcp-server", "", "Command to run a stdio MCP server directly")
 	mcpAdd := flag.Bool("mcp-add", false, "Interactively add a new MCP server to mcp_config.json")
+	mcpRemove := flag.Bool("mcp-remove", false, "Interactively remove an MCP server from mcp_config.json")
 	var toolsFlag toolsFlagValue
 	flag.Var(&toolsFlag, "t", "Enable tools / MCP support")
 	flag.Var(&toolsFlag, "tools", "Enable tools / MCP support")
@@ -409,6 +410,14 @@ func main() {
 
 	if *mcpAdd {
 		if err := mcp.AddServerInteractive(context.Background(), *mcpConfig); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	if *mcpRemove {
+		if err := mcp.RemoveServerInteractive(context.Background(), *mcpConfig); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}

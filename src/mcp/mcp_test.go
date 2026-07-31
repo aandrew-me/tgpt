@@ -135,3 +135,17 @@ func TestParseArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestRemoveServerInteractiveEmptyConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "mcp_config.json")
+	if err := SaveConfig(configPath, &Config{MCPServers: make(map[string]ServerConfig)}); err != nil {
+		t.Fatalf("unexpected error saving config: %v", err)
+	}
+
+	err := RemoveServerInteractive(t.Context(), configPath)
+	if err != nil {
+		t.Fatalf("expected no error when removing from empty config, got: %v", err)
+	}
+}
+
