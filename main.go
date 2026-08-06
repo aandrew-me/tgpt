@@ -713,6 +713,10 @@ func main() {
 						Key: Prompt.ControlC,
 						Fn:  exit,
 					}),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlZ,
+						Fn:  suspend,
+					}),
 				)
 				getAndPrintResponse(input)
 			}
@@ -823,6 +827,10 @@ func main() {
 						Key: Prompt.ControlC,
 						Fn:  exit,
 					}),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlZ,
+						Fn:  suspend,
+					}),
 				)
 				if len(input) > 0 {
 					getAndPrintFindResponse(input)
@@ -888,3 +896,8 @@ func exit(_ *Prompt.Buffer) {
 	restoreTerminal()
 	os.Exit(0)
 }
+
+func suspend(_ *Prompt.Buffer) {
+	suspendProcess()
+}
+

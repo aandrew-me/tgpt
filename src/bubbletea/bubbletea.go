@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/aandrew-me/tgpt/v2/src/utils"
@@ -73,6 +74,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(*userInput) > 1 {
 				m.textarea.Blur()
 				return m, tea.Quit
+			}
+		case "ctrl+z":
+			if runtime.GOOS != "windows" {
+				return m, tea.Suspend
 			}
 		case "tab":
 			if m.textarea.Focused() {
