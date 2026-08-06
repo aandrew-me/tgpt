@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
@@ -24,7 +25,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	Prompt "github.com/c-bata/go-prompt"
-	tea "charm.land/bubbletea/v2"
 	"github.com/fatih/color"
 )
 
@@ -269,6 +269,10 @@ func runInteractiveShellMode(
 				Key: Prompt.ControlC,
 				Fn:  exit,
 			}),
+			Prompt.OptionAddKeyBind(Prompt.KeyBind{
+				Key: Prompt.ControlZ,
+				Fn:  suspend,
+			}),
 		)
 		cmd := getAndPrintResponse(input)
 		execCmd(cmd)
@@ -302,12 +306,20 @@ func main() {
 		executablePath = execPath
 	}
 
-	terminate := make(chan os.Signal, 1)
-	signal.Notify(terminate, os.Interrupt, syscall.SIGTERM)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM, syscall.SIGTSTP)
 	go func() {
-		<-terminate
-		restoreTerminal()
-		os.Exit(0)
+		for {
+			sig := <-sigs
+			switch sig {
+			case os.Interrupt, syscall.SIGTERM:
+				restoreTerminal()
+				os.Exit(0)
+			case syscall.SIGTSTP: // Suspend to parent shell (Ctrl+Z outside raw-mode input)
+				restoreTerminal()
+				syscall.Kill(syscall.Getpid(), syscall.SIGSTOP)
+			}
+		}
 	}()
 
 	apiModel := flag.String("model", "", "Choose which model to use")
@@ -713,6 +725,10 @@ func main() {
 						Key: Prompt.ControlC,
 						Fn:  exit,
 					}),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlZ,
+						Fn:  suspend,
+					}),
 				)
 				getAndPrintResponse(input)
 			}
@@ -823,6 +839,10 @@ func main() {
 						Key: Prompt.ControlC,
 						Fn:  exit,
 					}),
+					Prompt.OptionAddKeyBind(Prompt.KeyBind{
+						Key: Prompt.ControlZ,
+						Fn:  suspend,
+					}),
 				)
 				if len(input) > 0 {
 					getAndPrintFindResponse(input)
@@ -887,4 +907,13 @@ func exit(_ *Prompt.Buffer) {
 	bold.Println("Exiting...")
 	restoreTerminal()
 	os.Exit(0)
+}
+
+// suspend stops the process so the user can return to the parent shell
+// (job control). The terminal is restored to cooked mode first so the
+// shell regains control of the tty; go-prompt re-enters raw mode on the
+// next Input() call after `fg`.
+func suspend(_ *Prompt.Buffer) {
+	restoreTerminal()
+	syscall.Kill(syscall.Getpid(), syscall.SIGSTOP)
 }
