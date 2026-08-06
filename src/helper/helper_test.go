@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -199,3 +200,121 @@ func TestFormatToolArgsTruncation(t *testing.T) {
 	}
 }
 
+func TestDetectPackageManager(t *testing.T) {
+	tests := []struct {
+		name          string
+		execPath      string
+		goos          string
+		wantIsPkg     bool
+		wantPkgName   string
+		wantUpdateCmd string
+	}{
+		{
+			name:          "Scoop on Windows",
+			execPath:      `C:\Users\user\scoop\shims\tgpt.exe`,
+			wantIsPkg:     true,
+			wantPkgName:   "Scoop",
+			wantUpdateCmd: "scoop update tgpt",
+		},
+		{
+			name:          "Chocolatey on Windows",
+			execPath:      `C:\ProgramData\chocolatey\bin\tgpt.exe`,
+			wantIsPkg:     true,
+			wantPkgName:   "Chocolatey",
+			wantUpdateCmd: "choco upgrade tgpt",
+		},
+		{
+			name:          "Homebrew Cellar",
+			execPath:      `/opt/homebrew/Cellar/tgpt/2.13.0/bin/tgpt`,
+			wantIsPkg:     true,
+			wantPkgName:   "Homebrew",
+			wantUpdateCmd: "brew upgrade tgpt",
+		},
+		{
+			name:          "Go bin",
+			execPath:      `/home/user/go/bin/tgpt`,
+			wantIsPkg:     true,
+			wantPkgName:   "Go",
+			wantUpdateCmd: "go install github.com/aandrew-me/tgpt/v2@latest",
+		},
+		{
+			name:          "PowerShell install script path on Windows",
+			execPath:      `C:\Users\user\AppData\Local\tgpt\tgpt.exe`,
+			wantIsPkg:     false,
+			wantPkgName:   "",
+			wantUpdateCmd: "",
+		},
+		{
+			name:          "Bash install script path on Linux",
+			execPath:      `/usr/local/bin/tgpt`,
+			wantIsPkg:     false,
+			wantPkgName:   "",
+			wantUpdateCmd: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotIsPkg, gotPkgName, gotUpdateCmd := DetectPackageManager(filepath.FromSlash(tt.execPath))
+			if gotIsPkg != tt.wantIsPkg {
+				t.Errorf("DetectPackageManager(%q) isPkg = %v, want %v", tt.execPath, gotIsPkg, tt.wantIsPkg)
+			}
+			if gotPkgName != tt.wantPkgName {
+				t.Errorf("DetectPackageManager(%q) pkgName = %q, want %q", tt.execPath, gotPkgName, tt.wantPkgName)
+			}
+			if gotUpdateCmd != tt.wantUpdateCmd {
+				t.Errorf("DetectPackageManager(%q) updateCmd = %q, want %q", tt.execPath, gotUpdateCmd, tt.wantUpdateCmd)
+			}
+		})
+	}
+}
+
+func TestDetectPacmanLinux(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Linux-specific test")
+	}
+	// For a non-existent file in /usr/bin/tgpt_fake_test, pacman/dpkg/rpm won't own it
+	gotIsPkg, _, _ := DetectPackageManager("/usr/bin/tgpt_fake_test")
+	if gotIsPkg {
+		t.Errorf("Expected false for non-owned file in /usr/bin, got %v", gotIsPkg)
+	}
+}
+
+func TestDetectPackageManagerMultiGOPATH(t *testing.T) {
+	sep := string(os.PathListSeparator)
+	origGOPATH := os.Getenv("GOPATH")
+	defer os.Setenv("GOPATH", origGOPATH)
+
+	dummyFirst := filepath.Join("custom", "first_path")
+	dummySecond := filepath.Join("custom", "second_path")
+	os.Setenv("GOPATH", dummyFirst+sep+dummySecond)
+
+	execInSecond := filepath.Join(dummySecond, "bin", "tgpt")
+	isPkg, pkgName, _ := DetectPackageManager(execInSecond)
+	if !isPkg || pkgName != "Go" {
+		t.Errorf("expected Go detection for path in multi-entry GOPATH (%q), got %v, %q", execInSecond, isPkg, pkgName)
+	}
+}
+
+func TestEscapePowerShellArg(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{
+			input: `C:\Users\name\AppData\Local\tgpt\tgpt.exe`,
+			want:  `'C:\Users\name\AppData\Local\tgpt\tgpt.exe'`,
+		},
+		{
+			input: `C:\Users\John's PC\tgpt.exe`,
+			want:  `'C:\Users\John''s PC\tgpt.exe'`,
+		},
+	}
+
+	for _, tt := range tests {
+		got := escapePowerShellArg(tt.input)
+		if got != tt.want {
+			t.Errorf("escapePowerShellArg(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
