@@ -1073,7 +1073,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			}
 			fullText += mainText
 
-			if !extraOptions.IsGetWhole && !extraOptions.IsGetSilent {
+			if !extraOptions.IsGetWhole {
 				fmt.Print(mainText)
 			}
 		}
