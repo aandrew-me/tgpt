@@ -226,9 +226,7 @@ func GetData(input string, params structs.Params, extraOptions structs.ExtraOpti
 		return nil, ""
 	}
 
-	if !extraOptions.IsGetSilent {
-		fmt.Print("\n\n")
-	}
+	fmt.Print("\n\n")
 
 	// turnMessages holds the fully-ordered messages for this turn (user input,
 	// any tool call/tool result pairs, and the final assistant response) when
