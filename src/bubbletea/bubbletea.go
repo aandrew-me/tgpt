@@ -7,11 +7,11 @@ import (
 	"runtime"
 	"strings"
 
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 	"github.com/atotto/clipboard"
-	Prompt "github.com/c-bata/go-prompt"
-	"charm.land/bubbles/v2/textarea"
-	tea "charm.land/bubbletea/v2"
 	"github.com/olekukonko/ts"
 )
 
@@ -145,7 +145,105 @@ func GetFormattedInputStdin() (formattedInput string) {
 	return strings.TrimSpace(input)
 }
 
-func HistoryCompleter(d Prompt.Document) []Prompt.Suggest {
-	s := []Prompt.Suggest{}
-	return Prompt.FilterHasPrefix(s, d.GetWordAfterCursor(), true)
+type InputModel struct {
+	textinput textinput.Model
+	history   []string
+	histIdx   int
+	tempInput string
+	Value     string
+	Canceled  bool
+}
+
+func InitialInputModel(prompt string, history []string) InputModel {
+	ti := textinput.New()
+	ti.Prompt = prompt
+	ti.Focus()
+
+	return InputModel{
+		textinput: ti,
+		history:   history,
+		histIdx:   len(history),
+		Value:     "",
+		Canceled:  false,
+	}
+}
+
+func (m InputModel) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c":
+			m.Canceled = true
+			return m, tea.Quit
+
+		case "ctrl+d":
+			if m.textinput.Value() == "" {
+				m.Canceled = true
+				return m, tea.Quit
+			}
+
+		case "ctrl+z":
+			if runtime.GOOS != "windows" {
+				return m, tea.Suspend
+			}
+
+		case "enter":
+			m.Value = m.textinput.Value()
+			return m, tea.Quit
+
+		case "up":
+			if len(m.history) > 0 && m.histIdx > 0 {
+				if m.histIdx == len(m.history) {
+					m.tempInput = m.textinput.Value()
+				}
+				m.histIdx--
+				m.textinput.SetValue(m.history[m.histIdx])
+				m.textinput.CursorEnd()
+			}
+			return m, nil
+
+		case "down":
+			if m.histIdx < len(m.history) {
+				m.histIdx++
+				if m.histIdx == len(m.history) {
+					m.textinput.SetValue(m.tempInput)
+				} else {
+					m.textinput.SetValue(m.history[m.histIdx])
+				}
+				m.textinput.CursorEnd()
+			}
+			return m, nil
+		}
+	}
+
+	m.textinput, cmd = m.textinput.Update(msg)
+	return m, cmd
+}
+
+func (m InputModel) View() tea.View {
+	v := tea.NewView(m.textinput.View())
+	v.Cursor = m.textinput.Cursor()
+	return v
+}
+
+// PromptInput runs a single-line input prompt using Bubble Tea.
+// Returns input string, canceled bool (true if Ctrl+C was pressed), and error.
+func PromptInput(prompt string, history []string) (string, bool, error) {
+	m := InitialInputModel(prompt, history)
+	p := tea.NewProgram(m)
+	finalModel, err := p.Run()
+	if err != nil {
+		return "", false, err
+	}
+	im := finalModel.(InputModel)
+	if !im.Canceled {
+		fmt.Printf("%s%s\n", prompt, im.Value)
+	}
+	return im.Value, im.Canceled, nil
 }
