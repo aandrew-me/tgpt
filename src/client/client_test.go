@@ -1,6 +1,7 @@
 package client
 
 import (
+	"net/http"
 	"os"
 	"testing"
 )
@@ -22,5 +23,31 @@ func TestNewStandardHTTPClient(t *testing.T) {
 	}
 	if c.Timeout.Seconds() != 30 {
 		t.Fatalf("expected timeout 30s, got %v", c.Timeout)
+	}
+
+	defaultClient := NewStandardHTTPClient()
+	if defaultClient.Timeout.Seconds() != 600 {
+		t.Fatalf("expected default timeout 600s, got %v", defaultClient.Timeout)
+	}
+
+	tr, ok := defaultClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+	if tr.DialContext == nil {
+		t.Fatal("expected DialContext to be set")
+	}
+	if tr.ResponseHeaderTimeout != 0 {
+		t.Fatalf("expected ResponseHeaderTimeout to be 0, got %v", tr.ResponseHeaderTimeout)
+	}
+}
+
+func TestNewClient(t *testing.T) {
+	c, err := NewClient()
+	if err != nil {
+		t.Fatalf("unexpected error creating tls client: %v", err)
+	}
+	if c == nil {
+		t.Fatal("expected non-nil tls client")
 	}
 }
