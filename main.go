@@ -23,7 +23,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
-	Prompt "github.com/c-bata/go-prompt"
 	tea "charm.land/bubbletea/v2"
 	"github.com/fatih/color"
 )
@@ -262,14 +261,14 @@ func runInteractiveShellMode(
 
 	for {
 		blue.Println("╭─ You")
-		input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
-			Prompt.OptionHistory(history),
-			Prompt.OptionPrefixTextColor(Prompt.Blue),
-			Prompt.OptionAddKeyBind(Prompt.KeyBind{
-				Key: Prompt.ControlC,
-				Fn:  exit,
-			}),
-		)
+		input, canceled, err := bubbletea.PromptInput(blue.Sprint("╰─> "), history)
+		if err != nil {
+			utils.PrintError(err.Error())
+			os.Exit(1)
+		}
+		if canceled {
+			handleExit()
+		}
 		cmd := getAndPrintResponse(input)
 		execCmd(cmd)
 	}
@@ -706,18 +705,14 @@ func main() {
 
 			for {
 				blue.Println("╭─ You")
-				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
-					Prompt.OptionHistory(history),
-					Prompt.OptionPrefixTextColor(Prompt.DarkBlue),
-					Prompt.OptionAddKeyBind(Prompt.KeyBind{
-						Key: Prompt.ControlC,
-						Fn:  exit,
-					}),
-					Prompt.OptionAddKeyBind(Prompt.KeyBind{
-						Key: Prompt.ControlZ,
-						Fn:  suspend,
-					}),
-				)
+				input, canceled, err := bubbletea.PromptInput(blue.Sprint("╰─> "), history)
+				if err != nil {
+					utils.PrintError(err.Error())
+					os.Exit(1)
+				}
+				if canceled {
+					handleExit()
+				}
 				getAndPrintResponse(input)
 			}
 
@@ -820,18 +815,14 @@ func main() {
 
 			for {
 				blue.Println("╭─ You")
-				input := Prompt.Input("╰─> ", bubbletea.HistoryCompleter,
-					Prompt.OptionHistory(history),
-					Prompt.OptionPrefixTextColor(Prompt.DarkBlue),
-					Prompt.OptionAddKeyBind(Prompt.KeyBind{
-						Key: Prompt.ControlC,
-						Fn:  exit,
-					}),
-					Prompt.OptionAddKeyBind(Prompt.KeyBind{
-						Key: Prompt.ControlZ,
-						Fn:  suspend,
-					}),
-				)
+				input, canceled, err := bubbletea.PromptInput(blue.Sprint("╰─> "), history)
+				if err != nil {
+					utils.PrintError(err.Error())
+					os.Exit(1)
+				}
+				if canceled {
+					handleExit()
+				}
 				if len(input) > 0 {
 					getAndPrintFindResponse(input)
 					history = append(history, input)
@@ -891,13 +882,9 @@ func main() {
 	}
 }
 
-func exit(_ *Prompt.Buffer) {
+func handleExit() {
 	bold.Println("Exiting...")
 	restoreTerminal()
 	os.Exit(0)
-}
-
-func suspend(_ *Prompt.Buffer) {
-	suspendProcess()
 }
 
