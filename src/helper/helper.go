@@ -343,9 +343,82 @@ func canWriteToDir(path string) bool {
 	return true
 }
 
+func isOwnedBySystemPkgMgr(execPath string) bool {
+	if pacman, err := exec.LookPath("pacman"); err == nil {
+		if err := exec.Command(pacman, "-Qo", execPath).Run(); err == nil {
+			return true
+		}
+	}
+	if dpkg, err := exec.LookPath("dpkg"); err == nil {
+		if err := exec.Command(dpkg, "-S", execPath).Run(); err == nil {
+			return true
+		}
+	}
+	if rpm, err := exec.LookPath("rpm"); err == nil {
+		if err := exec.Command(rpm, "-qf", execPath).Run(); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func DetectPackageManager(executablePath string) (isPkgMgr bool, pkgName string, updateCmd string) {
+	lowerPath := strings.ToLower(filepath.ToSlash(executablePath))
+
+	// Scoop (Windows)
+	if strings.Contains(lowerPath, "/scoop/") {
+		return true, "Scoop", "scoop update tgpt"
+	}
+
+	// Chocolatey (Windows)
+	if strings.Contains(lowerPath, "/chocolatey/") || strings.Contains(lowerPath, "/choco/") {
+		return true, "Chocolatey", "choco upgrade tgpt"
+	}
+
+	// Homebrew (macOS / Linux)
+	if strings.Contains(lowerPath, "/cellar/") || strings.Contains(lowerPath, "/homebrew/") || strings.Contains(lowerPath, "/linuxbrew/") {
+		return true, "Homebrew", "brew upgrade tgpt"
+	}
+
+	// System package manager (Linux pacman / dpkg / rpm)
+	if runtime.GOOS == "linux" && isOwnedBySystemPkgMgr(executablePath) {
+		return true, "system package manager", "use your package manager (e.g. pacman, apt, dnf) to update"
+	}
+
+	// Go install (go/bin/tgpt)
+	gobin := os.Getenv("GOBIN")
+	if gobin != "" && strings.HasPrefix(lowerPath, strings.ToLower(filepath.ToSlash(gobin))) {
+		return true, "Go", "go install github.com/aandrew-me/tgpt/v2@latest"
+	}
+	gopath := os.Getenv("GOPATH")
+	if gopath != "" {
+		for _, entry := range filepath.SplitList(gopath) {
+			entrySlash := strings.ToLower(filepath.ToSlash(entry))
+			if entrySlash != "" && strings.Contains(lowerPath, entrySlash+"/bin") {
+				return true, "Go", "go install github.com/aandrew-me/tgpt/v2@latest"
+			}
+		}
+	}
+	if strings.Contains(lowerPath, "/go/bin/") {
+		return true, "Go", "go install github.com/aandrew-me/tgpt/v2@latest"
+	}
+
+	return false, "", ""
+}
+
+func escapePowerShellArg(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
+}
+
 func Update(localVersion string, executablePath string) {
-	if runtime.GOOS == "windows" || runtime.GOOS == "android" {
+	if runtime.GOOS == "android" {
 		fmt.Println("This feature is not supported on your Operating System")
+		return
+	}
+
+	if isPkgMgr, pkgName, updateCmd := DetectPackageManager(executablePath); isPkgMgr {
+		fmt.Printf("tgpt was installed via a package manager (%s).\n", pkgName)
+		fmt.Printf("Please update it using your package manager: %s\n", updateCmd)
 		return
 	}
 
@@ -390,19 +463,25 @@ func Update(localVersion string, executablePath string) {
 
 	fmt.Printf("Updating from %s to %s...\n", localSemver, remoteSemver)
 
-	useSudo := !canWriteToDir(executablePath)
-
-	var script string
-	if useSudo {
-		fmt.Println("Elevated privileges required to write to:", filepath.Dir(executablePath))
-		fmt.Println("Requesting sudo access...")
-		script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | sudo bash -s -- "$1"`
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		script := fmt.Sprintf("& { $(irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1) } -Path %s", escapePowerShellArg(executablePath))
+		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", script)
 	} else {
-		script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s -- "$1"`
+		useSudo := !canWriteToDir(executablePath)
+		var script string
+		if useSudo {
+			fmt.Println("Elevated privileges required to write to:", filepath.Dir(executablePath))
+			fmt.Println("Requesting sudo access...")
+			script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | sudo bash -s -- "$1"`
+		} else {
+			script = `set -o pipefail; curl -sSLf https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s -- "$1"`
+		}
+
+		// Pass executablePath as positional parameter $1 to safely prevent shell injection.
+		cmd = exec.Command("bash", "-c", script, "bash", executablePath)
 	}
 
-	// Pass executablePath as positional parameter $1 to safely prevent shell injection.
-	cmd := exec.Command("bash", "-c", script, "bash", executablePath)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

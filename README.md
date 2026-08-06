@@ -84,11 +84,13 @@ go install github.com/aandrew-me/tgpt/v2@latest
 You can download the executable for your operating system, rename it to `tgpt` (or any other desired name), and then execute it by typing `./tgpt` while in that directory. Alternatively, you can add it to your PATH environmental variable and then execute it by simply typing `tgpt`.
 
 ## Updating ⬆️
-If you installed the program with the installation script, you may update it with
+If you installed the program with the installation script (GNU/Linux, macOS, or Windows), you may update it with:
 ```bash
 tgpt -u
 ```
-**It may require admin privileges.**
+*(On GNU/Linux and macOS, it may require admin privileges depending on the install location.)*
+
+If you installed using a package manager (Homebrew, Pacman, Scoop, Chocolatey, Go), please update using your package manager's update command (e.g. `brew upgrade tgpt`, `pacman -Syu tgpt`, `scoop update tgpt`, `choco upgrade tgpt`, or `go install github.com/aandrew-me/tgpt/v2@latest`).
 
 ## [Usage](./md/usage.md) 
 

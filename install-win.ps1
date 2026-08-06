@@ -19,7 +19,8 @@
 
 [CmdletBinding(DefaultParameterSetName = 'Install')]
 param(
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    [string]$Path
 )
 
 $ErrorActionPreference = 'Stop'
@@ -27,13 +28,29 @@ $ErrorActionPreference = 'Stop'
 # Configuration
 $installDir = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'tgpt'
 $exeName    = 'tgpt.exe'
-$tempPath   = Join-Path -Path $PWD -ChildPath $exeName
+
+if ($Path) {
+    if ((Test-Path -Path $Path -PathType Leaf) -or ($Path.ToLower().EndsWith('.exe'))) {
+        $installDir = Split-Path -Parent $Path
+        $exeName    = Split-Path -Leaf $Path
+    } else {
+        $installDir = $Path
+    }
+}
+
+$tempPath = Join-Path -Path $env:TEMP -ChildPath "tgpt_install_$PID.exe"
 
 function Install-tgpt {
     Write-Host "=== Installing tgpt (per-user) ===`n"
 
-    # Determine the correct binary URL
-    if ([Environment]::Is64BitOperatingSystem) {
+    # Determine processor architecture
+    $arch = $env:PROCESSOR_ARCHITECTURE
+    if ($env:PROCESSOR_ARCHITEW6432) { $arch = $env:PROCESSOR_ARCHITEW6432 }
+
+    if ($arch -eq 'ARM64') {
+        Write-Host "Detected ARM64 OS; downloading tgpt-arm64.exe..."
+        $url = 'https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-arm64.exe'
+    } elseif ([Environment]::Is64BitOperatingSystem) {
         Write-Host "Detected 64-bit OS; downloading tgpt-amd64.exe..."
         $url = 'https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-amd64.exe'
     } else {
@@ -41,26 +58,37 @@ function Install-tgpt {
         $url = 'https://github.com/aandrew-me/tgpt/releases/latest/download/tgpt-i386.exe'
     }
 
-    # Download the executable
+    # Download the executable to %TEMP%
     Write-Host "Downloading from $url"
-    Invoke-WebRequest -Uri $url `
-                      -OutFile $tempPath `
-                      -UseBasicParsing `
-                      -TimeoutSec 30
-    Write-Host "Download complete.`n"
+    try {
+        Invoke-WebRequest -Uri $url `
+                          -OutFile $tempPath `
+                          -UseBasicParsing `
+                          -TimeoutSec 30
+        Write-Host "Download complete.`n"
 
-    # Prepare install directory under LOCALAPPDATA
-    if (Test-Path $installDir) {
-        Write-Host "Cleaning existing installation in $installDir..."
-        Remove-Item -Path (Join-Path $installDir $exeName) -Force -ErrorAction SilentlyContinue
-    } else {
-        Write-Host "Creating install directory at $installDir"
-        New-Item -ItemType Directory -Path $installDir | Out-Null
+        # Prepare install directory under LOCALAPPDATA
+        if (Test-Path $installDir) {
+            Write-Host "Cleaning existing installation in $installDir..."
+            $targetExe = Join-Path $installDir $exeName
+            $oldExe    = Join-Path $installDir "$exeName.old"
+            Remove-Item -Path $oldExe -Force -ErrorAction SilentlyContinue
+            if (Test-Path $targetExe) {
+                Move-Item -Path $targetExe -Destination $oldExe -Force -ErrorAction SilentlyContinue
+            }
+        } else {
+            Write-Host "Creating install directory at $installDir"
+            New-Item -ItemType Directory -Path $installDir | Out-Null
+        }
+
+        # Move the binary into place
+        Move-Item -Path $tempPath -Destination (Join-Path $installDir $exeName) -Force
+        Write-Host "tgpt executable installed to $installDir`n"
+    } finally {
+        if (Test-Path $tempPath) {
+            Remove-Item -Path $tempPath -Force -ErrorAction SilentlyContinue
+        }
     }
-
-    # Move the binary into place
-    Move-Item -Path $tempPath -Destination (Join-Path $installDir $exeName) -Force
-    Write-Host "tgpt executable installed to $installDir`n"
 
     # Update user PATH
     $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User')
