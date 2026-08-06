@@ -28,7 +28,8 @@ case $(uname -m) in
     x86_64) ARCH="amd64"   ;;
     i386 | i686) ARCH="i386"   ;;
     arm64 | aarch64) ARCH="arm64"   ;;
-    arm | armv7l) ARCH="armv7l" ;;
+    armv5* | armv6l) ARCH="arm-softfloat" ;;
+    arm | armv7l | armv8l) ARCH="arm" ;;
     *) echo "Unsupported architecture: $(uname -m)"; exit 1   ;;
 esac
 

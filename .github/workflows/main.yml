@@ -27,12 +27,16 @@ jobs:
               run: |
                   CGO_ENABLED=0 go build -ldflags="-s -w" -o tgpt-linux-amd64
                   CGO_ENABLED=0 GOARCH=386 go build -ldflags="-s -w" -o tgpt-linux-i386
+                  CGO_ENABLED=0 GOARCH=386 GO386=softfloat go build -ldflags="-s -w" -o tgpt-linux-i386-softfloat
                   CGO_ENABLED=0 GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-linux-arm64
                   CGO_ENABLED=0 GOARCH=arm go build -ldflags="-s -w" -o tgpt-linux-arm
+                  CGO_ENABLED=0 GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o tgpt-linux-arm-softfloat
 
                   GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-amd64.exe
                   GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-arm64.exe
                   GOOS=windows GOARCH=386 go build -ldflags="-s -w" -o tgpt-i386.exe
+                  GOOS=windows GOARCH=386 GO386=softfloat go build -ldflags="-s -w" -o tgpt-i386-softfloat.exe
+                  GOOS=windows GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o tgpt-arm-softfloat.exe
 
                   GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-mac-amd64
                   GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-mac-arm64
@@ -40,12 +44,23 @@ jobs:
                   GOOS=netbsd GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-netbsd-amd64
                   GOOS=netbsd GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-netbsd-arm64
                   GOOS=netbsd GOARCH=arm go build -ldflags="-s -w" -o tgpt-netbsd-arm
+                  GOOS=netbsd GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o tgpt-netbsd-arm-softfloat
                   GOOS=netbsd GOARCH=386 go build -ldflags="-s -w" -o tgpt-netbsd-i386
+                  GOOS=netbsd GOARCH=386 GO386=softfloat go build -ldflags="-s -w" -o tgpt-netbsd-i386-softfloat
 
                   GOOS=freebsd GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-freebsd-amd64
                   GOOS=freebsd GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-freebsd-arm64
                   GOOS=freebsd GOARCH=arm go build -ldflags="-s -w" -o tgpt-freebsd-arm
-                  GOOS=freebsd GOARCH=386 go build -ldflags="-s -w" -o tgpt-freebsd-i386   
+                  GOOS=freebsd GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o tgpt-freebsd-arm-softfloat
+                  GOOS=freebsd GOARCH=386 go build -ldflags="-s -w" -o tgpt-freebsd-i386
+                  GOOS=freebsd GOARCH=386 GO386=softfloat go build -ldflags="-s -w" -o tgpt-freebsd-i386-softfloat
+
+                  GOOS=openbsd GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-openbsd-amd64
+                  GOOS=openbsd GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-openbsd-arm64
+                  GOOS=openbsd GOARCH=arm go build -ldflags="-s -w" -o tgpt-openbsd-arm
+                  GOOS=openbsd GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o tgpt-openbsd-arm-softfloat
+                  GOOS=openbsd GOARCH=386 go build -ldflags="-s -w" -o tgpt-openbsd-i386
+                  GOOS=openbsd GOARCH=386 GO386=softfloat go build -ldflags="-s -w" -o tgpt-openbsd-i386-softfloat
 
                   echo "## Changelog:" >> ${{ github.workspace }}-CHANGELOG.txt    
 
@@ -59,18 +74,30 @@ jobs:
                   
                   sha256sum tgpt-linux-i386
                   sha256sum tgpt-linux-i386 >> ${{ github.workspace }}-CHANGELOG.txt
+
+                  sha256sum tgpt-linux-i386-softfloat
+                  sha256sum tgpt-linux-i386-softfloat >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-linux-arm64
                   sha256sum tgpt-linux-arm64 >> ${{ github.workspace }}-CHANGELOG.txt
 
                   sha256sum tgpt-linux-arm
                   sha256sum tgpt-linux-arm >> ${{ github.workspace }}-CHANGELOG.txt
+
+                  sha256sum tgpt-linux-arm-softfloat
+                  sha256sum tgpt-linux-arm-softfloat >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-amd64.exe
                   sha256sum tgpt-amd64.exe >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-i386.exe
                   sha256sum tgpt-i386.exe >> ${{ github.workspace }}-CHANGELOG.txt
+
+                  sha256sum tgpt-i386-softfloat.exe
+                  sha256sum tgpt-i386-softfloat.exe >> ${{ github.workspace }}-CHANGELOG.txt
+
+                  sha256sum tgpt-arm-softfloat.exe
+                  sha256sum tgpt-arm-softfloat.exe >> ${{ github.workspace }}-CHANGELOG.txt
                   
                   sha256sum tgpt-mac-amd64
                   sha256sum tgpt-mac-amd64 >> ${{ github.workspace }}-CHANGELOG.txt
@@ -87,26 +114,36 @@ jobs:
                   files: |
                       tgpt-linux-amd64
                       tgpt-linux-i386
+                      tgpt-linux-i386-softfloat
                       tgpt-linux-arm64
                       tgpt-linux-arm
+                      tgpt-linux-arm-softfloat
                       tgpt-amd64.exe
                       tgpt-i386.exe
+                      tgpt-i386-softfloat.exe
                       tgpt-arm.exe
                       tgpt-arm64.exe
+                      tgpt-arm-softfloat.exe
                       tgpt-mac-amd64
                       tgpt-mac-arm64
                       tgpt-netbsd-amd64
                       tgpt-netbsd-arm64
                       tgpt-netbsd-arm
+                      tgpt-netbsd-arm-softfloat
                       tgpt-netbsd-i386
+                      tgpt-netbsd-i386-softfloat
                       tgpt-freebsd-amd64
                       tgpt-freebsd-arm64
                       tgpt-freebsd-arm
+                      tgpt-freebsd-arm-softfloat
                       tgpt-freebsd-i386  
+                      tgpt-freebsd-i386-softfloat
                       tgpt-openbsd-amd64
                       tgpt-openbsd-arm64
                       tgpt-openbsd-arm
+                      tgpt-openbsd-arm-softfloat
                       tgpt-openbsd-i386
+                      tgpt-openbsd-i386-softfloat
                       
                   token: ${{ secrets.GITHUB_TOKEN }}
                   draft: true
