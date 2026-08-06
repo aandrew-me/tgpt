@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -60,6 +61,10 @@ func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
 
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(timeout),
+		tls_client.WithDialer(net.Dialer{
+			Timeout:   15 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}),
 		// Allow overriding TLS fingerprint via env; default stays Firefox_117.
 		tls_client.WithClientProfile(func() profiles.ClientProfile {
 			p := profiles.Firefox_148
@@ -91,13 +96,17 @@ func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
 }
 
 func NewStandardHTTPClient(timeoutSeconds ...int) *http.Client {
-	timeout := 60 * time.Second
+	timeout := 600 * time.Second
 	if len(timeoutSeconds) > 0 && timeoutSeconds[0] > 0 {
 		timeout = time.Duration(timeoutSeconds[0]) * time.Second
 	}
 
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   15 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
 	}
 
 	proxyAddr := GetProxyURL()
