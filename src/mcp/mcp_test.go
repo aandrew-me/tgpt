@@ -149,3 +149,41 @@ func TestRemoveServerInteractiveEmptyConfig(t *testing.T) {
 	}
 }
 
+func TestLoadConfigDefaultPath(t *testing.T) {
+	dir := t.TempDir()
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get wd: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("failed to chdir: %v", err)
+	}
+	t.Cleanup(func() {
+		os.Chdir(origWd)
+	})
+
+	content := `{
+		"mcpServers": {
+			"default-server": {
+				"command": "echo",
+				"args": ["default"]
+			}
+		}
+	}`
+	if err := os.WriteFile("mcp_config.json", []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	cfg, err := LoadConfig("")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg == nil || len(cfg.MCPServers) != 1 {
+		t.Fatalf("expected 1 mcp server from default path, got %#v", cfg)
+	}
+	if _, ok := cfg.MCPServers["default-server"]; !ok {
+		t.Fatalf("expected default-server in config")
+	}
+}
+
+
