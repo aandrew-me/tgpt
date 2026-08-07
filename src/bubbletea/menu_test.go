@@ -61,6 +61,19 @@ func TestSelectModelCancel(t *testing.T) {
 	}
 }
 
+func TestSelectModelInterrupt(t *testing.T) {
+	m := SelectModel{
+		Title:   "Confirm",
+		Options: []string{"Yes", "No"},
+	}
+
+	updatedModel, _ := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	sm := updatedModel.(SelectModel)
+	if !sm.Interrupted {
+		t.Errorf("expected interrupted to be true after ctrl+c key")
+	}
+}
+
 func TestSelectModelView(t *testing.T) {
 	m := SelectModel{
 		Title:   "Confirm Action?",

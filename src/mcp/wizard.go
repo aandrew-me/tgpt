@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,7 +18,21 @@ import (
 // SelectMenu runs an interactive selection menu using arrow keys and Enter.
 // Returns the selected index, selected option string, or error if canceled.
 func SelectMenu(title string, options []string, defaultIndex int) (int, string, error) {
-	return bubbletea.SelectMenu(title, options, defaultIndex)
+	idx, opt, err := bubbletea.SelectMenu(title, options, defaultIndex)
+	if errors.Is(err, bubbletea.ErrInterrupted) {
+		bubbletea.RestoreTerminal()
+		os.Exit(130)
+	}
+	return idx, opt, err
+}
+
+func ConfirmMenu(title string, defaultYes bool) (bool, error) {
+	confirmed, err := bubbletea.ConfirmMenu(title, defaultYes)
+	if errors.Is(err, bubbletea.ErrInterrupted) {
+		bubbletea.RestoreTerminal()
+		os.Exit(130)
+	}
+	return confirmed, err
 }
 
 // RemoveServerInteractive lists configured MCP servers in an interactive arrow-key menu
@@ -215,7 +230,7 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 			}
 		}
 
-		addAuth, _ := bubbletea.ConfirmMenu("▶ Add Authorization Bearer Token / API Key?", false)
+		addAuth, _ := ConfirmMenu("▶ Add Authorization Bearer Token / API Key?", false)
 		if addAuth {
 			fmt.Print("  Enter Bearer Token / API Key: ")
 			token, _ := readInput(reader)
@@ -232,7 +247,7 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 			}
 		}
 
-		addHeaders, _ := bubbletea.ConfirmMenu("▶ Add additional custom HTTP headers?", false)
+		addHeaders, _ := ConfirmMenu("▶ Add additional custom HTTP headers?", false)
 		if addHeaders {
 			for {
 				fmt.Print("  Header Name (or press Enter to finish): ")
@@ -260,7 +275,7 @@ func AddServerInteractive(ctx context.Context, configPath string) error {
 	initErr := testMgr.InitServer(ctx, name, sc)
 	if initErr != nil {
 		fmt.Printf("\n⚠️  Connection test warning: %v\n", initErr)
-		saveAnyway, _ := bubbletea.ConfirmMenu("Do you still want to save this server configuration?", false)
+		saveAnyway, _ := ConfirmMenu("Do you still want to save this server configuration?", false)
 		if !saveAnyway {
 			fmt.Println("Aborted without saving.")
 			return nil

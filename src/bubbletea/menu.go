@@ -1,18 +1,36 @@
 package bubbletea
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 )
 
+var (
+	ErrInterrupted = errors.New("interrupted")
+	ErrCanceled    = errors.New("selection canceled")
+)
+
+func RestoreTerminal() {
+	if runtime.GOOS != "windows" {
+		rawModeOff := exec.Command("stty", "-raw", "echo")
+		rawModeOff.Stdin = os.Stdin
+		_ = rawModeOff.Run()
+	}
+}
+
 type SelectModel struct {
-	Title    string
-	Options  []string
-	Cursor   int
-	Selected int
-	Canceled bool
+	Title       string
+	Options     []string
+	Cursor      int
+	Selected    int
+	Canceled    bool
+	Interrupted bool
 }
 
 func (m SelectModel) Init() tea.Cmd {
@@ -23,7 +41,10 @@ func (m SelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc", "q":
+		case "ctrl+c":
+			m.Interrupted = true
+			return m, tea.Quit
+		case "esc", "q":
 			m.Canceled = true
 			return m, tea.Quit
 		case "up", "k":
@@ -79,7 +100,7 @@ func (m SelectModel) View() tea.View {
 }
 
 // SelectMenu runs an interactive selection menu using arrow keys and Enter.
-// Returns the selected index, selected option string, or error if canceled.
+// Returns the selected index, selected option string, or error if canceled or interrupted.
 func SelectMenu(title string, options []string, defaultIndex int) (int, string, error) {
 	if len(options) == 0 {
 		return -1, "", fmt.Errorf("no options provided")
@@ -103,8 +124,14 @@ func SelectMenu(title string, options []string, defaultIndex int) (int, string, 
 	}
 
 	res, ok := finalModel.(SelectModel)
-	if !ok || res.Canceled || res.Selected < 0 {
-		return -1, "", fmt.Errorf("selection canceled")
+	if !ok {
+		return -1, "", fmt.Errorf("selection failed")
+	}
+	if res.Interrupted {
+		return -1, "", ErrInterrupted
+	}
+	if res.Canceled || res.Selected < 0 {
+		return -1, "", ErrCanceled
 	}
 
 	return res.Selected, res.Options[res.Selected], nil

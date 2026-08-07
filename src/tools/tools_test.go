@@ -145,3 +145,14 @@ func TestParseToolList(t *testing.T) {
 		t.Fatalf("unexpected ParseToolList result for 'all': %v, %v", tools, ok)
 	}
 }
+
+func TestPreConfirmAutoExec(t *testing.T) {
+	ctx := context.WithValue(context.Background(), AutoExecKey, true)
+	proceed, msg, err := PreConfirm(ctx, "execute_command", `{"command": "echo test"}`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !proceed || msg != "" {
+		t.Fatalf("expected proceed true with empty msg, got %v, %q", proceed, msg)
+	}
+}

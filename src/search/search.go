@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -741,7 +742,11 @@ func ConfirmSearchExecution(params SearchParams, autoConfirm bool, isQuiet bool,
 		return response == "y" || response == "yes"
 	}
 
-	confirmed, _ := bubbletea.ConfirmMenu(title.String(), true)
+	confirmed, err := bubbletea.ConfirmMenu(title.String(), true)
+	if errors.Is(err, bubbletea.ErrInterrupted) {
+		bubbletea.RestoreTerminal()
+		os.Exit(130)
+	}
 	return confirmed
 }
 
