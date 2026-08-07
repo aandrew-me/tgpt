@@ -87,7 +87,7 @@ func TestWriteFileTool(t *testing.T) {
 	argsJSON := `{"path": "` + escapedPath + `", "content": "` + expectedContent + `"}`
 	res, err := r.Execute(context.Background(), "write_file", argsJSON)
 	if err != nil {
-		t.Fatalf("unexpected error executing write_file: %v", err)
+		t.Fatalf("unexpected error executing write_file for new file: %v", err)
 	}
 	if !strings.Contains(res, "Successfully wrote") {
 		t.Fatalf("expected success message, got %q", res)
@@ -154,5 +154,127 @@ func TestPreConfirmAutoExec(t *testing.T) {
 	}
 	if !proceed || msg != "" {
 		t.Fatalf("expected proceed true with empty msg, got %v, %q", proceed, msg)
+	}
+}
+
+func TestPreConfirmNewFileNoPrompt(t *testing.T) {
+	dir := t.TempDir()
+	newPath := filepath.Join(dir, "non_existent_file.txt")
+	escapedPath := strings.ReplaceAll(newPath, `\`, `\\`)
+	proceed, msg, err := PreConfirm(context.Background(), "write_file", `{"path": "`+escapedPath+`"}`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !proceed || msg != "" {
+		t.Fatalf("expected proceed true without confirmation for new file, got %v, %q", proceed, msg)
+	}
+}
+
+func TestWriteFileAppendMode(t *testing.T) {
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "append_test.txt")
+	if err := os.WriteFile(filePath, []byte("Hello "), 0644); err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	r := NewRegistry()
+	r.RegisterBuiltinTools()
+
+	escapedPath := strings.ReplaceAll(filePath, `\`, `\\`)
+	ctx := context.WithValue(context.Background(), AutoExecKey, true)
+	argsJSON := `{"path": "` + escapedPath + `", "content": "world!", "append": true}`
+
+	res, err := r.Execute(ctx, "write_file", argsJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing write_file in append mode: %v", err)
+	}
+	if !strings.Contains(res, "Successfully appended") {
+		t.Fatalf("expected append success message, got %q", res)
+	}
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("failed to read back appended file: %v", err)
+	}
+	if string(content) != "Hello world!" {
+		t.Fatalf("expected 'Hello world!', got %q", string(content))
+	}
+}
+
+func TestEditFileTool(t *testing.T) {
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "edit_test.txt")
+	initialContent := "func foo() {\n\treturn 1\n}\n"
+	if err := os.WriteFile(filePath, []byte(initialContent), 0644); err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	r := NewRegistry()
+	r.RegisterBuiltinTools()
+	if !r.Has("edit_file") {
+		t.Fatal("expected registry to have edit_file tool")
+	}
+
+	escapedPath := strings.ReplaceAll(filePath, `\`, `\\`)
+	ctx := context.WithValue(context.Background(), AutoExecKey, true)
+
+	// Successful edit
+	argsJSON := `{"path": "` + escapedPath + `", "old_content": "return 1", "new_content": "return 42"}`
+	res, err := r.Execute(ctx, "edit_file", argsJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing edit_file: %v", err)
+	}
+	if !strings.Contains(res, "Successfully edited") {
+		t.Fatalf("expected edit success message, got %q", res)
+	}
+
+	readBack, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("failed to read back edited file: %v", err)
+	}
+	expected := "func foo() {\n\treturn 42\n}\n"
+	if string(readBack) != expected {
+		t.Fatalf("expected %q, got %q", expected, string(readBack))
+	}
+
+	// Target old_content not found error
+	notFoundJSON := `{"path": "` + escapedPath + `", "old_content": "non_existent_code", "new_content": "something"}`
+	_, err = r.Execute(ctx, "edit_file", notFoundJSON)
+	if err == nil || !strings.Contains(err.Error(), "old_content not found") {
+		t.Fatalf("expected 'old_content not found' error, got %v", err)
+	}
+
+	// Multiple matches error
+	multiContent := "foo\nfoo\n"
+	if err := os.WriteFile(filePath, []byte(multiContent), 0644); err != nil {
+		t.Fatalf("failed to write multi-match file: %v", err)
+	}
+	multiJSON := `{"path": "` + escapedPath + `", "old_content": "foo", "new_content": "bar"}`
+	_, err = r.Execute(ctx, "edit_file", multiJSON)
+	if err == nil || !strings.Contains(err.Error(), "appears 2 times") {
+		t.Fatalf("expected multiple matches error, got %v", err)
+	}
+
+	// Identical old_content and new_content error
+	identicalJSON := `{"path": "` + escapedPath + `", "old_content": "foo", "new_content": "foo"}`
+	_, err = r.Execute(ctx, "edit_file", identicalJSON)
+	if err == nil || !strings.Contains(err.Error(), "identical") {
+		t.Fatalf("expected identical content error, got %v", err)
+	}
+
+	// Non-existent file edit error
+	missingPath := filepath.Join(dir, "does_not_exist.txt")
+	escapedMissing := strings.ReplaceAll(missingPath, `\`, `\\`)
+	missingJSON := `{"path": "` + escapedMissing + `", "old_content": "a", "new_content": "b"}`
+
+	// PreConfirm should return proceed true without prompting for missing file
+	proceed, msg, confirmErr := PreConfirm(context.Background(), "edit_file", missingJSON)
+	if confirmErr != nil || !proceed || msg != "" {
+		t.Fatalf("expected PreConfirm to skip prompt for missing file, got proceed=%v, msg=%q, err=%v", proceed, msg, confirmErr)
+	}
+
+	_, err = r.Execute(ctx, "edit_file", missingJSON)
+	if err == nil || !strings.Contains(err.Error(), "failed to read file for editing") {
+		t.Fatalf("expected failed to read file error, got %v", err)
 	}
 }

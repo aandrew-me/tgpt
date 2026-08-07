@@ -1268,7 +1268,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER for chat and IMG_PROVIDER for image gen.)\n", "--provider")
 	fmt.Printf("%-50v Find information using web search \n", "-f, --find")
 	fmt.Printf("%-50v Search provider for web search: exa (default) or google (Env: SEARCH_PROVIDER).\n%-50v Exa works without api key with rate limits and supports EXA_API_KEY env variable.\n%-50v google requires TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID env variables.\n%-50s Check SEARCH_SETUP.md for google: https://github.com/aandrew-me/tgpt/blob/main/SEARCH_SETUP.md\n", "--search-provider", "", "", "")
-	fmt.Printf("%-50v Enable built-in tool calling (all or comma-separated list: web_search_exa, web_search_firecrawl, read_directory, read_file, execute_command, web_fetch, write_file)\n", "-t, --tools [tools]")
+	fmt.Printf("%-50v Enable built-in tool calling (all or comma-separated list: web_search_exa, web_search_firecrawl, read_directory, read_file, execute_command, web_fetch, write_file, edit_file)\n", "-t, --tools [tools]")
 	fmt.Printf("%-50v Enable MCP (Model Context Protocol) and auto-detect configuration file\n", "--mcp")
 	fmt.Printf("%-50v Path to MCP server configuration JSON file (Env: MCP_CONFIG). See 'Tool calling & MCP' section below.\n", "--mcp-config")
 	fmt.Printf("%-50v Command to run a stdio MCP server directly, e.g. --mcp-server \"npx -y some-mcp-server\"\n", "--mcp-server")
@@ -1375,6 +1375,7 @@ func ShowHelpMessage() {
 	fmt.Println("execute_command      Execute a shell command")
 	fmt.Println("web_fetch            Fetch the contents of a webpage or URL")
 	fmt.Println("write_file           Write content to a file")
+	fmt.Println("edit_file            Edit a file by replacing old_content with new_content")
 
 	bold.Println("\nMCP servers:")
 	fmt.Println("Use --mcp to enable MCP and auto-detect configuration file, --mcp-config to specify a JSON file, or --mcp-server to run a single stdio MCP server directly.")
