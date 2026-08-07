@@ -1463,6 +1463,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 	searchOptions := structs.ExtraOptions{
 		IsNormal:    !isQuiet,
 		IsGetSilent: isQuiet,
+		AutoExec:    extraOptions.AutoExec,
 	}
 
 	queryWithContext := fmt.Sprintf("Here is the output of the search results: %s\n\nBased on these search results, answer the user's question: %s", searchResults, input)
@@ -1520,6 +1521,7 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 		responseObjects, responseTxt := GetData(input, params, structs.ExtraOptions{
 			IsInteractiveFind: true,
 			IsGetSilent:       true,
+			AutoExec:          extraOptions.AutoExec,
 		})
 		matches := searchRegex.FindStringSubmatch(responseTxt)
 
@@ -1553,7 +1555,7 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 			finalResponseObjects, finalResponseTxt := GetData(
 				fmt.Sprintf("Based on these search results, answer the user's question: %s", input),
 				params,
-				structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true},
+				structs.ExtraOptions{IsInteractiveFind: true, IsNormal: true, AutoExec: extraOptions.AutoExec},
 			)
 
 			if len(logFile) > 0 {
