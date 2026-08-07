@@ -1,14 +1,18 @@
 package tools
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -60,6 +64,8 @@ var AllBuiltinTools = []string{
 	"web_fetch",
 	"write_file",
 	"edit_file",
+	"grep",
+	"glob",
 }
 
 func IsBuiltinTool(name string) bool {
@@ -728,6 +734,248 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			}
 
 			return fmt.Sprintf("Successfully edited %s", filePath), nil
+		})
+	}
+
+	// 8. grep
+	if shouldRegister("grep") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "grep",
+				Description: "Search file contents using regular expressions",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"pattern": map[string]any{
+							"type":        "string",
+							"description": "Regular expression pattern to search for",
+						},
+						"path": map[string]any{
+							"type":        "string",
+							"description": "Directory or file path to search in (defaults to current directory)",
+						},
+						"include": map[string]any{
+							"type":        "string",
+							"description": "Optional file pattern filter (e.g. '*.go' or 'go')",
+						},
+					},
+					"required": []string{"pattern"},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			pattern, _ := args["pattern"].(string)
+			if pattern == "" {
+				return "", fmt.Errorf("pattern parameter is required")
+			}
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				return "", fmt.Errorf("invalid regular expression: %w", err)
+			}
+
+			searchPath, _ := args["path"].(string)
+			if searchPath == "" {
+				searchPath = "."
+			}
+			include, _ := args["include"].(string)
+			if include != "" && !strings.Contains(include, "*") && !strings.HasPrefix(include, ".") {
+				include = "*." + include
+			}
+
+			info, err := os.Stat(searchPath)
+			if err != nil {
+				return "", fmt.Errorf("failed to access path: %w", err)
+			}
+
+			var matches []string
+			matchCount := 0
+			maxMatches := 200
+
+			searchFile := func(filePath string) error {
+				if include != "" {
+					matched, err := filepath.Match(include, filepath.Base(filePath))
+					if err != nil || !matched {
+						return nil
+					}
+				}
+
+				f, err := os.Open(filePath)
+				if err != nil {
+					return nil
+				}
+				defer f.Close()
+
+				head := make([]byte, 512)
+				n, err := f.Read(head)
+				if err != nil && err != io.EOF {
+					return nil
+				}
+				if bytes.IndexByte(head[:n], 0) != -1 {
+					return nil
+				}
+				if _, err := f.Seek(0, io.SeekStart); err != nil {
+					return nil
+				}
+
+				scanner := bufio.NewScanner(f)
+				buf := make([]byte, 64*1024)
+				scanner.Buffer(buf, 1024*1024)
+
+				lineNum := 0
+				for scanner.Scan() {
+					lineNum++
+					line := scanner.Text()
+					if re.MatchString(line) {
+						matches = append(matches, fmt.Sprintf("%s:%d:%s", filePath, lineNum, line))
+						matchCount++
+						if matchCount >= maxMatches {
+							break
+						}
+					}
+				}
+				_ = scanner.Err()
+				return nil
+			}
+
+			if !info.IsDir() {
+				_ = searchFile(searchPath)
+			} else {
+				err = filepath.WalkDir(searchPath, func(p string, d fs.DirEntry, err error) error {
+					if err != nil {
+						return nil
+					}
+					if d.IsDir() {
+						name := d.Name()
+						if strings.HasPrefix(name, ".") && name != "." && name != ".." {
+							return filepath.SkipDir
+						}
+						if name == "node_modules" || name == "vendor" {
+							return filepath.SkipDir
+						}
+						return nil
+					}
+					if matchCount >= maxMatches {
+						return filepath.SkipAll
+					}
+					return searchFile(p)
+				})
+				if err != nil {
+					return "", fmt.Errorf("search failed: %w", err)
+				}
+			}
+
+			if len(matches) == 0 {
+				return "No matches found.", nil
+			}
+
+			out := strings.Join(matches, "\n")
+			if matchCount >= maxMatches {
+				out += fmt.Sprintf("\n... [truncated at %d matches]", maxMatches)
+			}
+			runes := []rune(out)
+			if len(runes) > 10000 {
+				out = string(runes[:10000]) + "\n... [content truncated]"
+			}
+			return out, nil
+		})
+	}
+
+	// 9. glob
+	if shouldRegister("glob") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "glob",
+				Description: "Find files and directories matching a glob pattern",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"pattern": map[string]any{
+							"type":        "string",
+							"description": "Glob pattern to match files (e.g. '*.go', '**/*.json', 'src/*.go')",
+						},
+						"path": map[string]any{
+							"type":        "string",
+							"description": "Directory path to start search from (defaults to current directory)",
+						},
+					},
+					"required": []string{"pattern"},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			pattern, _ := args["pattern"].(string)
+			if pattern == "" {
+				return "", fmt.Errorf("pattern parameter is required")
+			}
+			searchPath, _ := args["path"].(string)
+			if searchPath == "" {
+				searchPath = "."
+			}
+
+			var matches []string
+			maxMatches := 500
+
+			cleanPattern := filepath.ToSlash(pattern)
+			hasPath := strings.Contains(cleanPattern, "/")
+
+			err := filepath.WalkDir(searchPath, func(p string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return nil
+				}
+				if d.IsDir() {
+					name := d.Name()
+					if strings.HasPrefix(name, ".") && name != "." && name != ".." {
+						return filepath.SkipDir
+					}
+					if name == "node_modules" || name == "vendor" {
+						return filepath.SkipDir
+					}
+				}
+
+				relPath, _ := filepath.Rel(searchPath, p)
+				slashRel := filepath.ToSlash(relPath)
+
+				var matched bool
+				if hasPath {
+					if strings.Contains(cleanPattern, "**") {
+						parts := strings.Split(cleanPattern, "**")
+						for i, part := range parts {
+							parts[i] = regexp.QuoteMeta(part)
+						}
+						regexStr := "^" + strings.Join(parts, ".*") + "$"
+						regexStr = strings.ReplaceAll(regexStr, `\*`, `[^/]*`)
+						regexStr = strings.ReplaceAll(regexStr, `\?`, `[^/]`)
+						if re, err := regexp.Compile(regexStr); err == nil {
+							matched = re.MatchString(slashRel)
+						}
+					} else {
+						matched, _ = filepath.Match(cleanPattern, slashRel)
+					}
+				} else {
+					matched, _ = filepath.Match(pattern, d.Name())
+				}
+
+				if matched {
+					if d.IsDir() {
+						matches = append(matches, p+"/")
+					} else {
+						matches = append(matches, p)
+					}
+					if len(matches) >= maxMatches {
+						return filepath.SkipAll
+					}
+				}
+				return nil
+			})
+			if err != nil {
+				return "", fmt.Errorf("glob search failed: %w", err)
+			}
+
+			if len(matches) == 0 {
+				return "No matching files found.", nil
+			}
+
+			return strings.Join(matches, "\n"), nil
 		})
 	}
 }

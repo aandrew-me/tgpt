@@ -278,3 +278,144 @@ func TestEditFileTool(t *testing.T) {
 		t.Fatalf("expected failed to read file error, got %v", err)
 	}
 }
+
+func TestGrepTool(t *testing.T) {
+	dir := t.TempDir()
+	file1 := filepath.Join(dir, "file1.go")
+	file2 := filepath.Join(dir, "file2.txt")
+	if err := os.WriteFile(file1, []byte("package main\nfunc Hello() {\n\tprintln(\"world\")\n}\n"), 0644); err != nil {
+		t.Fatalf("failed to write file1: %v", err)
+	}
+	if err := os.WriteFile(file2, []byte("Hello world in txt file\nfunc Other() {}\n"), 0644); err != nil {
+		t.Fatalf("failed to write file2: %v", err)
+	}
+
+	r := NewRegistry()
+	r.RegisterBuiltinTools()
+	if !r.Has("grep") {
+		t.Fatal("expected registry to have grep tool")
+	}
+
+	escapedDir := strings.ReplaceAll(dir, `\`, `\\`)
+	ctx := context.Background()
+
+	// Search regex pattern across dir
+	argsJSON := `{"path": "` + escapedDir + `", "pattern": "func \\w+\\(\\)"}`
+	res, err := r.Execute(ctx, "grep", argsJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing grep: %v", err)
+	}
+	if !strings.Contains(res, "func Hello()") || !strings.Contains(res, "func Other()") {
+		t.Fatalf("expected matches for func Hello() and func Other(), got: %q", res)
+	}
+
+	// Search with include filter
+	includeJSON := `{"path": "` + escapedDir + `", "pattern": "func", "include": "*.go"}`
+	res, err = r.Execute(ctx, "grep", includeJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing grep with include: %v", err)
+	}
+	if !strings.Contains(res, "file1.go") || strings.Contains(res, "file2.txt") {
+		t.Fatalf("expected match only in file1.go, got: %q", res)
+	}
+
+	// No matches case
+	noMatchJSON := `{"path": "` + escapedDir + `", "pattern": "nonexistent_pattern"}`
+	res, err = r.Execute(ctx, "grep", noMatchJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing grep: %v", err)
+	}
+	if res != "No matches found." {
+		t.Fatalf("expected 'No matches found.', got: %q", res)
+	}
+
+	// Binary file skip test
+	binaryFile := filepath.Join(dir, "binary.bin")
+	binaryData := append([]byte("PNG image data\x00with NUL byte\n"), []byte("MATCH_STRING")...)
+	if err := os.WriteFile(binaryFile, binaryData, 0644); err != nil {
+		t.Fatalf("failed to write binary file: %v", err)
+	}
+	binaryJSON := `{"path": "` + escapedDir + `", "pattern": "MATCH_STRING"}`
+	res, err = r.Execute(ctx, "grep", binaryJSON)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(res, "binary.bin") {
+		t.Fatalf("expected binary file to be skipped, got matches: %q", res)
+	}
+
+	// Long line test (> 64KB)
+	longFile := filepath.Join(dir, "longline.txt")
+	longLine := strings.Repeat("a", 1000) + "TARGET_KEYWORD" + strings.Repeat("b", 70000) + "\n"
+	if err := os.WriteFile(longFile, []byte(longLine), 0644); err != nil {
+		t.Fatalf("failed to write long line file: %v", err)
+	}
+	longJSON := `{"path": "` + escapedDir + `", "pattern": "TARGET_KEYWORD"}`
+	res, err = r.Execute(ctx, "grep", longJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing grep for long line: %v", err)
+	}
+	if !strings.Contains(res, "longline.txt") || !strings.Contains(res, "TARGET_KEYWORD") {
+		t.Fatalf("expected match in long line file, got: %q", res)
+	}
+}
+
+func TestGlobTool(t *testing.T) {
+	dir := t.TempDir()
+	file1 := filepath.Join(dir, "app.go")
+	file2 := filepath.Join(dir, "config.json")
+	subDir := filepath.Join(dir, "src")
+	if err := os.MkdirAll(subDir, 0755); err != nil {
+		t.Fatalf("failed to create subDir: %v", err)
+	}
+	file3 := filepath.Join(subDir, "helper.go")
+
+	if err := os.WriteFile(file1, []byte("package main"), 0644); err != nil {
+		t.Fatalf("failed to write file1: %v", err)
+	}
+	if err := os.WriteFile(file2, []byte("{}"), 0644); err != nil {
+		t.Fatalf("failed to write file2: %v", err)
+	}
+	if err := os.WriteFile(file3, []byte("package src"), 0644); err != nil {
+		t.Fatalf("failed to write file3: %v", err)
+	}
+
+	r := NewRegistry()
+	r.RegisterBuiltinTools()
+	if !r.Has("glob") {
+		t.Fatal("expected registry to have glob tool")
+	}
+
+	escapedDir := strings.ReplaceAll(dir, `\`, `\\`)
+	ctx := context.Background()
+
+	// Glob pattern match *.go
+	argsJSON := `{"path": "` + escapedDir + `", "pattern": "*.go"}`
+	res, err := r.Execute(ctx, "glob", argsJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing glob: %v", err)
+	}
+	if !strings.Contains(res, "app.go") || strings.Contains(res, "config.json") {
+		t.Fatalf("expected match only for app.go, got: %q", res)
+	}
+
+	// Path-scoped glob match (src/*.go should match src/helper.go but NOT root app.go)
+	scopedJSON := `{"path": "` + escapedDir + `", "pattern": "src/*.go"}`
+	res, err = r.Execute(ctx, "glob", scopedJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing scoped glob: %v", err)
+	}
+	if !strings.Contains(res, "helper.go") || strings.Contains(res, "app.go") {
+		t.Fatalf("expected scoped match for src/helper.go, got: %q", res)
+	}
+
+	// No match case
+	noMatchJSON := `{"path": "` + escapedDir + `", "pattern": "*.txt"}`
+	res, err = r.Execute(ctx, "glob", noMatchJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing glob: %v", err)
+	}
+	if res != "No matching files found." {
+		t.Fatalf("expected 'No matching files found.', got: %q", res)
+	}
+}
