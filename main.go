@@ -377,6 +377,7 @@ func main() {
 	isChangelog := flag.Bool("cl", false, "See changelog of versions")
 	flag.BoolVar(isChangelog, "changelog", false, "See changelog of versions")
 
+	mcpEnabled := flag.Bool("mcp", false, "Enable MCP support and auto-detect config file")
 	mcpConfig := flag.String("mcp-config", os.Getenv("MCP_CONFIG"), "Path to MCP server configuration JSON file")
 	mcpServer := flag.String("mcp-server", "", "Command to run a stdio MCP server directly")
 	mcpAdd := flag.Bool("mcp-add", false, "Interactively add a new MCP server to mcp_config.json")
@@ -458,7 +459,7 @@ func main() {
 		tools.DefaultRegistry.RegisterBuiltinTools(toolsFlag.toolNames...)
 	}
 
-	if mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
+	if *mcpEnabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
 		ctx := context.Background()
 		cfg, err := mcp.LoadConfig(*mcpConfig)
 		if err != nil {
@@ -469,6 +470,8 @@ func main() {
 					fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", name, err)
 				}
 			}
+		} else if *mcpEnabled && *mcpServer == "" {
+			fmt.Fprintf(os.Stderr, "Warning: no MCP config file found (checked mcp_config.json and ~/.config/tgpt/mcp_config.json)\n")
 		}
 		if *mcpServer != "" {
 			parts := strings.Fields(*mcpServer)
@@ -481,7 +484,7 @@ func main() {
 		}
 	}
 
-	if toolsFlag.enabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
+	if toolsFlag.enabled || *mcpEnabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
 		activeTools = tools.DefaultRegistry.GetOpenAITools()
 	}
 
