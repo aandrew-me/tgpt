@@ -838,7 +838,11 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 						bubbletea.RestoreTerminal()
 						os.Exit(130)
 					}
-					toolOutput = cancelMsg
+					if cancelMsg != "" {
+						toolOutput = cancelMsg
+					} else {
+						toolOutput = confirmErr.Error()
+					}
 					err = confirmErr
 				} else if !proceed {
 					toolOutput = cancelMsg

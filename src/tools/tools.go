@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -135,6 +136,9 @@ func PreConfirm(ctx context.Context, name string, argsJSON string) (bool, string
 		cmdStr, _ := args["command"].(string)
 		confirmed, err := confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ?", cmdStr))
 		if err != nil {
+			if errors.Is(err, bubbletea.ErrCanceled) {
+				return false, "Command execution cancelled by user.", nil
+			}
 			return false, "", err
 		}
 		if !confirmed {
@@ -146,6 +150,9 @@ func PreConfirm(ctx context.Context, name string, argsJSON string) (bool, string
 			if _, err := os.Stat(filePath); err == nil {
 				confirmed, err := confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath))
 				if err != nil {
+					if errors.Is(err, bubbletea.ErrCanceled) {
+						return false, "File overwrite cancelled by user.", nil
+					}
 					return false, "", err
 				}
 				if !confirmed {
@@ -410,6 +417,9 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			if !autoExec && !confirmed {
 				c, err := confirmAction(fmt.Sprintf("\nExecute tool shell command: `%s` ?", cmdStr))
 				if err != nil {
+					if errors.Is(err, bubbletea.ErrCanceled) {
+						return "Command execution cancelled by user.", nil
+					}
 					return "", err
 				}
 				if !c {
@@ -554,6 +564,9 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 				if _, err := os.Stat(filePath); err == nil {
 					c, err := confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath))
 					if err != nil {
+						if errors.Is(err, bubbletea.ErrCanceled) {
+							return "File overwrite cancelled by user.", nil
+						}
 						return "", err
 					}
 					if !c {
