@@ -1,6 +1,7 @@
 package bubbletea
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,6 +9,11 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+)
+
+var (
+	ErrInterrupted = errors.New("interrupted")
+	ErrCanceled    = errors.New("selection canceled")
 )
 
 func RestoreTerminal() {
@@ -94,7 +100,7 @@ func (m SelectModel) View() tea.View {
 }
 
 // SelectMenu runs an interactive selection menu using arrow keys and Enter.
-// Returns the selected index, selected option string, or error if canceled.
+// Returns the selected index, selected option string, or error if canceled or interrupted.
 func SelectMenu(title string, options []string, defaultIndex int) (int, string, error) {
 	if len(options) == 0 {
 		return -1, "", fmt.Errorf("no options provided")
@@ -122,11 +128,10 @@ func SelectMenu(title string, options []string, defaultIndex int) (int, string, 
 		return -1, "", fmt.Errorf("selection failed")
 	}
 	if res.Interrupted {
-		RestoreTerminal()
-		os.Exit(0)
+		return -1, "", ErrInterrupted
 	}
 	if res.Canceled || res.Selected < 0 {
-		return -1, "", fmt.Errorf("selection canceled")
+		return -1, "", ErrCanceled
 	}
 
 	return res.Selected, res.Options[res.Selected], nil

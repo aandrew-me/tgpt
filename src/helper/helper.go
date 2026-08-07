@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -223,6 +224,10 @@ func (f *interactiveFormatter) writeText(text string) {
 func GetData(input string, params structs.Params, extraOptions structs.ExtraOptions) ([]interface{}, string) {
 	responseTxt, turnMessages, err := MakeRequestAndGetData(input, params, extraOptions)
 	if err != nil {
+		if errors.Is(err, bubbletea.ErrInterrupted) {
+			bubbletea.RestoreTerminal()
+			os.Exit(130)
+		}
 		return nil, ""
 	}
 
@@ -826,8 +831,16 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 
 				var toolOutput string
 				var err error
-				proceed, cancelMsg := tools.PreConfirm(preConfirmCtx, tc.Function.Name, tc.Function.Arguments)
-				if !proceed {
+				proceed, cancelMsg, confirmErr := tools.PreConfirm(preConfirmCtx, tc.Function.Name, tc.Function.Arguments)
+				if confirmErr != nil {
+					hideStatus()
+					if errors.Is(confirmErr, bubbletea.ErrInterrupted) {
+						bubbletea.RestoreTerminal()
+						os.Exit(130)
+					}
+					toolOutput = cancelMsg
+					err = confirmErr
+				} else if !proceed {
 					toolOutput = cancelMsg
 					err = fmt.Errorf("%s", cancelMsg)
 				} else {
@@ -1179,7 +1192,10 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 					fmt.Println()
 					ExecuteCommand(ShellName, ShellOptions, fullText)
 				} else {
-					confirmed, _ := bubbletea.ConfirmMenu("\nExecute shell command?", true)
+					confirmed, err := bubbletea.ConfirmMenu("\nExecute shell command?", true)
+					if errors.Is(err, bubbletea.ErrInterrupted) {
+						return "", nil, err
+					}
 					if confirmed {
 						ExecuteCommand(ShellName, ShellOptions, fullText)
 					} else {

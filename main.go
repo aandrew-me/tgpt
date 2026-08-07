@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -215,7 +216,10 @@ func runInteractiveShellMode(
 			output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, useAliases)
 			executed = true
 		} else {
-			confirmed, _ := bubbletea.ConfirmMenu(fmt.Sprintf("\nExecute shell command: `%s` ?", cmd), true)
+			confirmed, err := bubbletea.ConfirmMenu(fmt.Sprintf("\nExecute shell command: `%s` ?", cmd), true)
+			if errors.Is(err, bubbletea.ErrInterrupted) {
+				handleExit()
+			}
 			if confirmed {
 				output = helper.ExecuteCommandWithCapture(helper.ShellName, helper.ShellOptions, cmd, true, useAliases)
 				executed = true
@@ -301,7 +305,7 @@ func main() {
 	go func() {
 		<-terminate
 		restoreTerminal()
-		os.Exit(0)
+		os.Exit(130)
 	}()
 
 	apiModel := flag.String("model", "", "Choose which model to use")
@@ -892,6 +896,6 @@ func main() {
 func handleExit() {
 	bold.Println("Exiting...")
 	restoreTerminal()
-	os.Exit(0)
+	os.Exit(130)
 }
 
