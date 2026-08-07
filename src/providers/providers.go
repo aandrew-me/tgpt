@@ -35,6 +35,18 @@ func IsValidProvider(name string) bool {
 	return false
 }
 
+func SupportsTools(provider string) bool {
+	if provider == "" {
+		provider = "opencode"
+	}
+	switch provider {
+	case "anyapi", "deepseek", "gemini", "groq", "litellm", "ollama", "opencode", "openai", "pollinations":
+		return true
+	default:
+		return false
+	}
+}
+
 func GetMainText(line string, provider string, input string) string {
 	switch provider {
 	case "aihorde":

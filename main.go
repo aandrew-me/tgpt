@@ -20,6 +20,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
 	"github.com/aandrew-me/tgpt/v2/src/mcp"
+	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
@@ -455,37 +456,46 @@ func main() {
 	mcpMgr := mcp.NewManager(tools.DefaultRegistry)
 	defer mcpMgr.Close()
 
-	if toolsFlag.enabled {
-		tools.DefaultRegistry.RegisterBuiltinTools(toolsFlag.toolNames...)
-	}
+	mcpRequested := *mcpEnabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != ""
+	if toolsFlag.enabled || mcpRequested {
+		if !providers.SupportsTools(finalProvider) {
+			pName := finalProvider
+			if pName == "" {
+				pName = "opencode"
+			}
+			fmt.Fprintf(os.Stderr, "Warning: provider %q does not support tools or MCP. Tools will be ignored.\n", pName)
+		} else {
+			if toolsFlag.enabled {
+				tools.DefaultRegistry.RegisterBuiltinTools(toolsFlag.toolNames...)
+			}
 
-	if *mcpEnabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
-		ctx := context.Background()
-		cfg, err := mcp.LoadConfig(*mcpConfig)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to load MCP config: %v\n", err)
-		} else if cfg != nil {
-			for name, sc := range cfg.MCPServers {
-				if err := mcpMgr.InitServer(ctx, name, sc); err != nil {
-					fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", name, err)
+			if mcpRequested {
+				ctx := context.Background()
+				cfg, err := mcp.LoadConfig(*mcpConfig)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to load MCP config: %v\n", err)
+				} else if cfg != nil {
+					for name, sc := range cfg.MCPServers {
+						if err := mcpMgr.InitServer(ctx, name, sc); err != nil {
+							fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", name, err)
+						}
+					}
+				} else if *mcpEnabled && *mcpServer == "" {
+					fmt.Fprintf(os.Stderr, "Warning: no MCP config file found (checked mcp_config.json and ~/.config/tgpt/mcp_config.json)\n")
+				}
+				if *mcpServer != "" {
+					parts := strings.Fields(*mcpServer)
+					if len(parts) > 0 {
+						sc := mcp.ServerConfig{Command: parts[0], Args: parts[1:]}
+						if err := mcpMgr.InitServer(ctx, "cli-mcp", sc); err != nil {
+							fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", *mcpServer, err)
+						}
+					}
 				}
 			}
-		} else if *mcpEnabled && *mcpServer == "" {
-			fmt.Fprintf(os.Stderr, "Warning: no MCP config file found (checked mcp_config.json and ~/.config/tgpt/mcp_config.json)\n")
-		}
-		if *mcpServer != "" {
-			parts := strings.Fields(*mcpServer)
-			if len(parts) > 0 {
-				sc := mcp.ServerConfig{Command: parts[0], Args: parts[1:]}
-				if err := mcpMgr.InitServer(ctx, "cli-mcp", sc); err != nil {
-					fmt.Fprintf(os.Stderr, "Warning: failed to init MCP server %s: %v\n", *mcpServer, err)
-				}
-			}
-		}
-	}
 
-	if toolsFlag.enabled || *mcpEnabled || mcpConfigSet || *mcpConfig != "" || *mcpServer != "" {
-		activeTools = tools.DefaultRegistry.GetOpenAITools()
+			activeTools = tools.DefaultRegistry.GetOpenAITools()
+		}
 	}
 
 	mainParams := structs.Params{
