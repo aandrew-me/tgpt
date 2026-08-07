@@ -8,11 +8,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"syscall"
 
@@ -74,11 +72,7 @@ func (f *toolsFlagValue) IsBoolFlag() bool {
 }
 
 func restoreTerminal() {
-	if runtime.GOOS != "windows" {
-		rawModeOff := exec.Command("stty", "-raw", "echo")
-		rawModeOff.Stdin = os.Stdin
-		_ = rawModeOff.Run()
-	}
+	bubbletea.RestoreTerminal()
 }
 
 func loadConfig(configPath string) {

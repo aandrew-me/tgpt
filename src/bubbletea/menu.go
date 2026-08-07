@@ -2,17 +2,29 @@ package bubbletea
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 )
 
+func RestoreTerminal() {
+	if runtime.GOOS != "windows" {
+		rawModeOff := exec.Command("stty", "-raw", "echo")
+		rawModeOff.Stdin = os.Stdin
+		_ = rawModeOff.Run()
+	}
+}
+
 type SelectModel struct {
-	Title    string
-	Options  []string
-	Cursor   int
-	Selected int
-	Canceled bool
+	Title       string
+	Options     []string
+	Cursor      int
+	Selected    int
+	Canceled    bool
+	Interrupted bool
 }
 
 func (m SelectModel) Init() tea.Cmd {
@@ -23,7 +35,10 @@ func (m SelectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc", "q":
+		case "ctrl+c":
+			m.Interrupted = true
+			return m, tea.Quit
+		case "esc", "q":
 			m.Canceled = true
 			return m, tea.Quit
 		case "up", "k":
@@ -103,7 +118,14 @@ func SelectMenu(title string, options []string, defaultIndex int) (int, string, 
 	}
 
 	res, ok := finalModel.(SelectModel)
-	if !ok || res.Canceled || res.Selected < 0 {
+	if !ok {
+		return -1, "", fmt.Errorf("selection failed")
+	}
+	if res.Interrupted {
+		RestoreTerminal()
+		os.Exit(0)
+	}
+	if res.Canceled || res.Selected < 0 {
 		return -1, "", fmt.Errorf("selection canceled")
 	}
 
