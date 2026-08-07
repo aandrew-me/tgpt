@@ -59,6 +59,7 @@ var AllBuiltinTools = []string{
 	"execute_command",
 	"web_fetch",
 	"write_file",
+	"edit_file",
 }
 
 func IsBuiltinTool(name string) bool {
@@ -146,17 +147,43 @@ func PreConfirm(ctx context.Context, name string, argsJSON string) (bool, string
 		}
 	case "write_file":
 		filePath, _ := args["path"].(string)
+		appendMode, _ := args["append"].(bool)
 		if filePath != "" {
 			if _, err := os.Stat(filePath); err == nil {
-				confirmed, err := confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath))
+				var prompt string
+				var cancelMsg string
+				if appendMode {
+					prompt = fmt.Sprintf("\nAppend to file `%s` ?", filePath)
+					cancelMsg = "File append cancelled by user."
+				} else {
+					prompt = fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath)
+					cancelMsg = "File overwrite cancelled by user."
+				}
+				confirmed, err := confirmAction(prompt)
 				if err != nil {
 					if errors.Is(err, bubbletea.ErrCanceled) {
-						return false, "File overwrite cancelled by user.", nil
+						return false, cancelMsg, nil
 					}
 					return false, "", err
 				}
 				if !confirmed {
-					return false, "File overwrite cancelled by user.", nil
+					return false, cancelMsg, nil
+				}
+			}
+		}
+	case "edit_file":
+		filePath, _ := args["path"].(string)
+		if filePath != "" {
+			if _, err := os.Stat(filePath); err == nil {
+				confirmed, err := confirmAction(fmt.Sprintf("\nEdit file `%s` ?", filePath))
+				if err != nil {
+					if errors.Is(err, bubbletea.ErrCanceled) {
+						return false, "File edit cancelled by user.", nil
+					}
+					return false, "", err
+				}
+				if !confirmed {
+					return false, "File edit cancelled by user.", nil
 				}
 			}
 		}
@@ -544,6 +571,10 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 							"type":        "string",
 							"description": "Content to write to the file",
 						},
+						"append": map[string]any{
+							"type":        "boolean",
+							"description": "If true, append content to the file instead of overwriting it (defaults to false)",
+						},
 					},
 					"required": []string{"path", "content"},
 				},
@@ -557,20 +588,30 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			if !ok {
 				return "", fmt.Errorf("content parameter is required")
 			}
+			appendMode, _ := args["append"].(bool)
 
 			autoExec, _ := ctx.Value(AutoExecKey).(bool)
 			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
 			if !autoExec && !confirmed {
 				if _, err := os.Stat(filePath); err == nil {
-					c, err := confirmAction(fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath))
+					var prompt string
+					var cancelMsg string
+					if appendMode {
+						prompt = fmt.Sprintf("\nAppend to file `%s` ?", filePath)
+						cancelMsg = "File append cancelled by user."
+					} else {
+						prompt = fmt.Sprintf("\nFile `%s` already exists. Overwrite it?", filePath)
+						cancelMsg = "File overwrite cancelled by user."
+					}
+					c, err := confirmAction(prompt)
 					if err != nil {
 						if errors.Is(err, bubbletea.ErrCanceled) {
-							return "File overwrite cancelled by user.", nil
+							return cancelMsg, nil
 						}
 						return "", err
 					}
 					if !c {
-						return "File overwrite cancelled by user.", nil
+						return cancelMsg, nil
 					}
 				}
 			}
@@ -582,11 +623,111 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 				}
 			}
 
+			if appendMode {
+				f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					return "", fmt.Errorf("failed to open file for appending: %w", err)
+				}
+				defer f.Close()
+				if _, err := f.WriteString(content); err != nil {
+					return "", fmt.Errorf("failed to append to file: %w", err)
+				}
+				return fmt.Sprintf("Successfully appended to %s", filePath), nil
+			}
+
 			if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 				return "", fmt.Errorf("failed to write file: %w", err)
 			}
 
 			return fmt.Sprintf("Successfully wrote to %s", filePath), nil
+		})
+	}
+
+	// 7. edit_file
+	if shouldRegister("edit_file") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "edit_file",
+				Description: "Edit a file by replacing old_content with new_content",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{
+							"type":        "string",
+							"description": "Path to the file to edit",
+						},
+						"old_content": map[string]any{
+							"type":        "string",
+							"description": "Exact text or code block in the file to be replaced",
+						},
+						"new_content": map[string]any{
+							"type":        "string",
+							"description": "New text or code block to replace old_content with",
+						},
+					},
+					"required": []string{"path", "old_content", "new_content"},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			filePath, _ := args["path"].(string)
+			if filePath == "" {
+				return "", fmt.Errorf("path parameter is required")
+			}
+			oldContent, ok := args["old_content"].(string)
+			if !ok {
+				return "", fmt.Errorf("old_content parameter is required")
+			}
+			if oldContent == "" {
+				return "", fmt.Errorf("old_content parameter cannot be empty")
+			}
+			newContent, ok := args["new_content"].(string)
+			if !ok {
+				return "", fmt.Errorf("new_content parameter is required")
+			}
+			if oldContent == newContent {
+				return "", fmt.Errorf("old_content and new_content are identical; no changes to make")
+			}
+
+			if _, err := os.Stat(filePath); err != nil {
+				return "", fmt.Errorf("failed to read file for editing: %w", err)
+			}
+
+			autoExec, _ := ctx.Value(AutoExecKey).(bool)
+			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
+			if !autoExec && !confirmed {
+				c, err := confirmAction(fmt.Sprintf("\nEdit file `%s` ?", filePath))
+				if err != nil {
+					if errors.Is(err, bubbletea.ErrCanceled) {
+						return "File edit cancelled by user.", nil
+					}
+					return "", err
+				}
+				if !c {
+					return "File edit cancelled by user.", nil
+				}
+			}
+
+			data, err := os.ReadFile(filePath)
+			if err != nil {
+				return "", fmt.Errorf("failed to read file for editing: %w", err)
+			}
+
+			fileStr := string(data)
+			count := strings.Count(fileStr, oldContent)
+			if count == 0 {
+				return "", fmt.Errorf("old_content not found in %s", filePath)
+			}
+			if count > 1 {
+				return "", fmt.Errorf("old_content appears %d times in %s; please provide more surrounding context to make it unique", count, filePath)
+			}
+
+			updatedStr := strings.Replace(fileStr, oldContent, newContent, 1)
+			if err := os.WriteFile(filePath, []byte(updatedStr), 0644); err != nil {
+				return "", fmt.Errorf("failed to write edited file: %w", err)
+			}
+
+			return fmt.Sprintf("Successfully edited %s", filePath), nil
 		})
 	}
 }
