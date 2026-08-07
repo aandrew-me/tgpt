@@ -188,7 +188,7 @@ func runInteractiveShellMode(
 		params.ThreadID = threadID
 		params.SystemPrompt = systemPrompt
 
-		responseObjects, responseTxt := helper.GetData(input, params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true})
+		responseObjects, responseTxt := helper.GetData(input, params, structs.ExtraOptions{IsInteractiveShell: true, IsNormal: true, AutoExec: shouldExecuteCommand})
 
 		if len(logFile) > 0 {
 			utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", logFile)
@@ -602,14 +602,14 @@ func main() {
 				}
 				helper.GetWholeText(
 					*preprompt+trimmedPrompt+contextText+pipedInput,
-					structs.ExtraOptions{IsGetWhole: *isWhole},
+					structs.ExtraOptions{IsGetWhole: *isWhole, AutoExec: *shouldExecuteCommand},
 					mainParams,
 				)
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				helper.GetWholeText(
 					*preprompt+formattedInput+cleanPipedInput,
-					structs.ExtraOptions{IsGetWhole: *isWhole},
+					structs.ExtraOptions{IsGetWhole: *isWhole, AutoExec: *shouldExecuteCommand},
 					mainParams,
 				)
 			}
@@ -651,6 +651,7 @@ func main() {
 					structs.ExtraOptions{
 						IsGetCode:   true,
 						IsGetSilent: *isQuiet,
+						AutoExec:    *shouldExecuteCommand,
 					},
 				)
 			} else {
@@ -695,7 +696,7 @@ func main() {
 				mainParams.PrevMessages = previousMessages
 				mainParams.ThreadID = threadID
 
-				responseObjects, responseTxt := helper.GetData(input, mainParams, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+				responseObjects, responseTxt := helper.GetData(input, mainParams, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet, AutoExec: *shouldExecuteCommand})
 
 				if len(*logFile) > 0 {
 					utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
@@ -755,7 +756,7 @@ func main() {
 					mainParams.PrevMessages = previousMessages
 					mainParams.ThreadID = threadID
 
-					responseObjects, responseTxt := helper.GetData(userInput, mainParams, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet})
+					responseObjects, responseTxt := helper.GetData(userInput, mainParams, structs.ExtraOptions{IsInteractive: true, IsNormal: true, IsGetSilent: *isQuiet, AutoExec: *shouldExecuteCommand})
 					previousMessages = append(previousMessages, responseObjects...)
 					lastResponse = responseTxt
 
@@ -791,6 +792,7 @@ func main() {
 					IsFind:         true,
 					Verbose:        *isVerbose,
 					SearchProvider: finalSearchProvider,
+					AutoExec:       *shouldExecuteCommand,
 				}
 
 				helper.SearchQuery(trimmedPrompt, mainParams, extraOptions, *isQuiet, *logFile)
@@ -811,6 +813,7 @@ func main() {
 				IsFind:            true,
 				Verbose:           *isVerbose,
 				SearchProvider:    finalSearchProvider,
+				AutoExec:          *shouldExecuteCommand,
 			}
 
 			getAndPrintFindResponse := helper.InteractiveFindSession(mainParams, extraOptions, *logFile, nil)
@@ -854,13 +857,13 @@ func main() {
 					utils.PrintError(`Example: tgpt -q "What is encryption?"`)
 					return
 				}
-				if _, _, err := helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
+				if _, _, err := helper.MakeRequestAndGetData(*preprompt+trimmedPrompt+contextText+pipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true, AutoExec: *shouldExecuteCommand}); err != nil {
 					return
 				}
 			} else {
 				formattedInput := bubbletea.GetFormattedInputStdin()
 				fmt.Println()
-				if _, _, err := helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true}); err != nil {
+				if _, _, err := helper.MakeRequestAndGetData(*preprompt+formattedInput+cleanPipedInput, mainParams, structs.ExtraOptions{IsGetSilent: true, AutoExec: *shouldExecuteCommand}); err != nil {
 					return
 				}
 			}
@@ -877,7 +880,7 @@ func main() {
 				*preprompt+formattedInput+contextText+pipedInput,
 				mainParams,
 				structs.ExtraOptions{
-					IsNormal: true, IsInteractive: false, Verbose: *isVerbose,
+					IsNormal: true, IsInteractive: false, Verbose: *isVerbose, AutoExec: *shouldExecuteCommand,
 				})
 		}
 	} else {
@@ -889,7 +892,7 @@ func main() {
 		}
 		input := scanner.Text()
 		formattedInput := strings.TrimSpace(input)
-		helper.GetData(*preprompt+formattedInput+pipedInput, mainParams, structs.ExtraOptions{IsInteractive: false, IsNormal: true, Verbose: *isVerbose})
+		helper.GetData(*preprompt+formattedInput+pipedInput, mainParams, structs.ExtraOptions{IsInteractive: false, IsNormal: true, Verbose: *isVerbose, AutoExec: *shouldExecuteCommand})
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/aandrew-me/tgpt/v2/src/structs"
+	"github.com/aandrew-me/tgpt/v2/src/tools"
 	http "github.com/bogdanfinn/fhttp"
 )
 
@@ -184,6 +185,56 @@ func TestToolDepthLimitClearsToolsAndReturnsResponse(t *testing.T) {
 
 	if res != "Final summary response" {
 		t.Errorf("expected response 'Final summary response', got %q", res)
+	}
+}
+
+func TestToolExecutionAutoExec(t *testing.T) {
+	step := 0
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		if step == 0 {
+			step++
+			resp := `{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"execute_command","arguments":"{\"command\":\"echo auto_exec_test\"}"}}]}}]}`
+			_, _ = w.Write([]byte("data: " + resp + "\n\n"))
+		} else {
+			resp := `{"choices":[{"delta":{"content":"Command executed successfully"}}]} `
+			_, _ = w.Write([]byte("data: " + resp + "\n\n"))
+		}
+	}))
+	defer server.Close()
+
+	tools.DefaultRegistry.RegisterBuiltinTools("execute_command")
+
+	params := structs.Params{
+		Provider: "openai",
+		Url:      server.URL,
+		Tools:    tools.DefaultRegistry.GetOpenAITools(),
+	}
+	extraOptions := structs.ExtraOptions{
+		IsNormal: true,
+		AutoExec: true,
+	}
+
+	res, turnMsgs, err := MakeRequestAndGetData("run command", params, extraOptions)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(res, "Command executed successfully") {
+		t.Errorf("expected response to contain 'Command executed successfully', got %q", res)
+	}
+
+	foundToolResult := false
+	for _, msg := range turnMsgs {
+		if tm, ok := msg.(structs.ToolMessage); ok {
+			if strings.Contains(tm.Content, "auto_exec_test") {
+				foundToolResult = true
+				break
+			}
+		}
+	}
+	if !foundToolResult {
+		t.Errorf("expected turn messages to contain tool result with auto_exec_test, got %#v", turnMsgs)
 	}
 }
 
