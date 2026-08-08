@@ -36,7 +36,6 @@ jobs:
                   GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-arm64.exe
                   GOOS=windows GOARCH=386 go build -ldflags="-s -w" -o tgpt-i386.exe
                   GOOS=windows GOARCH=386 GO386=softfloat go build -ldflags="-s -w" -o tgpt-i386-softfloat.exe
-                  GOOS=windows GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o tgpt-arm-softfloat.exe
 
                   GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o tgpt-mac-amd64
                   GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o tgpt-mac-arm64
@@ -95,10 +94,7 @@ jobs:
 
                   sha256sum tgpt-i386-softfloat.exe
                   sha256sum tgpt-i386-softfloat.exe >> ${{ github.workspace }}-CHANGELOG.txt
-
-                  sha256sum tgpt-arm-softfloat.exe
-                  sha256sum tgpt-arm-softfloat.exe >> ${{ github.workspace }}-CHANGELOG.txt
-                  
+                
                   sha256sum tgpt-mac-amd64
                   sha256sum tgpt-mac-amd64 >> ${{ github.workspace }}-CHANGELOG.txt
                   
