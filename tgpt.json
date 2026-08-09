@@ -1,21 +1,22 @@
 {
     "homepage": "https://github.com/aandrew-me/tgpt",
-    "version": "2.12.0",
+    "version": "2.13.0",
     "description": "ChatGPT in terminal for free",
     "license": "GPL-3",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/aandrew-me/tgpt/releases/download/v2.12.0/tgpt-amd64.exe"
+            "url": "https://github.com/aandrew-me/tgpt/releases/download/v2.13.0/tgpt-amd64.exe",
+            "bin": [["tgpt-amd64.exe", "tgpt"]]
         },
         "32bit": {
-            "url": "https://github.com/aandrew-me/tgpt/releases/download/v2.12.0/tgpt-i386.exe"
+            "url": "https://github.com/aandrew-me/tgpt/releases/download/v2.13.0/tgpt-i386.exe",
+            "bin": [["tgpt-i386.exe", "tgpt"]]
         },
         "arm64": {
-            "url": "https://github.com/aandrew-me/tgpt/releases/download/v2.12.0/tgpt-arm64.exe"
+            "url": "https://github.com/aandrew-me/tgpt/releases/download/v2.13.0/tgpt-arm64.exe",
+            "bin": [["tgpt-arm64.exe", "tgpt"]]
         }
     },
-    
-	"bin": ["tgpt-amd64.exe", ["tgpt-amd64.exe", "tgpt"]],
     "checkver": {
         "github": "https://github.com/aandrew-me/tgpt"
     },
