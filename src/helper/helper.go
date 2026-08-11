@@ -1278,7 +1278,7 @@ func ShowHelpMessage() {
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
-	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, ollama, litellm, groq, gemini, deepseek\n", "--url")
+	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, ollama, litellm, groq, gemini, deepseek, omniroute\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
@@ -1305,7 +1305,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, openai, opencode, pollinations, powerbrain.")
+	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -1339,6 +1339,9 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: ollamacloud")
 	fmt.Println("Uses Ollama Cloud API. Recognizes OLLAMA_API_KEY and OLLAMA_MODEL env vars. Default model: gpt-oss:120b")
+
+	bold.Println("\nProvider: omniroute")
+	fmt.Println("OpenAI compatible provider. Default base URL: http://localhost:20128/v1. Default model: auto (supports auto/coding, auto/fast, auto/cheap). Recognizes OMNIROUTE_API_KEY, OMNIROUTE_MODEL, OMNIROUTE_URL, OMNIROUTE_BASE_URL env vars.")
 
 	bold.Println("\nProvider: opencode")
 	fmt.Println("Free provider using opencode.ai/zen API. Uses deepseek-v4-flash-free model by default. API key defaults to 'public'. Recognizes OPENCODE_API_KEY, OPENCODE_MODEL and OPENCODE_URL env vars. Available models: https://opencode.ai/docs/zen/#endpoints")

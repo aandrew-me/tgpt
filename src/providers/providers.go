@@ -14,6 +14,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/litellm"
 	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
+	"github.com/aandrew-me/tgpt/v2/src/providers/omniroute"
 	"github.com/aandrew-me/tgpt/v2/src/providers/opencode"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
@@ -23,7 +24,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "opencode", "openai", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -40,7 +41,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "deepseek", "gemini", "groq", "litellm", "ollama", "opencode", "openai", "pollinations":
+	case "anyapi", "deepseek", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "pollinations":
 		return true
 	default:
 		return false
@@ -71,6 +72,8 @@ func GetMainText(line string, provider string, input string) string {
 		return ollama.GetMainText(line)
 	case "ollamacloud":
 		return ollama.GetCloudMainText(line)
+	case "omniroute":
+		return omniroute.GetMainText(line)
 	case "opencode":
 		return opencode.GetMainText(line)
 	case "openai":
@@ -117,6 +120,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return ollama.NewRequest(input, params)
 	case "ollamacloud":
 		return ollama.NewCloudRequest(input, params)
+	case "omniroute":
+		return omniroute.NewRequest(input, params)
 	case "opencode":
 		return opencode.NewRequest(input, params)
 	case "openai":
