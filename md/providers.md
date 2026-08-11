@@ -9,6 +9,7 @@
 - [MiniMax](https://platform.minimaxi.com/) (Requires API key, default model `MiniMax-M2.7`)
 - [Ollama](https://www.ollama.com/) (Local models) (Supports many models)
 - [OllamaCloud](https://ollama.com/) (Cloud API) (Requires OLLAMA_API_KEY, default model `gpt-oss:120b`)
+- OmniRoute (OpenAI-compatible API router, default base URL `http://localhost:20128/v1`, default model `auto`, supports `OMNIROUTE_API_KEY`, `OMNIROUTE_MODEL`, `OMNIROUTE_URL`, `OMNIROUTE_BASE_URL` env vars)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [OpenCode](https://opencode.ai) (Free, uses opencode.ai/zen API, default model deepseek-v4-flash-free, default API key `public`, supports OPENCODE_API_KEY / OPENCODE_MODEL / OPENCODE_URL env vars)
 - [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))
