@@ -6,6 +6,7 @@ import (
 
 	"github.com/aandrew-me/tgpt/v2/src/providers/aihorde"
 	"github.com/aandrew-me/tgpt/v2/src/providers/anyapi"
+	"github.com/aandrew-me/tgpt/v2/src/providers/atlascloud"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/providers/groq"
@@ -15,8 +16,8 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/src/providers/omniroute"
-	"github.com/aandrew-me/tgpt/v2/src/providers/opencode"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
+	"github.com/aandrew-me/tgpt/v2/src/providers/opencode"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/providers/powerbrain"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -24,7 +25,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "atlascloud", "deepseek", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -41,7 +42,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "deepseek", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "pollinations":
+	case "anyapi", "atlascloud", "deepseek", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "pollinations":
 		return true
 	default:
 		return false
@@ -54,6 +55,8 @@ func GetMainText(line string, provider string, input string) string {
 		return aihorde.GetMainText(line)
 	case "anyapi":
 		return anyapi.GetMainText(line)
+	case "atlascloud":
+		return atlascloud.GetMainText(line)
 	case "deepseek":
 		return deepseek.GetMainText(line)
 	case "isou":
@@ -102,6 +105,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return aihorde.NewRequest(input, params)
 	case "anyapi":
 		return anyapi.NewRequest(input, params)
+	case "atlascloud":
+		return atlascloud.NewRequest(input, params)
 	case "deepseek":
 		return deepseek.NewRequest(input, params)
 	case "gemini":
