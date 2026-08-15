@@ -1,6 +1,7 @@
 ### Currently available providers
 
 - [AnyAPI](https://docs.anyapi.ai/) (Multi-model API, 100k free anytokens/day, supports chat and image gen, many providers including deepseek, google, openai)
+- [Atlas Cloud](https://www.atlascloud.ai/) (OpenAI-compatible API, requires `ATLASCLOUD_API_KEY`, default model `qwen/qwen3.8-max`, supports `ATLASCLOUD_MODEL`, `ATLASCLOUD_URL`, and `ATLASCLOUD_BASE_URL`)
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
 - [Isou](https://isou.chat/) (Free) (Deepseek-chat with SEARXNG)

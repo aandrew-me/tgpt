@@ -1305,10 +1305,13 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, opencode, pollinations, powerbrain.")
+	fmt.Println("Available providers to use: anyapi, atlascloud, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
+
+	bold.Println("\nProvider: atlascloud")
+	fmt.Println("OpenAI-compatible Atlas Cloud API. Recognizes ATLASCLOUD_API_KEY, ATLASCLOUD_MODEL, ATLASCLOUD_URL and ATLASCLOUD_BASE_URL env vars. Default model: qwen/qwen3.8-max. Docs: https://www.atlascloud.ai/")
 
 	bold.Println("Provider: aihorde")
 	fmt.Println("A free, community-powered generation service: volunteers share spare computer power so anyone can generate images and text. Supports AIHORDE_MODEL and AIHORDE_API_KEY env variables. Site: https://aihorde.net/")
