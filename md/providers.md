@@ -13,6 +13,7 @@
 - OmniRoute (OpenAI-compatible API router, default base URL `http://localhost:20128/v1`, default model `auto`, supports `OMNIROUTE_API_KEY`, `OMNIROUTE_MODEL`, `OMNIROUTE_URL`, `OMNIROUTE_BASE_URL` env vars)
 - [OpenAI](https://platform.openai.com/docs/guides/text-generation/chat-completions-api) (All models, Requires API Key, supports custom endpoints)
 - [OpenCode](https://opencode.ai) (Free, uses opencode.ai/zen API, default model deepseek-v4-flash-free, default API key `public`, supports OPENCODE_API_KEY / OPENCODE_MODEL / OPENCODE_URL env vars)
+- [OpenRouter](https://openrouter.ai/) (OpenAI-compatible API, default model `openrouter/free`, supports `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_URL`, and `OPENROUTER_BASE_URL` env vars)
 - [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))
 - [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-2.0-flash`)
 - PowerBrain (Free)
