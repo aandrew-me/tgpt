@@ -1305,7 +1305,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, atlascloud, deepseek, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
+	fmt.Println("Available providers to use: anyapi, atlascloud, deepseek, deepseek-web, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -1318,6 +1318,14 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: deepseek")
 	fmt.Println("Uses DeepSeek-V4-Flash model by default. Requires API key. Recognizes DEEPSEEK_API_KEY and DEEPSEEK_MODEL env vars. Docs: https://api-docs.deepseek.com/")
+
+	bold.Println("\nProvider: deepseek-web")
+	fmt.Println("Web-based DeepSeek provider using chat.deepseek.com. Requires userToken (via DEEPSEEK_WEB_TOKEN env var or --key) and a JS runtime (node, bun, or deno) in PATH for solving Proof-of-Work.")
+	fmt.Println("How to get userToken:")
+	fmt.Println("  1. Log in to https://chat.deepseek.com in your browser.")
+	fmt.Println("  2. Open Developer Tools (F12) -> Application -> Local Storage -> https://chat.deepseek.com.")
+	fmt.Println("  3. Find the key 'userToken' and copy its value (either the inner 'value' string or full JSON).")
+	fmt.Println("Supports DEEPSEEK_WEB_THINKING=true (for deep thinking) and DEEPSEEK_WEB_SEARCH=true (for web search).")
 
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API key. Recognizes GROQ_API_KEY and GROQ_MODEL env vars. Models: https://console.groq.com/docs/models")
@@ -1443,6 +1451,7 @@ func ShowHelpMessage() {
 	fmt.Println(`tgpt -s "How to update my system?"`)
 	fmt.Println(`tgpt -c "Write a function in Go that reverses a string"`)
 	fmt.Println(`tgpt --provider deepseek "What is 1+1"`)
+	fmt.Println(`tgpt --provider deepseek-web --key "YOUR_USER_TOKEN" "What is 1+1"`)
 	fmt.Println(`tgpt --img "cat"`)
 	fmt.Println(`tgpt --img --out ~/my-cat.jpg --height 256 --width 256 "cat"`)
 	fmt.Println(`tgpt --provider openai --key "sk-xxxx" --model "gpt-5.6" "What is 1+1"`)
