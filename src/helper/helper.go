@@ -1185,7 +1185,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			fmt.Println(fullText)
 		}
 
-		if extraOptions.IsGetSilent || extraOptions.IsGetCode {
+		if extraOptions.IsGetSilent || extraOptions.IsGetCode || extraOptions.IsGetCommand {
 			fmt.Println()
 		}
 
@@ -1193,7 +1193,6 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 			lineCount := strings.Count(fullText, "\n") + 1
 			if lineCount == 1 {
 				if extraOptions.AutoExec {
-					fmt.Println()
 					ExecuteCommand(ShellName, ShellOptions, fullText)
 				} else {
 					confirmed, err := bubbletea.ConfirmMenu("\nExecute shell command?", true)
