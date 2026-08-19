@@ -1305,7 +1305,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, atlascloud, deepseek, deepseek-web, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
+	fmt.Println("Available providers to use: anyapi, atlascloud, deepseek, deepseek-web, fx, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -1326,6 +1326,9 @@ func ShowHelpMessage() {
 	fmt.Println("  2. Open Developer Tools (F12) -> Application -> Local Storage -> https://chat.deepseek.com.")
 	fmt.Println("  3. Find the key 'userToken' and copy its value (either the inner 'value' string or full JSON).")
 	fmt.Println("Supports DEEPSEEK_WEB_THINKING=true (for deep thinking) and DEEPSEEK_WEB_SEARCH=true (for web search).")
+
+	bold.Println("\nProvider: fx")
+	fmt.Println("Free provider using fx.sh gateway. Default model: zai/glm-5.2. Site: https://fx.sh/")
 
 	bold.Println("\nProvider: groq")
 	fmt.Println("Requires a free API key. Recognizes GROQ_API_KEY and GROQ_MODEL env vars. Models: https://console.groq.com/docs/models")

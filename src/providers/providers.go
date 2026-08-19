@@ -9,6 +9,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/atlascloud"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseekweb"
+	"github.com/aandrew-me/tgpt/v2/src/providers/fx"
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/providers/groq"
 	"github.com/aandrew-me/tgpt/v2/src/providers/isou"
@@ -27,7 +28,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "atlascloud", "deepseek", "deepseek-web", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "atlascloud", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -63,6 +64,8 @@ func GetMainText(line string, provider string, input string) string {
 		return deepseek.GetMainText(line)
 	case "deepseek-web":
 		return deepseekweb.GetMainText(line)
+	case "fx":
+		return fx.GetMainText(line)
 	case "isou":
 		return isou.GetMainText((line))
 	case "gemini":
@@ -117,6 +120,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return deepseek.NewRequest(input, params)
 	case "deepseek-web":
 		return deepseekweb.NewRequest(input, params)
+	case "fx":
+		return fx.NewRequest(input, params)
 	case "gemini":
 		return gemini.NewRequest(input, params)
 	case "groq":
