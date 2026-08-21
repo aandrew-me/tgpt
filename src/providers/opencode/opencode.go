@@ -28,7 +28,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(1)
 	}
 
-	model := "deepseek-v4-flash-free"
+	model := "mimo-v2.5-free"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	} else if envModel := os.Getenv("OPENCODE_MODEL"); envModel != "" {
