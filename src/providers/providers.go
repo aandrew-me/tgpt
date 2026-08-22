@@ -21,6 +21,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/opencode"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openrouter"
+	"github.com/aandrew-me/tgpt/v2/src/providers/orcarouter"
 	"github.com/aandrew-me/tgpt/v2/src/providers/pollinations"
 	"github.com/aandrew-me/tgpt/v2/src/providers/powerbrain"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
@@ -28,7 +29,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "atlascloud", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "atlascloud", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "orcarouter", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -45,7 +46,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "atlascloud", "deepseek", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "openrouter", "pollinations":
+	case "anyapi", "atlascloud", "deepseek", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "openrouter", "orcarouter", "pollinations":
 		return true
 	default:
 		return false
@@ -90,6 +91,8 @@ func GetMainText(line string, provider string, input string) string {
 		return openai.GetMainText(line)
 	case "openrouter":
 		return openrouter.GetMainText(line)
+	case "orcarouter":
+		return orcarouter.GetMainText(line)
 	case "pollinations":
 		return pollinations.GetMainText(line)
 	case "powerbrain":
@@ -146,6 +149,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return openai.NewRequest(input, params)
 	case "openrouter":
 		return openrouter.NewRequest(input, params)
+	case "orcarouter":
+		return orcarouter.NewRequest(input, params)
 	case "pollinations":
 		return pollinations.NewRequest(input, params)
 	case "powerbrain":

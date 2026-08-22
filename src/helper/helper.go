@@ -1277,7 +1277,7 @@ func ShowHelpMessage() {
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
-	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud\n", "--url")
+	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, orcarouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
@@ -1304,7 +1304,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, atlascloud, deepseek, deepseek-web, fx, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
+	fmt.Println("Available providers to use: anyapi, atlascloud, deepseek, deepseek-web, fx, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, orcarouter, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -1364,6 +1364,9 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: openrouter")
 	fmt.Println("OpenAI-compatible OpenRouter API. Default model: openrouter/free. Recognizes OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL and OPENROUTER_BASE_URL env vars. Docs: https://openrouter.ai/")
+
+	bold.Println("\nProvider: orcarouter")
+	fmt.Println("OpenAI-compatible OrcaRouter gateway API. Default model: orcarouter/auto. Recognizes ORCAROUTER_API_KEY, ORCAROUTER_MODEL, ORCAROUTER_URL and ORCAROUTER_BASE_URL env vars. Docs: https://www.orcarouter.ai/")
 
 	bold.Println("\nProvider: pollinations")
 	fmt.Println("Works without an API key. Recognizes POLLINATIONS_API_KEY and POLLINATIONS_MODEL env vars. Free API key: https://enter.pollinations.ai/")
