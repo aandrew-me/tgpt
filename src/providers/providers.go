@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/aandrew-me/tgpt/v2/src/providers/aihorde"
+	"github.com/aandrew-me/tgpt/v2/src/providers/aitopia"
 	"github.com/aandrew-me/tgpt/v2/src/providers/anyapi"
 	"github.com/aandrew-me/tgpt/v2/src/providers/atlascloud"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
@@ -28,7 +29,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "atlascloud", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "aitopia", "atlascloud", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -56,6 +57,8 @@ func GetMainText(line string, provider string, input string) string {
 	switch provider {
 	case "aihorde":
 		return aihorde.GetMainText(line)
+	case "aitopia":
+		return aitopia.GetMainText(line)
 	case "anyapi":
 		return anyapi.GetMainText(line)
 	case "atlascloud":
@@ -112,6 +115,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 	switch provider {
 	case "aihorde":
 		return aihorde.NewRequest(input, params)
+	case "aitopia":
+		return aitopia.NewRequest(input, params)
 	case "anyapi":
 		return anyapi.NewRequest(input, params)
 	case "atlascloud":
