@@ -5,6 +5,7 @@
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Deepseek Web](https://chat.deepseek.com/) (Web API, requires user token from chat.deepseek.com via `DEEPSEEK_WEB_TOKEN` / `--key` and a JS runtime like `node`, `bun`, or `deno` in PATH to solve Proof-of-Work, supports optional `DEEPSEEK_WEB_THINKING=true` and `DEEPSEEK_WEB_SEARCH=true` env vars)
 - [Fx](https://fx.sh/) (Free, fx.sh gateway, default model `zai/glm-5.2`)
+- [Aitopia](https://extensions.aitopia.ai/) (Free) (Uses gpt-4o-mini by default)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
 - [Isou](https://isou.chat/) (Free) (Deepseek-chat with SEARXNG)
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/) (Free) (koboldcpp/HF_SPACE_Tiefighter-13B)
