@@ -470,7 +470,7 @@ func Update(localVersion string, executablePath string) {
 
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		script := fmt.Sprintf("& { $(irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1) } -Path %s", escapePowerShellArg(executablePath))
+		script := fmt.Sprintf("& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1))) -Path %s", escapePowerShellArg(executablePath))
 		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", script)
 	} else {
 		useSudo := !canWriteToDir(executablePath)
