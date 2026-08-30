@@ -66,7 +66,7 @@ go install github.com/aandrew-me/tgpt/v2@latest
 
     Uninstall with
     ```
-    iex "& { $(irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1) } -Uninstall"
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1))) -Uninstall
     ```
 
 
