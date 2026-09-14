@@ -12,6 +12,7 @@ import (
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
+	"github.com/aandrew-me/tgpt/v2/src/utils"
 )
 
 type RequestBody struct {
@@ -28,7 +29,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(1)
 	}
 
-	model := "mimo-v2.5-free"
+	model := "big-pickle"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	} else if envModel := os.Getenv("OPENCODE_MODEL"); envModel != "" {
@@ -98,6 +99,16 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	if apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}
+
+	randID, _ := utils.GenerateHexString(40)
+	requestID, _ := utils.GenerateHexString(26)
+	sesID, _ := utils.GenerateHexString(26)
+
+	req.Header.Set("x-opencode-client", "desktop")
+	req.Header.Set("x-opencode-project", randID)
+	req.Header.Set("User-Agent", "opencode/1.18.18 ai-sdk/provider-utils/4.0.23 runtime/node.js/24")
+	req.Header.Set("x-opencode-request", "msg_" + requestID)
+	req.Header.Set("x-opencode-session", "ses_" + sesID)
 
 	return client.Do(req)
 }

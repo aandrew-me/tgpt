@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"math/rand"
@@ -12,9 +13,27 @@ import (
 
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	http "github.com/bogdanfinn/fhttp"
+	crypto_rand "crypto/rand"
 
 	"github.com/fatih/color"
 )
+
+func GenerateHexString(length int) (string, error) {
+	if length <= 0 {
+		return "", nil
+	}
+
+	byteLength := (length + 1) / 2
+	b := make([]byte, byteLength)
+
+	if _, err := crypto_rand.Read(b); err != nil {
+		return "", err
+	}
+
+	// Encode to hex and truncate to handle odd lengths
+	hexString := hex.EncodeToString(b)
+	return hexString[:length], nil
+}
 
 func RandomString(length int) string {
 	characters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"
@@ -131,4 +150,4 @@ func GetLastCodeBlock(markdown string) string {
 	}
 
 	return strings.Join(codeBlock, "\n")
-}
+}
