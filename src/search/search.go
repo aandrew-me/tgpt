@@ -87,6 +87,17 @@ type SerpingapiSearchResponse struct {
 	} `json:"organic"`
 }
 
+// SerplySearchResponse represents the response from the Serply search API.
+// Serply returns organic rows under "results" and names the snippet field
+// "description".
+type SerplySearchResponse struct {
+	Results []struct {
+		Title       string `json:"title"`
+		Link        string `json:"link"`
+		Description string `json:"description"`
+	} `json:"results"`
+}
+
 func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
 	userQuery := params.Query
 	numResults := params.NumResults
@@ -625,6 +636,97 @@ func parseSerpingapiResponse(body []byte, verbose bool) ([]SearchResult, error) 
 	return results, nil
 }
 
+// serplyQuery builds the query string sent to Serply. Like serpingapi, the API
+// has no separate site filter parameter, so the filter is expressed as a site:
+// operator.
+func serplyQuery(params SearchParams) string {
+	if params.SiteFilter != "" {
+		return "site:" + params.SiteFilter + " " + params.Query
+	}
+	return params.Query
+}
+
+// serplySearch performs the actual Serply search API call
+func serplySearch(params SearchParams, apiKey string, verbose bool) ([]SearchResult, error) {
+	numResults := params.NumResults
+	if numResults <= 0 {
+		numResults = 5
+	}
+
+	query := url.Values{}
+	query.Set("q", serplyQuery(params))
+	query.Set("num", strconv.Itoa(numResults))
+	endpoint := "https://api.serply.io/v1/search/?" + query.Encode()
+
+	if verbose {
+		fmt.Printf("Calling Serply: %s\n", endpoint)
+	}
+
+	// Create HTTP client
+	httpClient, err := client.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %v", err)
+	}
+
+	// Make request
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("X-Api-Key", apiKey)
+	req.Header.Set("User-Agent", "TGPT/2.11.0")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute search request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read search response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("search API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return parseSerplyResponse(body, numResults, verbose)
+}
+
+// parseSerplyResponse converts a Serply JSON response into search results.
+// Serply treats num as an approximate cap rather than an exact count, so the
+// rows are trimmed to the requested number here.
+func parseSerplyResponse(body []byte, numResults int, verbose bool) ([]SearchResult, error) {
+	var searchResp SerplySearchResponse
+	if err := json.Unmarshal(body, &searchResp); err != nil {
+		return nil, fmt.Errorf("failed to parse search response: %v", err)
+	}
+
+	// Convert to our format
+	var results []SearchResult
+	for _, item := range searchResp.Results {
+		if numResults > 0 && len(results) >= numResults {
+			break
+		}
+		// Validate URL format
+		if _, err := url.ParseRequestURI(item.Link); err != nil {
+			if verbose {
+				fmt.Printf("Warning: Skipping invalid URL: %s\n", item.Link)
+			}
+			continue
+		}
+		results = append(results, SearchResult{
+			Title:   item.Title,
+			URL:     item.Link,
+			Snippet: item.Description,
+		})
+	}
+
+	return results, nil
+}
+
 // extractContent extracts the main content from a web page using is-fast
 func extractContent(pageURL string) (string, error) {
 	// Check if is-fast binary exists
@@ -886,6 +988,8 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 		return PerformSearchWithParams(searchParams, verbose)
 	case "serpingapi":
 		return PerformSerpingapiSearchWithParams(searchParams, verbose)
+	case "serply":
+		return PerformSerplySearchWithParams(searchParams, verbose)
 	}
 
 	return PerformExaMCPSearch(searchParams, verbose)
@@ -924,6 +1028,27 @@ func PerformSerpingapiSearchWithParams(params SearchParams, verbose bool) (strin
 
 	// Perform serpingapi search
 	results, err := serpingapiSearch(params, apiKey, verbose)
+	if err != nil {
+		return "", fmt.Errorf("search failed: %v", err)
+	}
+
+	extractContentForResults(results, verbose)
+
+	// Format results for AI synthesis
+	return formatResultsForAI(results, params.Query), nil
+}
+
+// PerformSerplySearchWithParams executes search with pre-built SearchParams using Serply
+func PerformSerplySearchWithParams(params SearchParams, verbose bool) (string, error) {
+	// Get API credentials from environment
+	apiKey := os.Getenv("SERPLY_API_KEY")
+
+	if apiKey == "" {
+		return "", fmt.Errorf("missing required environment variable: SERPLY_API_KEY must be set. Please check SEARCH_SETUP.md for configuration instructions")
+	}
+
+	// Perform Serply search
+	results, err := serplySearch(params, apiKey, verbose)
 	if err != nil {
 		return "", fmt.Errorf("search failed: %v", err)
 	}
