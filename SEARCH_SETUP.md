@@ -67,6 +67,20 @@ export TGPT_GOOGLE_SEARCH_ENGINE_ID="your_actual_search_engine_id"
 
 Then reload your shell or run `source ~/.bashrc` (or your shell config file).
 
+## Alternative: serpingapi
+
+[serpingapi](https://serpingapi.com) can be used instead of Google Custom Search. It returns Google results and needs a single API key (no search engine ID). A free plan with 1,000 searches per month is available and does not require a card.
+
+1. Create an account at [https://serpingapi.com](https://serpingapi.com) and copy an API key from the dashboard
+2. Set the key and select the provider:
+
+```bash
+export SERPINGAPI_API_KEY="your_serpingapi_key"
+export SEARCH_PROVIDER="serpingapi"   # or pass --search-provider serpingapi
+```
+
+Site filters are sent as part of the query (`site:reddit.com ...`). API reference: [https://serpingapi.com/docs](https://serpingapi.com/docs)
+
 ## Usage Examples
 
 ### One-Shot Search (`-f`)
@@ -137,6 +151,7 @@ tgpt -ia
 
 ### "missing required environment variables" error
 - Make sure both `TGPT_GOOGLE_API_KEY` and `TGPT_GOOGLE_SEARCH_ENGINE_ID` are set
+- For `--search-provider serpingapi`, make sure `SERPINGAPI_API_KEY` is set
 - Verify the variables are exported: `echo $TGPT_GOOGLE_API_KEY`
 
 ### "search API returned status 403" error
@@ -156,5 +171,6 @@ tgpt -ia
 ## Rate Limits
 
 - Google Custom Search API: 100 queries per day (free tier)
+- serpingapi: 1,000 searches per month (free plan)
 - Consider upgrading to paid tier for higher limits if needed
 - The tool defaults to 3 results per query to conserve quota
