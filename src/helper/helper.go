@@ -1266,7 +1266,7 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Generate images from text\n", "-img, --image")
 	fmt.Printf("%-50v Set Provider. Detailed information has been provided below. (Env: AI_PROVIDER for chat and IMG_PROVIDER for image gen.)\n", "--provider")
 	fmt.Printf("%-50v Find information using web search \n", "-f, --find")
-	fmt.Printf("%-50v Search provider for web search: exa (default) or google (Env: SEARCH_PROVIDER).\n%-50v Exa works without api key with rate limits and supports EXA_API_KEY env variable.\n%-50v google requires TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID env variables.\n%-50s Check SEARCH_SETUP.md for google: https://github.com/aandrew-me/tgpt/blob/main/SEARCH_SETUP.md\n", "--search-provider", "", "", "")
+	fmt.Printf("%-50v Search provider for web search: exa (default), google or serpingapi (Env: SEARCH_PROVIDER).\n%-50v Exa works without api key with rate limits and supports EXA_API_KEY env variable.\n%-50v google requires TGPT_GOOGLE_API_KEY and TGPT_GOOGLE_SEARCH_ENGINE_ID env variables.\n%-50v serpingapi requires SERPINGAPI_API_KEY env variable (free tier available).\n%-50s Check SEARCH_SETUP.md for google and serpingapi: https://github.com/aandrew-me/tgpt/blob/main/SEARCH_SETUP.md\n", "--search-provider", "", "", "", "")
 	fmt.Printf("%-50v Enable built-in tool calling (all or comma-separated list: %s)\n", "-t, --tools [tools]", strings.Join(tools.AllBuiltinTools, ", "))
 	fmt.Printf("%-50v Enable MCP (Model Context Protocol) and auto-detect configuration file\n", "--mcp")
 	fmt.Printf("%-50v Path to MCP server configuration JSON file (Env: MCP_CONFIG). See 'Tool calling & MCP' section below.\n", "--mcp-config")

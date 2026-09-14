@@ -78,6 +78,15 @@ type GoogleSearchResponse struct {
 	} `json:"items"`
 }
 
+// SerpingapiSearchResponse represents the response from the serpingapi search API
+type SerpingapiSearchResponse struct {
+	Organic []struct {
+		Title   string `json:"title"`
+		Link    string `json:"link"`
+		Snippet string `json:"snippet"`
+	} `json:"organic"`
+}
+
 func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
 	userQuery := params.Query
 	numResults := params.NumResults
@@ -523,6 +532,99 @@ func googleSearch(params SearchParams, apiKey, searchEngineID string, verbose bo
 	return results, nil
 }
 
+// serpingapiQuery builds the query string sent to serpingapi. The API has no
+// separate site filter parameter, so the filter is expressed as a site: operator.
+func serpingapiQuery(params SearchParams) string {
+	if params.SiteFilter != "" {
+		return "site:" + params.SiteFilter + " " + params.Query
+	}
+	return params.Query
+}
+
+// serpingapiSearch performs the actual serpingapi search API call
+func serpingapiSearch(params SearchParams, apiKey string, verbose bool) ([]SearchResult, error) {
+	endpoint := "https://api.serpingapi.com/v1/search"
+
+	numResults := params.NumResults
+	if numResults <= 0 {
+		numResults = 5
+	}
+
+	payload := map[string]interface{}{
+		"q":   serpingapiQuery(params),
+		"num": numResults,
+	}
+
+	reqBody, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal search request: %v", err)
+	}
+
+	if verbose {
+		fmt.Printf("Calling serpingapi: %s with %s\n", endpoint, string(reqBody))
+	}
+
+	// Create HTTP client
+	httpClient, err := client.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %v", err)
+	}
+
+	// Make request
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", apiKey)
+	req.Header.Set("User-Agent", "TGPT/2.11.0")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute search request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read search response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("search API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return parseSerpingapiResponse(body, verbose)
+}
+
+// parseSerpingapiResponse converts a serpingapi JSON response into search results
+func parseSerpingapiResponse(body []byte, verbose bool) ([]SearchResult, error) {
+	var searchResp SerpingapiSearchResponse
+	if err := json.Unmarshal(body, &searchResp); err != nil {
+		return nil, fmt.Errorf("failed to parse search response: %v", err)
+	}
+
+	// Convert to our format
+	var results []SearchResult
+	for _, item := range searchResp.Organic {
+		// Validate URL format
+		if _, err := url.ParseRequestURI(item.Link); err != nil {
+			if verbose {
+				fmt.Printf("Warning: Skipping invalid URL: %s\n", item.Link)
+			}
+			continue
+		}
+		results = append(results, SearchResult{
+			Title:   item.Title,
+			URL:     item.Link,
+			Snippet: item.Snippet,
+		})
+	}
+
+	return results, nil
+}
+
 // extractContent extracts the main content from a web page using is-fast
 func extractContent(pageURL string) (string, error) {
 	// Check if is-fast binary exists
@@ -779,8 +881,11 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 		}
 	}
 
-	if searchProvider == "google" {
+	switch searchProvider {
+	case "google":
 		return PerformSearchWithParams(searchParams, verbose)
+	case "serpingapi":
+		return PerformSerpingapiSearchWithParams(searchParams, verbose)
 	}
 
 	return PerformExaMCPSearch(searchParams, verbose)
@@ -802,7 +907,35 @@ func PerformSearchWithParams(params SearchParams, verbose bool) (string, error) 
 		return "", fmt.Errorf("search failed: %v", err)
 	}
 
-	// Extract content from each result concurrently
+	extractContentForResults(results, verbose)
+
+	// Format results for AI synthesis
+	return formatResultsForAI(results, params.Query), nil
+}
+
+// PerformSerpingapiSearchWithParams executes search with pre-built SearchParams using serpingapi
+func PerformSerpingapiSearchWithParams(params SearchParams, verbose bool) (string, error) {
+	// Get API credentials from environment
+	apiKey := os.Getenv("SERPINGAPI_API_KEY")
+
+	if apiKey == "" {
+		return "", fmt.Errorf("missing required environment variable: SERPINGAPI_API_KEY must be set. Please check SEARCH_SETUP.md for configuration instructions")
+	}
+
+	// Perform serpingapi search
+	results, err := serpingapiSearch(params, apiKey, verbose)
+	if err != nil {
+		return "", fmt.Errorf("search failed: %v", err)
+	}
+
+	extractContentForResults(results, verbose)
+
+	// Format results for AI synthesis
+	return formatResultsForAI(results, params.Query), nil
+}
+
+// extractContentForResults fetches page content for each result concurrently and fills in Content
+func extractContentForResults(results []SearchResult, verbose bool) {
 	type contentResult struct {
 		index   int
 		content string
@@ -860,9 +993,6 @@ func PerformSearchWithParams(params SearchParams, verbose bool) (string, error) 
 	if finalFailedCount := atomic.LoadInt64(&failedCount); finalFailedCount > 0 {
 		fmt.Fprintf(os.Stderr, "Note: Failed to extract content from %d out of %d results\n", finalFailedCount, len(results))
 	}
-
-	// Format results for AI synthesis
-	return formatResultsForAI(results, params.Query), nil
 }
 
 // callLLMForOptimization calls the LLM to optimize search parameters
