@@ -2,6 +2,7 @@
 
 - [AnyAPI](https://docs.anyapi.ai/) (Multi-model API, 100k free anytokens/day, supports chat and image gen, many providers including deepseek, google, openai)
 - [Atlas Cloud](https://www.atlascloud.ai/) (OpenAI-compatible API, requires `ATLASCLOUD_API_KEY`, default model `qwen/qwen3.8-max`, supports `ATLASCLOUD_MODEL`, `ATLASCLOUD_URL`, and `ATLASCLOUD_BASE_URL`)
+- [Cheaper Inference](https://cheaperinference.com/docs) (OpenAI-compatible gateway, requires `CHEAPERINFERENCE_API_KEY`, default model `gpt-5.6-luna`, supports `CHEAPERINFERENCE_MODEL`, `CHEAPERINFERENCE_URL`, and `CHEAPERINFERENCE_BASE_URL`)
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Deepseek Web](https://chat.deepseek.com/) (Web API, requires user token from chat.deepseek.com via `DEEPSEEK_WEB_TOKEN` / `--key` and a JS runtime like `node`, `bun`, or `deno` in PATH to solve Proof-of-Work, supports optional `DEEPSEEK_WEB_THINKING=true` and `DEEPSEEK_WEB_SEARCH=true` env vars)
 - [Fx](https://fx.sh/) (Free, fx.sh gateway, default model `zai/glm-5.2`)
