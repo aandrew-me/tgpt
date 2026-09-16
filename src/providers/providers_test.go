@@ -3,7 +3,7 @@ package providers
 import "testing"
 
 func TestSupportsTools(t *testing.T) {
-	supported := []string{"openai", "opencode", "gemini", "groq", "deepseek", "ollama", "litellm", "omniroute", "openrouter", "anyapi", "atlascloud", "pollinations", ""}
+	supported := []string{"openai", "opencode", "gemini", "groq", "deepseek", "ollama", "litellm", "omniroute", "openrouter", "anyapi", "atlascloud", "cheaperinference", "pollinations", ""}
 	for _, p := range supported {
 		if !SupportsTools(p) {
 			t.Errorf("expected provider %q to support tools", p)
