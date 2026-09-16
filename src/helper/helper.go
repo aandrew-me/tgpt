@@ -1277,7 +1277,7 @@ func ShowHelpMessage() {
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
-	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud\n", "--url")
+	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, cheaperinference\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
@@ -1304,13 +1304,16 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, deepseek, deepseek-web, fx, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
+	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, cheaperinference, deepseek, deepseek-web, fx, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
 
 	bold.Println("\nProvider: atlascloud")
 	fmt.Println("OpenAI-compatible Atlas Cloud API. Recognizes ATLASCLOUD_API_KEY, ATLASCLOUD_MODEL, ATLASCLOUD_URL and ATLASCLOUD_BASE_URL env vars. Default model: qwen/qwen3.8-max. Docs: https://www.atlascloud.ai/")
+
+	bold.Println("\nProvider: cheaperinference")
+	fmt.Println("OpenAI-compatible Cheaper Inference gateway. Recognizes CHEAPERINFERENCE_API_KEY, CHEAPERINFERENCE_MODEL, CHEAPERINFERENCE_URL and CHEAPERINFERENCE_BASE_URL env vars. Default model: gpt-5.6-luna. Docs: https://cheaperinference.com/docs")
 
 	bold.Println("\nProvider: aihorde")
 	fmt.Println("A free, community-powered generation service: volunteers share spare computer power so anyone can generate images and text. Supports AIHORDE_MODEL and AIHORDE_API_KEY env variables. Site: https://aihorde.net/")
