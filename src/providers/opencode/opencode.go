@@ -15,11 +15,32 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/utils"
 )
 
+var defaultTools = []any{
+	map[string]any{"type": "function", "function": map[string]any{"name": "bash"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "edit"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "glob"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "grep"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "question"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "read"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "skill"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "task"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "todowrite"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "webfetch"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "websearch"}},
+	map[string]any{"type": "function", "function": map[string]any{"name": "write"}},
+}
+
+type StreamOptions struct {
+	IncludeUsage bool `json:"include_usage"`
+}
+
 type RequestBody struct {
-	Model    string `json:"model"`
-	Stream   bool   `json:"stream"`
-	Messages []any  `json:"messages"`
-	Tools    []any  `json:"tools,omitempty"`
+	Model         string         `json:"model"`
+	Stream        bool           `json:"stream"`
+	Messages      []any          `json:"messages"`
+	Tools         []any          `json:"tools,omitempty"`
+	ToolChoice    string         `json:"tool_choice,omitempty"`
+	StreamOptions *StreamOptions `json:"stream_options,omitempty"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -64,11 +85,35 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		})
 	}
 
+	tools := make([]any, 0, len(params.Tools)+len(defaultTools))
+	seenTools := make(map[string]bool)
+
+	for _, t := range params.Tools {
+		if name := toolName(t); name != "" {
+			seenTools[name] = true
+		}
+		tools = append(tools, t)
+	}
+
+	for _, dt := range defaultTools {
+		if name := toolName(dt); name != "" && !seenTools[name] {
+			seenTools[name] = true
+			tools = append(tools, dt)
+		}
+	}
+
+	toolChoice := "none"
+	if len(params.Tools) > 0 {
+		toolChoice = "auto"
+	}
+
 	requestInfo := RequestBody{
-		Model:    model,
-		Stream:   true,
-		Messages: messages,
-		Tools:    params.Tools,
+		Model:         model,
+		Stream:        true,
+		Messages:      messages,
+		Tools:         tools,
+		ToolChoice:    toolChoice,
+		StreamOptions: &StreamOptions{IncludeUsage: true},
 	}
 
 	if len(params.PrevMessages) > 0 {
@@ -95,6 +140,9 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Language", "*")
+	req.Header.Set("Sec-Fetch-Mode", "cors")
 
 	if apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
@@ -107,8 +155,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	req.Header.Set("x-opencode-client", "desktop")
 	req.Header.Set("x-opencode-project", randID)
 	req.Header.Set("User-Agent", "opencode/1.18.18 ai-sdk/provider-utils/4.0.23 runtime/node.js/24")
-	req.Header.Set("x-opencode-request", "msg_" + requestID)
-	req.Header.Set("x-opencode-session", "ses_" + sesID)
+	req.Header.Set("x-opencode-request", "msg_"+requestID)
+	req.Header.Set("x-opencode-session", "ses_"+sesID)
 
 	return client.Do(req)
 }
@@ -130,3 +178,27 @@ func GetMainText(line string) (mainText string) {
 	}
 	return ""
 }
+
+func toolName(t any) string {
+	switch v := t.(type) {
+	case map[string]any:
+		if fn, ok := v["function"].(map[string]any); ok {
+			if name, ok := fn["name"].(string); ok {
+				return name
+			}
+		}
+	}
+	b, err := json.Marshal(t)
+	if err == nil {
+		var s struct {
+			Function struct {
+				Name string `json:"name"`
+			} `json:"function"`
+		}
+		if json.Unmarshal(b, &s) == nil {
+			return s.Function.Name
+		}
+	}
+	return ""
+}
+
