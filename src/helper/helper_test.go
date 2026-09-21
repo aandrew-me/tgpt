@@ -263,6 +263,7 @@ func TestDetectPackageManager(t *testing.T) {
 		{
 			name:          "Scoop on Windows",
 			execPath:      `C:\Users\user\scoop\shims\tgpt.exe`,
+			goos:          "windows",
 			wantIsPkg:     true,
 			wantPkgName:   "Scoop",
 			wantUpdateCmd: "scoop update tgpt",
@@ -270,6 +271,7 @@ func TestDetectPackageManager(t *testing.T) {
 		{
 			name:          "Chocolatey on Windows",
 			execPath:      `C:\ProgramData\chocolatey\bin\tgpt.exe`,
+			goos:          "windows",
 			wantIsPkg:     true,
 			wantPkgName:   "Chocolatey",
 			wantUpdateCmd: "choco upgrade tgpt",
@@ -291,6 +293,7 @@ func TestDetectPackageManager(t *testing.T) {
 		{
 			name:          "PowerShell install script path on Windows",
 			execPath:      `C:\Users\user\AppData\Local\tgpt\tgpt.exe`,
+			goos:          "windows",
 			wantIsPkg:     false,
 			wantPkgName:   "",
 			wantUpdateCmd: "",
@@ -306,6 +309,9 @@ func TestDetectPackageManager(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.goos != "" && runtime.GOOS != tt.goos {
+				t.Skipf("skipping %s on %s", tt.name, runtime.GOOS)
+			}
 			gotIsPkg, gotPkgName, gotUpdateCmd := DetectPackageManager(filepath.FromSlash(tt.execPath))
 			if gotIsPkg != tt.wantIsPkg {
 				t.Errorf("DetectPackageManager(%q) isPkg = %v, want %v", tt.execPath, gotIsPkg, tt.wantIsPkg)
