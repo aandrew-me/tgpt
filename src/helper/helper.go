@@ -470,7 +470,10 @@ func Update(localVersion string, executablePath string) {
 
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		script := fmt.Sprintf("& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1))) -Path %s", escapePowerShellArg(executablePath))
+		script := fmt.Sprintf(
+			"$ErrorActionPreference='Stop'; $s=Join-Path $env:TEMP \"tgpt_update_$PID.ps1\"; irm 'https://raw.githubusercontent.com/aandrew-me/tgpt/refs/heads/main/install-win.ps1' -OutFile $s; try { & $s -Path %s } finally { Remove-Item $s -Force -ErrorAction SilentlyContinue }",
+			escapePowerShellArg(executablePath),
+		)
 		cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", script)
 	} else {
 		useSudo := !canWriteToDir(executablePath)
