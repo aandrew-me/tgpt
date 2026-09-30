@@ -7,6 +7,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/aihorde"
 	"github.com/aandrew-me/tgpt/v2/src/providers/aitopia"
 	"github.com/aandrew-me/tgpt/v2/src/providers/anyapi"
+	"github.com/aandrew-me/tgpt/v2/src/providers/apiroute"
 	"github.com/aandrew-me/tgpt/v2/src/providers/atlascloud"
 	"github.com/aandrew-me/tgpt/v2/src/providers/cheaperinference"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
@@ -30,7 +31,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "aitopia", "atlascloud", "cheaperinference", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -47,7 +48,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "atlascloud", "cheaperinference", "deepseek", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "openrouter", "pollinations":
+	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "openrouter", "pollinations":
 		return true
 	default:
 		return false
@@ -64,6 +65,8 @@ func GetMainText(line string, provider string, input string) string {
 		return anyapi.GetMainText(line)
 	case "atlascloud":
 		return atlascloud.GetMainText(line)
+	case "apiroute":
+		return apiroute.GetMainText(line)
 	case "cheaperinference":
 		return cheaperinference.GetMainText(line)
 	case "deepseek":
@@ -124,6 +127,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return anyapi.NewRequest(input, params)
 	case "atlascloud":
 		return atlascloud.NewRequest(input, params)
+	case "apiroute":
+		return apiroute.NewRequest(input, params)
 	case "cheaperinference":
 		return cheaperinference.NewRequest(input, params)
 	case "deepseek":
