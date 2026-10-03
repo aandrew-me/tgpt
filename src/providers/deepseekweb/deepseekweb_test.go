@@ -53,6 +53,42 @@ func TestGetMainText(t *testing.T) {
 	if res := GetMainText(line4); res != "" {
 		t.Fatalf("expected empty string for [DONE], got %q", res)
 	}
+
+	// Initial response object with fragments
+	lineFragInit := `data: {"v":{"response":{"message_id":2,"parent_id":1,"model":"","role":"ASSISTANT","status":"WIP","fragments":[{"id":2,"type":"RESPONSE","content":"My"}]}}}`
+	if res := GetMainText(lineFragInit); res != "My" {
+		t.Fatalf("expected 'My', got %q", res)
+	}
+
+	// Fragment append patch
+	lineFragAppend := `data: {"p":"response/fragments/-1/content","o":"APPEND","v":" name"}`
+	if res := GetMainText(lineFragAppend); res != " name" {
+		t.Fatalf("expected ' name', got %q", res)
+	}
+
+	// Raw v shorthand token
+	lineShorthand := `data: {"v":" is"}`
+	if res := GetMainText(lineShorthand); res != " is" {
+		t.Fatalf("expected ' is', got %q", res)
+	}
+
+	// Fragment append patch with array of fragments
+	lineFragArrayAppend := `data: {"p":"response/fragments","o":"APPEND","v":[{"type":"RESPONSE","content":"Hi"}]}`
+	if res := GetMainText(lineFragArrayAppend); res != "Hi" {
+		t.Fatalf("expected 'Hi', got %q", res)
+	}
+
+	// Fragment append patch with single object fragment
+	lineFragObjectAppend := `data: {"p":"response/fragments","o":"APPEND","v":{"type":"RESPONSE","content":"Hello"}}`
+	if res := GetMainText(lineFragObjectAppend); res != "Hello" {
+		t.Fatalf("expected 'Hello', got %q", res)
+	}
+
+	// Non-content updates (status, tokens) should return empty string
+	lineStatus := `data: {"p":"response/status","o":"SET","v":"FINISHED"}`
+	if res := GetMainText(lineStatus); res != "" {
+		t.Fatalf("expected empty string for status update, got %q", res)
+	}
 }
 
 func TestTokenExtraction(t *testing.T) {
