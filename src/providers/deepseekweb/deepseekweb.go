@@ -412,6 +412,10 @@ func GetMainText(line string) string {
 		V                 struct {
 			Response struct {
 				MessageID any `json:"message_id"`
+				Fragments []struct {
+					Type    string `json:"type"`
+					Content string `json:"content"`
+				} `json:"fragments"`
 			} `json:"response"`
 		} `json:"v"`
 	}
@@ -443,8 +447,41 @@ func GetMainText(line string) string {
 	}
 
 	if str, ok := d.V.(string); ok && str != "" {
-		if d.P == "response/content" || d.P == "response/thinking_content" || d.P == "" {
+		if d.P == "" || strings.HasSuffix(d.P, "content") {
 			return str
+		}
+	}
+
+	if len(meta.V.Response.Fragments) > 0 {
+		var sb strings.Builder
+		for _, frag := range meta.V.Response.Fragments {
+			if frag.Content != "" {
+				sb.WriteString(frag.Content)
+			}
+		}
+		if sb.Len() > 0 {
+			return sb.String()
+		}
+	}
+
+	if strings.HasSuffix(d.P, "fragments") || d.P == "" {
+		if list, ok := d.V.([]any); ok {
+			var sb strings.Builder
+			for _, item := range list {
+				if m, ok := item.(map[string]any); ok {
+					if c, ok := m["content"].(string); ok && c != "" {
+						sb.WriteString(c)
+					}
+				}
+			}
+			if sb.Len() > 0 {
+				return sb.String()
+			}
+		}
+		if m, ok := d.V.(map[string]any); ok {
+			if c, ok := m["content"].(string); ok && c != "" {
+				return c
+			}
 		}
 	}
 
