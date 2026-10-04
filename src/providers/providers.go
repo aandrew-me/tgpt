@@ -12,6 +12,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/cheaperinference"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseekweb"
+	"github.com/aandrew-me/tgpt/v2/src/providers/demonroute"
 	"github.com/aandrew-me/tgpt/v2/src/providers/fx"
 	"github.com/aandrew-me/tgpt/v2/src/providers/gemini"
 	"github.com/aandrew-me/tgpt/v2/src/providers/groq"
@@ -31,7 +32,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
+	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "demonroute", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain",
 }
 
 func IsValidProvider(name string) bool {
@@ -73,6 +74,8 @@ func GetMainText(line string, provider string, input string) string {
 		return deepseek.GetMainText(line)
 	case "deepseek-web":
 		return deepseekweb.GetMainText(line)
+	case "demonroute":
+		return demonroute.GetMainText(line)
 	case "fx":
 		return fx.GetMainText(line)
 	case "isou":
@@ -135,6 +138,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return deepseek.NewRequest(input, params)
 	case "deepseek-web":
 		return deepseekweb.NewRequest(input, params)
+	case "demonroute":
+		return demonroute.NewRequest(input, params)
 	case "fx":
 		return fx.NewRequest(input, params)
 	case "gemini":
