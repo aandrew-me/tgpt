@@ -6,6 +6,7 @@
 - [Cheaper Inference](https://cheaperinference.com/docs) (OpenAI-compatible gateway, requires `CHEAPERINFERENCE_API_KEY`, default model `gpt-5.6-luna`, supports `CHEAPERINFERENCE_MODEL`, `CHEAPERINFERENCE_URL`, and `CHEAPERINFERENCE_BASE_URL`)
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
 - [Deepseek Web](https://chat.deepseek.com/) (Web API, requires user token from chat.deepseek.com via `DEEPSEEK_WEB_TOKEN` / `--key` and a JS runtime like `node`, `bun`, or `deno` in PATH to solve Proof-of-Work, supports optional `DEEPSEEK_WEB_THINKING=true` and `DEEPSEEK_WEB_SEARCH=true` env vars)
+- [DemonRoute](https://demonroute.com) (OpenAI-compatible API, 567 models behind one key including uncensored open-weight builds, requires `DEMONROUTE_API_KEY`, default model `dr/mythomax-l2-13b`, supports `DEMONROUTE_MODEL`, `DEMONROUTE_URL`, and `DEMONROUTE_BASE_URL`)
 - [Fx](https://fx.sh/) (Free, fx.sh gateway, default model `zai/glm-5.2`)
 - [Aitopia](https://extensions.aitopia.ai/) (Free) (Uses gpt-4o-mini by default)
 - [Groq](https://groq.com/) (Requires a free API Key. [Many models](https://console.groq.com/docs/models))
@@ -27,3 +28,4 @@
 - AnyAPI (Requires API key, 100k anytokens/day)
 - Pollinations (Free) ([Models](https://image.pollinations.ai/models))
 - MagicStudio (Free)
+

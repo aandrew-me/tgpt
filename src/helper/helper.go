@@ -1280,7 +1280,7 @@ func ShowHelpMessage() {
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
-	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference\n", "--url")
+	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference, demonroute\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
@@ -1307,7 +1307,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, apiroute, cheaperinference, deepseek, deepseek-web, fx, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
+	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, apiroute, cheaperinference, deepseek, deepseek-web, demonroute, fx, gemini, groq, isou, koboldai, minimax, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -1317,6 +1317,9 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: apiroute")
 	fmt.Println("OpenAI-compatible API Route gateway. Recognizes API_ROUTE_API_KEY, API_ROUTE_MODEL, API_ROUTE_URL and API_ROUTE_BASE_URL env vars. Default model: gpt-5.5. Site: https://www.api-route.com/")
+
+	bold.Println("\nProvider: demonroute")
+	fmt.Println("OpenAI-compatible DemonRoute API. Recognizes DEMONROUTE_API_KEY, DEMONROUTE_MODEL, DEMONROUTE_URL and DEMONROUTE_BASE_URL env vars. Default model: dr/mythomax-l2-13b. Site: https://demonroute.com")
 
 	bold.Println("\nProvider: cheaperinference")
 	fmt.Println("OpenAI-compatible Cheaper Inference gateway. Recognizes CHEAPERINFERENCE_API_KEY, CHEAPERINFERENCE_MODEL, CHEAPERINFERENCE_URL and CHEAPERINFERENCE_BASE_URL env vars. Default model: gpt-5.6-luna. Docs: https://cheaperinference.com/docs")
