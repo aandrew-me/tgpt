@@ -406,17 +406,27 @@ func GetMainText(line string) string {
 		}
 	}
 
+	type fragmentItem struct {
+		Type            string `json:"type"`
+		Content         string `json:"content"`
+		ThinkingContent string `json:"thinking_content"`
+		Text            string `json:"text"`
+	}
+
 	// Update lastParentMessageID if response message ID is present in stream metadata
 	var meta struct {
 		ResponseMessageID any `json:"response_message_id"`
-		V                 struct {
-			Response struct {
-				MessageID any `json:"message_id"`
-				Fragments []struct {
-					Type    string `json:"type"`
-					Content string `json:"content"`
-				} `json:"fragments"`
+		Response          struct {
+			MessageID any            `json:"message_id"`
+			Fragments []fragmentItem `json:"fragments"`
+		} `json:"response"`
+		V struct {
+			MessageID any `json:"message_id"`
+			Response  struct {
+				MessageID any            `json:"message_id"`
+				Fragments []fragmentItem `json:"fragments"`
 			} `json:"response"`
+			Fragments []fragmentItem `json:"fragments"`
 		} `json:"v"`
 	}
 	if err := json.Unmarshal([]byte(obj), &meta); err == nil {
@@ -424,6 +434,10 @@ func GetMainText(line string) string {
 			lastParentMessageID = meta.ResponseMessageID
 		} else if meta.V.Response.MessageID != nil {
 			lastParentMessageID = meta.V.Response.MessageID
+		} else if meta.V.MessageID != nil {
+			lastParentMessageID = meta.V.MessageID
+		} else if meta.Response.MessageID != nil {
+			lastParentMessageID = meta.Response.MessageID
 		}
 	}
 
@@ -446,32 +460,77 @@ func GetMainText(line string) string {
 		return d.Choices[0].Delta.Content
 	}
 
+	extractFromFragList := func(frags []fragmentItem) string {
+		var sb strings.Builder
+		for _, frag := range frags {
+			if strings.EqualFold(frag.Type, "REQUEST") {
+				continue
+			}
+			if frag.Content != "" {
+				sb.WriteString(frag.Content)
+			} else if frag.ThinkingContent != "" {
+				sb.WriteString(frag.ThinkingContent)
+			} else if frag.Text != "" {
+				sb.WriteString(frag.Text)
+			}
+		}
+		return sb.String()
+	}
+
+	extractFromMap := func(m map[string]any) string {
+		if t, ok := m["type"].(string); ok && strings.EqualFold(t, "REQUEST") {
+			return ""
+		}
+		if c, ok := m["content"].(string); ok && c != "" {
+			return c
+		}
+		if tc, ok := m["thinking_content"].(string); ok && tc != "" {
+			return tc
+		}
+		if txt, ok := m["text"].(string); ok && txt != "" {
+			return txt
+		}
+		if sub, ok := m["fragments"].([]any); ok {
+			var sb strings.Builder
+			for _, item := range sub {
+				if sm, ok := item.(map[string]any); ok {
+					if c, ok := sm["content"].(string); ok && c != "" {
+						sb.WriteString(c)
+					}
+				}
+			}
+			return sb.String()
+		}
+		return ""
+	}
+
 	if str, ok := d.V.(string); ok && str != "" {
-		if d.P == "" || strings.HasSuffix(d.P, "content") {
+		if d.P == "" || strings.HasSuffix(d.P, "content") || strings.HasSuffix(d.P, "text") ||
+			(strings.Contains(d.P, "fragments") && !strings.HasSuffix(d.P, "/type") && !strings.HasSuffix(d.P, "/id") && !strings.HasSuffix(d.P, "/status") && !strings.HasSuffix(d.P, "/model")) {
 			return str
 		}
 	}
 
-	if len(meta.V.Response.Fragments) > 0 {
-		var sb strings.Builder
-		for _, frag := range meta.V.Response.Fragments {
-			if frag.Content != "" {
-				sb.WriteString(frag.Content)
-			}
-		}
-		if sb.Len() > 0 {
-			return sb.String()
-		}
+	if res := extractFromFragList(meta.V.Response.Fragments); res != "" {
+		return res
+	}
+	if res := extractFromFragList(meta.V.Fragments); res != "" {
+		return res
+	}
+	if res := extractFromFragList(meta.Response.Fragments); res != "" {
+		return res
 	}
 
-	if strings.HasSuffix(d.P, "fragments") || d.P == "" {
+	if strings.Contains(d.P, "fragments") || d.P == "" {
 		if list, ok := d.V.([]any); ok {
 			var sb strings.Builder
 			for _, item := range list {
 				if m, ok := item.(map[string]any); ok {
-					if c, ok := m["content"].(string); ok && c != "" {
-						sb.WriteString(c)
+					if text := extractFromMap(m); text != "" {
+						sb.WriteString(text)
 					}
+				} else if s, ok := item.(string); ok && s != "" {
+					sb.WriteString(s)
 				}
 			}
 			if sb.Len() > 0 {
@@ -479,8 +538,8 @@ func GetMainText(line string) string {
 			}
 		}
 		if m, ok := d.V.(map[string]any); ok {
-			if c, ok := m["content"].(string); ok && c != "" {
-				return c
+			if text := extractFromMap(m); text != "" {
+				return text
 			}
 		}
 	}

@@ -89,6 +89,54 @@ func TestGetMainText(t *testing.T) {
 	if res := GetMainText(lineStatus); res != "" {
 		t.Fatalf("expected empty string for status update, got %q", res)
 	}
+
+	// Initial response object with fragments directly under v
+	lineFragDirectV := `data: {"v":{"fragments":[{"type":"RESPONSE","content":"DirectV"}]}}`
+	if res := GetMainText(lineFragDirectV); res != "DirectV" {
+		t.Fatalf("expected 'DirectV', got %q", res)
+	}
+
+	// Initial response object with fragments directly under response
+	lineFragDirectResp := `data: {"response":{"fragments":[{"type":"RESPONSE","content":"DirectResp"}]}}`
+	if res := GetMainText(lineFragDirectResp); res != "DirectResp" {
+		t.Fatalf("expected 'DirectResp', got %q", res)
+	}
+
+	// Fragment append patch targeting indexed fragment path with object
+	lineFragIndexedObj := `data: {"p":"response/fragments/0","o":"APPEND","v":{"type":"RESPONSE","content":" indexed obj"}}`
+	if res := GetMainText(lineFragIndexedObj); res != " indexed obj" {
+		t.Fatalf("expected ' indexed obj', got %q", res)
+	}
+
+	// Fragment append patch targeting indexed fragment path with string
+	lineFragIndexedStr := `data: {"p":"response/fragments/-1","o":"APPEND","v":" indexed str"}`
+	if res := GetMainText(lineFragIndexedStr); res != " indexed str" {
+		t.Fatalf("expected ' indexed str', got %q", res)
+	}
+
+	// Fragment with thinking_content fallback
+	lineFragThinking := `data: {"v":{"fragments":[{"type":"THINKING","thinking_content":"Reasoning"}]}}`
+	if res := GetMainText(lineFragThinking); res != "Reasoning" {
+		t.Fatalf("expected 'Reasoning', got %q", res)
+	}
+
+	// Fragment with text fallback
+	lineFragText := `data: {"v":{"fragments":[{"type":"RESPONSE","text":"FallbackText"}]}}`
+	if res := GetMainText(lineFragText); res != "FallbackText" {
+		t.Fatalf("expected 'FallbackText', got %q", res)
+	}
+
+	// REQUEST fragments in conversation history should be filtered out
+	lineFragWithRequest := `data: {"v":{"response":{"fragments":[{"type":"REQUEST","content":"User prompt"},{"type":"RESPONSE","content":"Assistant output"}]}}}`
+	if res := GetMainText(lineFragWithRequest); res != "Assistant output" {
+		t.Fatalf("expected 'Assistant output', got %q", res)
+	}
+
+	// String array in fragments patch
+	lineFragStringArray := `data: {"p":"response/fragments","o":"APPEND","v":["Chunk1","Chunk2"]}`
+	if res := GetMainText(lineFragStringArray); res != "Chunk1Chunk2" {
+		t.Fatalf("expected 'Chunk1Chunk2', got %q", res)
+	}
 }
 
 func TestTokenExtraction(t *testing.T) {
