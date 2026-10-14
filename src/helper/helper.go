@@ -703,6 +703,7 @@ type toolCallAccumulator struct {
 
 func HandleEachPart(resp *http.Response, input string, params structs.Params, extraOptions structs.ExtraOptions) (string, []interface{}) {
 	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 32*1024), 1024*1024)
 	formatter := newStreamFormatter(params.Provider)
 	fullText := ""
 	toolCallMap := make(map[int]*toolCallAccumulator)
@@ -917,6 +918,7 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 
 func HandleEachPartInteractiveShell(resp *http.Response, input string, params structs.Params) string {
 	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 32*1024), 1024*1024)
 	formatter := newInteractiveFormatter(params.Provider)
 	fullText := ""
 
@@ -1163,6 +1165,7 @@ func MakeRequestAndGetData(input string, params structs.Params, extraOptions str
 		}
 
 		scanner := bufio.NewScanner(resp.Body)
+		scanner.Buffer(make([]byte, 32*1024), 1024*1024)
 		fullText := ""
 
 		for scanner.Scan() {

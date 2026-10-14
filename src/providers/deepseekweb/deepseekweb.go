@@ -411,7 +411,8 @@ func GetMainText(line string) string {
 		ResponseMessageID any `json:"response_message_id"`
 		V                 struct {
 			Response struct {
-				MessageID any `json:"message_id"`
+				MessageID any    `json:"message_id"`
+				Content   string `json:"content"`
 				Fragments []struct {
 					Type    string `json:"type"`
 					Content string `json:"content"`
@@ -464,6 +465,11 @@ func GetMainText(line string) string {
 		}
 	}
 
+	// Handle direct content field in top-level SET events (p="" with v.response.content)
+	if meta.V.Response.Content != "" {
+		return meta.V.Response.Content
+	}
+
 	if strings.HasSuffix(d.P, "fragments") || d.P == "" {
 		if list, ok := d.V.([]any); ok {
 			var sb strings.Builder
@@ -481,6 +487,28 @@ func GetMainText(line string) string {
 		if m, ok := d.V.(map[string]any); ok {
 			if c, ok := m["content"].(string); ok && c != "" {
 				return c
+			}
+		}
+	}
+
+	// Handle SET events for individual fragment objects (e.g., p="response/fragments/0")
+	// and response-level SET events (e.g., p="response") where d.V is a map
+	// containing "content" or nested "fragments".
+	if m, ok := d.V.(map[string]any); ok && strings.HasPrefix(d.P, "response") {
+		if c, ok := m["content"].(string); ok && c != "" {
+			return c
+		}
+		if frags, ok := m["fragments"].([]any); ok {
+			var sb strings.Builder
+			for _, item := range frags {
+				if fm, ok := item.(map[string]any); ok {
+					if c, ok := fm["content"].(string); ok && c != "" {
+						sb.WriteString(c)
+					}
+				}
+			}
+			if sb.Len() > 0 {
+				return sb.String()
 			}
 		}
 	}

@@ -89,6 +89,84 @@ func TestGetMainText(t *testing.T) {
 	if res := GetMainText(lineStatus); res != "" {
 		t.Fatalf("expected empty string for status update, got %q", res)
 	}
+
+	// SET event for an individual fragment element (e.g., p="response/fragments/0")
+	// This is the format that caused beginning truncation: the initial fragment
+	// object is sent as a map at a specific array index path.
+	lineFragElementSet := `data: {"p":"response/fragments/0","o":"SET","v":{"id":1,"type":"RESPONSE","content":"My name"}}`
+	if res := GetMainText(lineFragElementSet); res != "My name" {
+		t.Fatalf("expected 'My name' from fragment element SET, got %q", res)
+	}
+
+	// SET event at the response level with a direct content field
+	lineResponseSet := `data: {"p":"response","o":"SET","v":{"content":"Hello there","status":"WIP","model":"deepseek"}}`
+	if res := GetMainText(lineResponseSet); res != "Hello there" {
+		t.Fatalf("expected 'Hello there' from response-level SET, got %q", res)
+	}
+
+	// SET event at the response level with nested fragments array
+	lineResponseFragsSet := `data: {"p":"response","o":"SET","v":{"fragments":[{"type":"RESPONSE","content":"First"},{"type":"RESPONSE","content":" part"}],"status":"WIP"}}`
+	if res := GetMainText(lineResponseFragsSet); res != "First part" {
+		t.Fatalf("expected 'First part' from response-level fragments SET, got %q", res)
+	}
+
+	// Top-level SET with direct v.response.content (no fragments)
+	lineTopLevelContent := `data: {"v":{"response":{"message_id":"abc","content":"Direct content","status":"WIP"}}}`
+	if res := GetMainText(lineTopLevelContent); res != "Direct content" {
+		t.Fatalf("expected 'Direct content' from top-level response content, got %q", res)
+	}
+
+	// Model info update should still return empty
+	lineModelInfo := `data: {"p":"response/model","o":"SET","v":"deepseek_v4"}`
+	if res := GetMainText(lineModelInfo); res != "" {
+		t.Fatalf("expected empty string for model update, got %q", res)
+	}
+}
+
+// TestGetMainTextFullStream simulates a complete stream sequence and verifies
+// that no tokens are dropped from beginning or end.
+func TestGetMainTextFullStream(t *testing.T) {
+	// Simulate the exact event sequence that caused beginning truncation:
+	// 1. Initial SET with fragment containing first tokens
+	// 2. Subsequent APPEND events for additional tokens
+	events := []string{
+		`data: {"p":"response/fragments/0","o":"SET","v":{"id":1,"type":"RESPONSE","content":"My"}}`,
+		`data: {"p":"response/fragments/0/content","o":"APPEND","v":" name"}`,
+		`data: {"p":"response/fragments/0/content","o":"APPEND","v":" is"}`,
+		`data: {"p":"response/fragments/0/content","o":"APPEND","v":" DeepSeek"}`,
+		`data: [DONE]`,
+	}
+
+	var fullText string
+	for _, event := range events {
+		fullText += GetMainText(event)
+	}
+
+	expected := "My name is DeepSeek"
+	if fullText != expected {
+		t.Fatalf("expected full stream output %q, got %q", expected, fullText)
+	}
+}
+
+// TestGetMainTextFragmentInitStream simulates the initial response with
+// fragments embedded in the top-level v.response object.
+func TestGetMainTextFragmentInitStream(t *testing.T) {
+	events := []string{
+		`data: {"v":{"response":{"message_id":2,"fragments":[{"id":1,"type":"RESPONSE","content":"Hello"}]}}}`,
+		`data: {"p":"response/fragments/0/content","o":"APPEND","v":" world"}`,
+		`data: {"p":"response/fragments/0/content","o":"APPEND","v":"!"}`,
+		`data: [DONE]`,
+	}
+
+	var fullText string
+	for _, event := range events {
+		fullText += GetMainText(event)
+	}
+
+	expected := "Hello world!"
+	if fullText != expected {
+		t.Fatalf("expected full stream output %q, got %q", expected, fullText)
+	}
 }
 
 func TestTokenExtraction(t *testing.T) {
