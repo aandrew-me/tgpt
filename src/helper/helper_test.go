@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"io"
 	stdhttp "net/http"
 	"net/http/httptest"
 	"os"
@@ -373,5 +374,42 @@ func TestEscapePowerShellArg(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("escapePowerShellArg(%q) = %q, want %q", tt.input, got, tt.want)
 		}
+	}
+}
+
+// TestHandleEachPartLargeSSELine verifies that the scanner buffer increase
+// allows processing SSE data lines that exceed the default 64KB limit.
+// Without the fix, bufio.Scanner would return bufio.ErrTooLong and silently
+// stop reading the stream, causing long responses to be truncated.
+func TestHandleEachPartLargeSSELine(t *testing.T) {
+	// Build an SSE line with a content payload larger than 64KB (the default
+	// bufio.MaxScanTokenSize). We use the OpenAI choices/delta format since
+	// HandleEachPart dispatches through providers.GetMainText.
+	largeContent := strings.Repeat("A", 80*1024) // 80KB of content
+	sseLine := `data: {"choices":[{"delta":{"content":"` + largeContent + `"}}]}` + "\n"
+
+	// Add a second normal-sized line after it to confirm scanning continues.
+	sseLine += `data: {"choices":[{"delta":{"content":" tail"}}]}` + "\n"
+	sseLine += "data: [DONE]\n"
+
+	// Create a mock HTTP response with the SSE body.
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       stdhttp.NoBody,
+	}
+	resp.Body = io.NopCloser(strings.NewReader(sseLine))
+
+	params := structs.Params{
+		Provider: "opencode",
+	}
+	extraOptions := structs.ExtraOptions{}
+
+	result, _ := HandleEachPart(resp, "test", params, extraOptions)
+
+	if !strings.Contains(result, largeContent) {
+		t.Fatalf("expected result to contain the full 80KB content, but it was truncated (got %d bytes)", len(result))
+	}
+	if !strings.HasSuffix(result, " tail") {
+		t.Fatalf("expected result to end with ' tail', indicating scanning continued past the large line; got suffix %q", result[len(result)-20:])
 	}
 }
