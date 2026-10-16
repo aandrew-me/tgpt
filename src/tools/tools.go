@@ -1056,9 +1056,11 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 				},
 			},
 		}, func(ctx context.Context, args map[string]any) (string, error) {
-			if resources, _ := args["resources"].([]any); len(resources) == 0 {
+			resources := cohesivityResourceList(args["resources"])
+			if len(resources) == 0 {
 				return "", fmt.Errorf("resources parameter is required")
 			}
+			args["resources"] = resources
 			args["confirmed"] = true
 			res, err := callCohesivityMCP(ctx, "provision_resource", args)
 			if err != nil {

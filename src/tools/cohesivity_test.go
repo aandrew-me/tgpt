@@ -85,3 +85,28 @@ func TestCohesivityStatusErrors(t *testing.T) {
 		t.Fatalf("expected tool error to be returned, got %v", err)
 	}
 }
+
+func TestCohesivityResourceList(t *testing.T) {
+	cases := []struct {
+		in   any
+		want []any
+	}{
+		{[]any{"postgres", "object-storage"}, []any{"postgres", "object-storage"}},
+		{"postgres", []any{"postgres"}},
+		{"postgres, object-storage", []any{"postgres", "object-storage"}},
+		{"", nil},
+		{nil, nil},
+		{42, nil},
+	}
+	for _, tc := range cases {
+		got := cohesivityResourceList(tc.in)
+		if len(got) != len(tc.want) {
+			t.Fatalf("resources %v: got %v, want %v", tc.in, got, tc.want)
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Fatalf("resources %v: got %v, want %v", tc.in, got, tc.want)
+			}
+		}
+	}
+}

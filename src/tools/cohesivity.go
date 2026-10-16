@@ -30,6 +30,31 @@ const (
 		"Do not show the keys in chat. Tell the user what was created and that it expires in 72 hours unless they claim it."
 )
 
+// cohesivityResourceList accepts the resources argument as a JSON array or as a
+// single string, optionally comma separated, since smaller models often send
+// "postgres" or "postgres, object-storage" instead of ["postgres"].
+func cohesivityResourceList(value any) []any {
+	var out []any
+	add := func(s string) {
+		if s = strings.TrimSpace(s); s != "" {
+			out = append(out, s)
+		}
+	}
+	switch v := value.(type) {
+	case []any:
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				add(s)
+			}
+		}
+	case string:
+		for _, s := range strings.Split(v, ",") {
+			add(s)
+		}
+	}
+	return out
+}
+
 // cohesivityTenantParams returns the tenant parameters shared by cohesivity_provision and cohesivity_status.
 func cohesivityTenantParams() map[string]any {
 	return map[string]any{
