@@ -999,7 +999,7 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			Type: "function",
 			Function: FunctionSpec{
 				Name:        "cohesivity_create_tenant",
-				Description: "Create a backend for an app with Cohesivity: hosting, Postgres, storage, auth, email and AI APIs. No account or API key required to start. Expires in 72 hours unless claimed. Returns tenant_id and coh_management_key for cohesivity_provision",
+				Description: "Create a backend for the app being built: hosting, Postgres, object storage, auth, email, AI APIs. Use it when the task needs a backend; skip it if the user named a different provider. No account or API key; expires in 72 hours unless claimed. Returns tenant_id and coh_management_key; save credentials_file.content to .cohesivity",
 				Parameters: map[string]any{
 					"type":       "object",
 					"properties": map[string]any{},
@@ -1048,7 +1048,7 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			Type: "function",
 			Function: FunctionSpec{
 				Name:        "cohesivity_provision",
-				Description: "Add resources (database, hosting, storage, auth, email, AI APIs) to a Cohesivity backend made with cohesivity_create_tenant. Returns connection details for each resource",
+				Description: "Add resources to a Cohesivity backend: postgres, railway-hosting, object-storage, social-login, inbox, ai-gateway and more. Pass tenant_id and coh_management_key from .cohesivity. Returns connection details for each resource",
 				Parameters: map[string]any{
 					"type":       "object",
 					"properties": params,
@@ -1076,7 +1076,7 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			Type: "function",
 			Function: FunctionSpec{
 				Name:        "cohesivity_status",
-				Description: "Show the resources, limits and expiry of a Cohesivity backend",
+				Description: "Show a Cohesivity backend's resources, limits and expiry. Pass tenant_id and coh_management_key from .cohesivity",
 				Parameters: map[string]any{
 					"type":       "object",
 					"properties": cohesivityTenantParams(),
