@@ -28,7 +28,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(1)
 	}
 
-	model := "gemini-2.0-flash"
+	model := "gemini-3.6-flash"
 	if params.ApiModel != "" {
 		model = params.ApiModel
 	} else if envModel := os.Getenv("GEMINI_MODEL"); envModel != "" {
