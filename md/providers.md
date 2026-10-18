@@ -21,7 +21,7 @@
 - [OpenCode](https://opencode.ai) (Free, uses opencode.ai/zen API, default model deepseek-v4-flash-free, default API key `public`, supports OPENCODE_API_KEY / OPENCODE_MODEL / OPENCODE_URL env vars)
 - [OpenRouter](https://openrouter.ai/) (OpenAI-compatible API, default model `openrouter/free`, supports `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_URL`, and `OPENROUTER_BASE_URL` env vars)
 - [Pollinations](https://pollinations.ai/) ([Many free models](https://text.pollinations.ai/models))
-- [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-2.0-flash`)
+- [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-3.6-flash`)
 - PowerBrain (Free)
 
 **Image Generation Models**: 
