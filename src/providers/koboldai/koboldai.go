@@ -57,8 +57,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 func GetMainText(line string) (mainText string) {
 	var obj = "{}"
-	if len(line) > 1 && strings.Contains(line, "data:") {
-		obj = strings.Split(line, "data: ")[1]
+	if after, ok := strings.CutPrefix(line, "data: "); ok {
+		obj = after
 	}
 
 	var d Response

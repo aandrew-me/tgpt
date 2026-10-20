@@ -34,3 +34,10 @@ func TestGetMainTextKeepsContentContainingDataPrefix(t *testing.T) {
 		}
 	}
 }
+
+func TestKoboldAIKeepsTokenContainingDataPrefix(t *testing.T) {
+	line := `data: {"token":"the header is data: x"}`
+	if got := GetMainText(line, "koboldai", ""); got != "the header is data: x" {
+		t.Errorf("got %q", got)
+	}
+}
