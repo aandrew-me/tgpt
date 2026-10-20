@@ -413,3 +413,97 @@ func TestHandleEachPartLargeSSELine(t *testing.T) {
 		t.Fatalf("expected result to end with ' tail', indicating scanning continued past the large line; got suffix %q", result[len(result)-20:])
 	}
 }
+
+// Gemini's OpenAI-compatible endpoint streams every parallel tool call whole,
+// in its own chunk, without an index. Each call must be kept apart and executed.
+func TestToolCallsWithoutIndexAreKeptApart(t *testing.T) {
+	step := 0
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		if step == 0 {
+			step++
+			first := `{"choices":[{"delta":{"tool_calls":[{"id":"call_a","type":"function","function":{"name":"execute_command","arguments":"{\"command\":\"echo first_call_output\"}"}}]}}]}`
+			second := `{"choices":[{"delta":{"tool_calls":[{"id":"call_b","type":"function","function":{"name":"execute_command","arguments":"{\"command\":\"echo second_call_output\"}"}}]}}]}`
+			_, _ = w.Write([]byte("data: " + first + "\n\ndata: " + second + "\n\n"))
+		} else {
+			_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"done\"}}]}\n\n"))
+		}
+	}))
+	defer server.Close()
+
+	tools.DefaultRegistry.RegisterBuiltinTools("execute_command")
+
+	params := structs.Params{
+		Provider: "openai",
+		Url:      server.URL,
+		Tools:    tools.DefaultRegistry.GetOpenAITools(),
+	}
+	extraOptions := structs.ExtraOptions{
+		IsNormal: true,
+		AutoExec: true,
+	}
+
+	_, turnMsgs, err := MakeRequestAndGetData("run both", params, extraOptions)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	results := map[string]string{}
+	for _, msg := range turnMsgs {
+		if tm, ok := msg.(structs.ToolMessage); ok {
+			results[tm.ToolCallID] = tm.Content
+		}
+	}
+	if !strings.Contains(results["call_a"], "first_call_output") || !strings.Contains(results["call_b"], "second_call_output") {
+		t.Errorf("expected both tool calls to run with their own results, got %#v", results)
+	}
+}
+
+func TestToolCallFragmentsWithoutIndexContinueTheLastCall(t *testing.T) {
+	step := 0
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, r *stdhttp.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		if step == 0 {
+			step++
+			chunks := []string{
+				`{"choices":[{"delta":{"tool_calls":[{"id":"call_a","type":"function","function":{"name":"execute_command","arguments":"{\"command\":"}}]}}]}`,
+				`{"choices":[{"delta":{"tool_calls":[{"id":"call_a","function":{"arguments":"\"echo first_call_output\"}"}}]}}]}`,
+				`{"choices":[{"delta":{"tool_calls":[{"id":"call_b","type":"function","function":{"name":"execute_command","arguments":"{\"comm"}}]}}]}`,
+				`{"choices":[{"delta":{"tool_calls":[{"function":{"arguments":"and\":\"echo second_call_output\"}"}}]}}]}`,
+			}
+			for _, chunk := range chunks {
+				_, _ = w.Write([]byte("data: " + chunk + "\n\n"))
+			}
+		} else {
+			_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"done\"}}]}\n\n"))
+		}
+	}))
+	defer server.Close()
+
+	tools.DefaultRegistry.RegisterBuiltinTools("execute_command")
+
+	params := structs.Params{
+		Provider: "openai",
+		Url:      server.URL,
+		Tools:    tools.DefaultRegistry.GetOpenAITools(),
+	}
+	extraOptions := structs.ExtraOptions{
+		IsNormal: true,
+		AutoExec: true,
+	}
+
+	_, turnMsgs, err := MakeRequestAndGetData("run both", params, extraOptions)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	results := map[string]string{}
+	for _, msg := range turnMsgs {
+		if tm, ok := msg.(structs.ToolMessage); ok {
+			results[tm.ToolCallID] = tm.Content
+		}
+	}
+	if !strings.Contains(results["call_a"], "first_call_output") || !strings.Contains(results["call_b"], "second_call_output") {
+		t.Errorf("expected both tool calls to run with their own results, got %#v", results)
+	}
+}

@@ -701,6 +701,31 @@ type toolCallAccumulator struct {
 	args strings.Builder
 }
 
+// toolCallSlot returns the slot of a streamed tool call delta. Gemini's
+// OpenAI-compatible endpoint sends every parallel call whole and without an
+// index: such a delta starts a new call when it brings an id that differs from
+// the latest call's, or a name without an id; anything else continues the latest call.
+func toolCallSlot(calls map[int]*toolCallAccumulator, delta structs.ToolCallDelta) int {
+	if delta.Index != nil {
+		return *delta.Index
+	}
+	if len(calls) == 0 {
+		return 0
+	}
+	latest := 0
+	for index := range calls {
+		latest = max(latest, index)
+	}
+	startsNewCall := delta.Function.Name != ""
+	if delta.ID != "" {
+		startsNewCall = delta.ID != calls[latest].id
+	}
+	if startsNewCall {
+		return latest + 1
+	}
+	return latest
+}
+
 func HandleEachPart(resp *http.Response, input string, params structs.Params, extraOptions structs.ExtraOptions) (string, []interface{}) {
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 32*1024), 1024*1024)
@@ -723,10 +748,11 @@ func HandleEachPart(resp *http.Response, input string, params structs.Params, ex
 		var d structs.CommonResponse
 		if err := json.Unmarshal([]byte(obj), &d); err == nil && len(d.Choices) > 0 {
 			for _, tcDelta := range d.Choices[0].Delta.ToolCalls {
-				acc, ok := toolCallMap[tcDelta.Index]
+				index := toolCallSlot(toolCallMap, tcDelta)
+				acc, ok := toolCallMap[index]
 				if !ok {
 					acc = &toolCallAccumulator{}
-					toolCallMap[tcDelta.Index] = acc
+					toolCallMap[index] = acc
 				}
 				if tcDelta.ID != "" {
 					acc.id = tcDelta.ID
