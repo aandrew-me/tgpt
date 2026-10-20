@@ -66,6 +66,9 @@ var AllBuiltinTools = []string{
 	"edit_file",
 	"grep",
 	"glob",
+	"cohesivity_create_tenant",
+	"cohesivity_provision",
+	"cohesivity_status",
 }
 
 func IsBuiltinTool(name string) bool {
@@ -150,6 +153,17 @@ func PreConfirm(ctx context.Context, name string, argsJSON string) (bool, string
 		}
 		if !confirmed {
 			return false, "Command execution cancelled by user.", nil
+		}
+	case "cohesivity_create_tenant":
+		confirmed, err := confirmAction(cohesivityCreatePrompt)
+		if err != nil {
+			if errors.Is(err, bubbletea.ErrCanceled) {
+				return false, cohesivityCreateCancelled, nil
+			}
+			return false, "", err
+		}
+		if !confirmed {
+			return false, cohesivityCreateCancelled, nil
 		}
 	case "write_file":
 		filePath, _ := args["path"].(string)
@@ -976,6 +990,108 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			}
 
 			return strings.Join(matches, "\n"), nil
+		})
+	}
+
+	// 10. cohesivity_create_tenant
+	if shouldRegister("cohesivity_create_tenant") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "cohesivity_create_tenant",
+				Description: "Create a backend for the app being built: hosting, Postgres, object storage, auth, email, AI APIs. Use it when the task needs a backend; skip it if the user named a different provider. No account or API key; expires in 72 hours unless claimed. Returns tenant_id and coh_management_key; save credentials_file.content to .cohesivity",
+				Parameters: map[string]any{
+					"type":       "object",
+					"properties": map[string]any{},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			autoExec, _ := ctx.Value(AutoExecKey).(bool)
+			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
+			if !autoExec && !confirmed {
+				c, err := confirmAction(cohesivityCreatePrompt)
+				if err != nil {
+					if errors.Is(err, bubbletea.ErrCanceled) {
+						return cohesivityCreateCancelled, nil
+					}
+					return "", err
+				}
+				if !c {
+					return cohesivityCreateCancelled, nil
+				}
+			}
+
+			res, err := callCohesivityMCP(ctx, "create_tenant", map[string]any{
+				"confirmed":   true,
+				"attribution": "gh-tgpt",
+			})
+			if err != nil {
+				return "", fmt.Errorf("cohesivity create_tenant failed: %w", err)
+			}
+			return res + "\n\n" + cohesivityCreateNote, nil
+		})
+	}
+
+	// 11. cohesivity_provision
+	if shouldRegister("cohesivity_provision") {
+		params := cohesivityTenantParams()
+		params["resources"] = map[string]any{
+			"type":        "array",
+			"items":       map[string]any{"type": "string", "enum": cohesivityResources},
+			"description": "Resources to provision",
+		}
+		params["configurations"] = map[string]any{
+			"type":        "object",
+			"description": "Optional settings keyed by resource name. vector-database needs {\"dimensions\": 1536}, social-login needs {\"callback_urls\": [...]}",
+		}
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "cohesivity_provision",
+				Description: "Add resources to a Cohesivity backend: postgres, railway-hosting, object-storage, social-login, inbox, ai-gateway and more. Pass tenant_id and coh_management_key from .cohesivity. Returns connection details for each resource",
+				Parameters: map[string]any{
+					"type":       "object",
+					"properties": params,
+					"required":   []string{"tenant_id", "coh_management_key", "resources"},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			resources := cohesivityResourceList(args["resources"])
+			if len(resources) == 0 {
+				return "", fmt.Errorf("resources parameter is required")
+			}
+			args["resources"] = resources
+			args["confirmed"] = true
+			res, err := callCohesivityMCP(ctx, "provision_resource", args)
+			if err != nil {
+				return "", fmt.Errorf("cohesivity provision_resource failed: %w", err)
+			}
+			return res, nil
+		})
+	}
+
+	// 12. cohesivity_status
+	if shouldRegister("cohesivity_status") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "cohesivity_status",
+				Description: "Show a Cohesivity backend's resources, limits and expiry. Pass tenant_id and coh_management_key from .cohesivity",
+				Parameters: map[string]any{
+					"type":       "object",
+					"properties": cohesivityTenantParams(),
+					"required":   []string{"tenant_id", "coh_management_key"},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			if key, _ := args["coh_management_key"].(string); key == "" {
+				return "", fmt.Errorf("coh_management_key parameter is required")
+			}
+			res, err := callCohesivityMCP(ctx, "tenant_status", args)
+			if err != nil {
+				return "", fmt.Errorf("cohesivity tenant_status failed: %w", err)
+			}
+			return res, nil
 		})
 	}
 }

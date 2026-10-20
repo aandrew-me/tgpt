@@ -1441,6 +1441,7 @@ func ShowHelpMessage() {
 	fmt.Println("edit_file            Edit a file by replacing old_content with new_content")
 	fmt.Println("grep                 Search file contents using regular expressions")
 	fmt.Println("glob                 Find files and directories matching a glob pattern")
+	fmt.Println("cohesivity_*         Create a backend with Cohesivity (cohesivity_create_tenant, cohesivity_provision, cohesivity_status), no API key needed")
 
 	bold.Println("\nMCP servers:")
 	fmt.Println("Use --mcp to enable MCP and auto-detect configuration file, --mcp-config to specify a JSON file, or --mcp-server to run a single stdio MCP server directly.")
