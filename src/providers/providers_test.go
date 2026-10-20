@@ -25,3 +25,12 @@ func TestSupportsTools(t *testing.T) {
 		t.Errorf("expected fx to be a valid provider")
 	}
 }
+
+func TestGetMainTextKeepsContentContainingDataPrefix(t *testing.T) {
+	line := `data: {"choices":[{"delta":{"content":"the header is data: x"}}]}`
+	for _, p := range []string{"deepseek", "gemini", "groq", "minimax", "openai", "opencode", "pollinations"} {
+		if got := GetMainText(line, p, ""); got != "the header is data: x" {
+			t.Errorf("provider %q: got %q", p, got)
+		}
+	}
+}
