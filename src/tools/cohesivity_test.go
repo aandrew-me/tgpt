@@ -114,6 +114,28 @@ func TestCohesivityStatusErrors(t *testing.T) {
 	}
 }
 
+func TestCohesivityToolsOptIn(t *testing.T) {
+	cases := []struct {
+		selected []string
+		want     bool
+	}{
+		{nil, false},
+		{[]string{"all"}, false},
+		{[]string{"all", "cohesivity"}, true},
+		{[]string{"cohesivity_status"}, true},
+	}
+	for _, c := range cases {
+		r := NewRegistry()
+		r.RegisterBuiltinTools(c.selected...)
+		if r.Has("cohesivity_status") != c.want || r.Has("read_file") != (c.selected == nil || c.selected[0] == "all") {
+			t.Errorf("unexpected tools registered for %v", c.selected)
+		}
+	}
+	if list, ok := ParseToolList("all,cohesivity"); !ok || len(list) != 2 {
+		t.Fatalf("expected all,cohesivity to parse, got %v, %v", list, ok)
+	}
+}
+
 func TestCohesivityResourceList(t *testing.T) {
 	cases := []struct {
 		in   any

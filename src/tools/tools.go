@@ -73,6 +73,9 @@ var AllBuiltinTools = []string{
 
 func IsBuiltinTool(name string) bool {
 	name = strings.ToLower(strings.TrimSpace(name))
+	if name == "cohesivity" {
+		return true
+	}
 	for _, t := range AllBuiltinTools {
 		if t == name {
 			return true
@@ -287,13 +290,16 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 		fmt.Fprintf(os.Stderr, "Warning: unknown tool %q ignored. Available tools: %s\n", t, strings.Join(AllBuiltinTools, ", "))
 	}
 
+	// Cohesivity tools create hosted resources, so they are opt-in: only
+	// registered when named or selected with the "cohesivity" group.
 	shouldRegister := func(name string) bool {
+		optIn := strings.HasPrefix(name, "cohesivity_")
 		if len(selectedTools) == 0 {
-			return true
+			return !optIn
 		}
 		for _, t := range selectedTools {
 			trimmed := strings.ToLower(strings.TrimSpace(t))
-			if trimmed == "all" || trimmed == name {
+			if (trimmed == "all" && !optIn) || trimmed == name || (optIn && trimmed == "cohesivity") {
 				return true
 			}
 		}
