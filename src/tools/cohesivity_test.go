@@ -59,7 +59,8 @@ func TestCohesivityProvision(t *testing.T) {
 
 	r := NewRegistry()
 	r.RegisterBuiltinTools("cohesivity_provision")
-	res, err := r.Execute(context.Background(), "cohesivity_provision", `{"tenant_id": "t1", "coh_management_key": "coh_man_x", "resources": ["postgres"]}`)
+	ctx := context.WithValue(context.Background(), ConfirmedKey, true)
+	res, err := r.Execute(ctx, "cohesivity_provision", `{"tenant_id": "t1", "coh_management_key": "coh_man_x", "resources": ["postgres"]}`)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -69,6 +70,33 @@ func TestCohesivityProvision(t *testing.T) {
 	resources, _ := (*got)["resources"].([]any)
 	if (*got)["_tool"] != "tools/call provision_resource" || (*got)["tenant_id"] != "t1" || (*got)["confirmed"] != true || len(resources) != 1 || resources[0] != "postgres" {
 		t.Fatalf("unexpected provision_resource call: %#v", *got)
+	}
+}
+
+func TestCohesivityProvisionDeclined(t *testing.T) {
+	got := startCohesivityServer(t, `{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"postgres active"}]}}`)
+	var prompt string
+	orig := confirmAction
+	confirmAction = func(p string) (bool, error) { prompt = p; return false, nil }
+	t.Cleanup(func() { confirmAction = orig })
+
+	args := `{"tenant_id": "t1", "coh_management_key": "coh_man_x", "resources": "postgres"}`
+	proceed, msg, err := PreConfirm(context.Background(), "cohesivity_provision", args)
+	if err != nil || proceed || msg != cohesivityProvisionCancelled {
+		t.Fatalf("expected declined provision, got %v, %q, %v", proceed, msg, err)
+	}
+	if !strings.Contains(prompt, "`postgres`") || !strings.Contains(prompt, "`t1`") {
+		t.Fatalf("prompt should name the resources and tenant, got %q", prompt)
+	}
+
+	r := NewRegistry()
+	r.RegisterBuiltinTools("cohesivity_provision")
+	res, err := r.Execute(context.Background(), "cohesivity_provision", args)
+	if err != nil || res != cohesivityProvisionCancelled {
+		t.Fatalf("expected cancelled result, got %q, %v", res, err)
+	}
+	if *got != nil {
+		t.Fatalf("declined provision should not reach the server, got %#v", *got)
 	}
 }
 

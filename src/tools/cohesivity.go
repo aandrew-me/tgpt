@@ -23,9 +23,10 @@ var cohesivityResources = []string{
 }
 
 const (
-	cohesivityCreatePrompt    = "\nCreate a Cohesivity backend? It is free and expires in 72 hours unless claimed."
-	cohesivityCreateCancelled = "Backend creation cancelled by user."
-	cohesivityCreateNote      = "Save credentials_file.content from this result verbatim to .cohesivity in the project root " +
+	cohesivityCreatePrompt       = "\nCreate a Cohesivity backend? It is free and expires in 72 hours unless claimed."
+	cohesivityCreateCancelled    = "Backend creation cancelled by user."
+	cohesivityProvisionCancelled = "Provisioning cancelled by user."
+	cohesivityCreateNote         = "Save credentials_file.content from this result verbatim to .cohesivity in the project root " +
 		"with write_file, then run `chmod 600 .cohesivity` and add .cohesivity to .gitignore. " +
 		"Do not show the keys in chat. Tell the user what was created and that it expires in 72 hours unless they claim it."
 )
@@ -53,6 +54,16 @@ func cohesivityResourceList(value any) []any {
 		}
 	}
 	return out
+}
+
+// cohesivityProvisionPrompt names the resources and tenant a provision call would change.
+func cohesivityProvisionPrompt(args map[string]any) string {
+	var names []string
+	for _, r := range cohesivityResourceList(args["resources"]) {
+		names = append(names, r.(string))
+	}
+	tenantID, _ := args["tenant_id"].(string)
+	return fmt.Sprintf("\nAdd `%s` to Cohesivity backend `%s` ?", strings.Join(names, ", "), tenantID)
 }
 
 // cohesivityTenantParams returns the tenant parameters shared by cohesivity_provision and cohesivity_status.

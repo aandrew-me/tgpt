@@ -120,7 +120,7 @@ const ConfirmedKey contextKey = "confirmed"
 var bold = color.New(color.Bold)
 
 // confirmAction prompts the user with an interactive yes/no question using Bubble Tea.
-func confirmAction(prompt string) (bool, error) {
+var confirmAction = func(prompt string) (bool, error) {
 	return bubbletea.ConfirmMenu(prompt, true)
 }
 
@@ -164,6 +164,17 @@ func PreConfirm(ctx context.Context, name string, argsJSON string) (bool, string
 		}
 		if !confirmed {
 			return false, cohesivityCreateCancelled, nil
+		}
+	case "cohesivity_provision":
+		confirmed, err := confirmAction(cohesivityProvisionPrompt(args))
+		if err != nil {
+			if errors.Is(err, bubbletea.ErrCanceled) {
+				return false, cohesivityProvisionCancelled, nil
+			}
+			return false, "", err
+		}
+		if !confirmed {
+			return false, cohesivityProvisionCancelled, nil
 		}
 	case "write_file":
 		filePath, _ := args["path"].(string)
@@ -1059,6 +1070,20 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			resources := cohesivityResourceList(args["resources"])
 			if len(resources) == 0 {
 				return "", fmt.Errorf("resources parameter is required")
+			}
+			autoExec, _ := ctx.Value(AutoExecKey).(bool)
+			confirmed, _ := ctx.Value(ConfirmedKey).(bool)
+			if !autoExec && !confirmed {
+				c, err := confirmAction(cohesivityProvisionPrompt(args))
+				if err != nil {
+					if errors.Is(err, bubbletea.ErrCanceled) {
+						return cohesivityProvisionCancelled, nil
+					}
+					return "", err
+				}
+				if !c {
+					return cohesivityProvisionCancelled, nil
+				}
 			}
 			args["resources"] = resources
 			args["confirmed"] = true
