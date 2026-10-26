@@ -10,6 +10,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/apiroute"
 	"github.com/aandrew-me/tgpt/v2/src/providers/atlascloud"
 	"github.com/aandrew-me/tgpt/v2/src/providers/cheaperinference"
+	"github.com/aandrew-me/tgpt/v2/src/providers/cloudgpu"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseek"
 	"github.com/aandrew-me/tgpt/v2/src/providers/deepseekweb"
 	"github.com/aandrew-me/tgpt/v2/src/providers/demonroute"
@@ -33,7 +34,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "demonroute", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain", "runcrate",
+	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "cloudgpu", "deepseek", "deepseek-web", "demonroute", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain", "runcrate",
 }
 
 func IsValidProvider(name string) bool {
@@ -50,7 +51,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "demonroute", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate":
+	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "cloudgpu", "deepseek", "demonroute", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate":
 		return true
 	default:
 		return false
@@ -109,6 +110,8 @@ func GetMainText(line string, provider string, input string) string {
 		return powerbrain.GetMainText(line)
 	case "runcrate":
 		return runcrate.GetMainText(line)
+	case "cloudgpu":
+		return cloudgpu.GetMainText(line)
 	default:
 		return opencode.GetMainText(line)
 	}
@@ -175,6 +178,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return powerbrain.NewRequest(input, params)
 	case "runcrate":
 		return runcrate.NewRequest(input, params)
+	case "cloudgpu":
+		return cloudgpu.NewRequest(input, params)
 	default:
 		return opencode.NewRequest(input, params)
 	}
