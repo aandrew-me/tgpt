@@ -24,6 +24,7 @@
 - [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-3.6-flash`)
 - PowerBrain (Free)
 - [Runcrate](https://www.runcrate.ai/?utm_source=tgpt&utm_medium=directory&utm_campaign=gpu_pricing) (OpenAI-compatible API for open models, open models are free with your GitHub account, requires `RUNCRATE_API_KEY`, default model `deepseek-ai/DeepSeek-V4.1-Flash`, supports `RUNCRATE_MODEL`, `RUNCRATE_URL`, and `RUNCRATE_BASE_URL`)
+- [CloudGPU](https://cloudgpu.app/api?utm_source=github&utm_medium=referral&utm_campaign=202611_seg06_indiedev&utm_content=github_tgpt_provider) (OpenAI-compatible API for open models such as DeepSeek, Kimi, GLM and Qwen, requires `CLOUDGPU_API_KEY`, default model `deepseek-v4.1-flash`, supports `CLOUDGPU_MODEL`, `CLOUDGPU_URL`, and `CLOUDGPU_BASE_URL`)
 
 **Image Generation Models**: 
 - AnyAPI (Requires API key, 100k anytokens/day)
