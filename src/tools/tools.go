@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -1015,7 +1016,9 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 							matched = re.MatchString(slashRel)
 						}
 					} else {
-						matched, _ = filepath.Match(cleanPattern, slashRel)
+						// Both sides use "/" here, so use path.Match: on Windows,
+						// filepath.Match lets "*" and "?" match "/" as well.
+						matched, _ = path.Match(cleanPattern, slashRel)
 					}
 				} else {
 					matched, _ = filepath.Match(pattern, d.Name())

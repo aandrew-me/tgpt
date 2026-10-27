@@ -409,6 +409,23 @@ func TestGlobTool(t *testing.T) {
 		t.Fatalf("expected scoped match for src/helper.go, got: %q", res)
 	}
 
+	// A "*" in a path-scoped pattern must not match across directories
+	// (src/*.go should NOT match src/nested/deep.go)
+	nestedDir := filepath.Join(subDir, "nested")
+	if err := os.MkdirAll(nestedDir, 0755); err != nil {
+		t.Fatalf("failed to create nestedDir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(nestedDir, "deep.go"), []byte("package nested"), 0644); err != nil {
+		t.Fatalf("failed to write nested file: %v", err)
+	}
+	res, err = r.Execute(ctx, "glob", scopedJSON)
+	if err != nil {
+		t.Fatalf("unexpected error executing scoped glob: %v", err)
+	}
+	if !strings.Contains(res, "helper.go") || strings.Contains(res, "deep.go") {
+		t.Fatalf("expected src/*.go to match only src/helper.go, got: %q", res)
+	}
+
 	// No match case
 	noMatchJSON := `{"path": "` + escapedDir + `", "pattern": "*.txt"}`
 	res, err = r.Execute(ctx, "glob", noMatchJSON)
