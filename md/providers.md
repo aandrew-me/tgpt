@@ -14,6 +14,7 @@
 - [KoboldAI](https://koboldai-koboldcpp-tiefighter.hf.space/) (Free) (koboldcpp/HF_SPACE_Tiefighter-13B)
 - [LiteLLM](https://docs.litellm.ai/) (AI gateway proxy, access 100+ LLM providers via unified OpenAI-compatible API, default endpoint `http://localhost:4000/v1/chat/completions`, requires `--model` flag or `LITELLM_MODEL` env var)
 - [MiniMax](https://platform.minimaxi.com/) (Requires API key, default model `MiniMax-M2.7`)
+- [Obscurify.ai](https://obscurify.ai/?utm_source=tgpt) (OpenAI-compatible API, 200+ models, account is a random account number with no email, requires `OBSCURIFY_API_KEY`, default model `deepseek/deepseek-v4-flash`, supports `OBSCURIFY_MODEL`, `OBSCURIFY_URL`, and `OBSCURIFY_BASE_URL`)
 - [Ollama](https://www.ollama.com/) (Local models) (Supports many models)
 - [OllamaCloud](https://ollama.com/) (Cloud API) (Requires OLLAMA_API_KEY, default model `gpt-oss:120b`)
 - OmniRoute (OpenAI-compatible API router, default base URL `http://localhost:20128/v1`, default model `auto`, supports `OMNIROUTE_API_KEY`, `OMNIROUTE_MODEL`, `OMNIROUTE_URL`, `OMNIROUTE_BASE_URL` env vars)

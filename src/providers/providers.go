@@ -20,6 +20,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/litellm"
 	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
+	"github.com/aandrew-me/tgpt/v2/src/providers/obscurifyai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
 	"github.com/aandrew-me/tgpt/v2/src/providers/omniroute"
 	"github.com/aandrew-me/tgpt/v2/src/providers/openai"
@@ -33,7 +34,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "demonroute", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain", "runcrate",
+	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "demonroute", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "obscurifyai", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain", "runcrate",
 }
 
 func IsValidProvider(name string) bool {
@@ -50,7 +51,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "demonroute", "gemini", "groq", "litellm", "ollama", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate":
+	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "demonroute", "gemini", "groq", "litellm", "obscurifyai", "ollama", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate":
 		return true
 	default:
 		return false
@@ -91,6 +92,8 @@ func GetMainText(line string, provider string, input string) string {
 		return litellm.GetMainText(line)
 	case "minimax":
 		return minimax.GetMainText(line)
+	case "obscurifyai":
+		return obscurifyai.GetMainText(line)
 	case "ollama":
 		return ollama.GetMainText(line)
 	case "ollamacloud":
@@ -157,6 +160,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return litellm.NewRequest(input, params)
 	case "minimax":
 		return minimax.NewRequest(input, params)
+	case "obscurifyai":
+		return obscurifyai.NewRequest(input, params)
 	case "ollama":
 		return ollama.NewRequest(input, params)
 	case "ollamacloud":
