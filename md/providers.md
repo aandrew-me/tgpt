@@ -29,3 +29,5 @@
 - Pollinations (Free) ([Models](https://image.pollinations.ai/models))
 - MagicStudio (Free)
 
+### Adding new providers
+If you want to add your own provider or any new provider, it needs to have some kind of free tier (free models / free tokens).
