@@ -1,5 +1,7 @@
 package structs
 
+import "strconv"
+
 type Params struct {
 	ApiModel        string
 	ApiKey          string
@@ -14,6 +16,21 @@ type Params struct {
 	SystemPrompt    string
 	RotateProviders string
 	Tools           []any
+}
+
+// SamplingOptions returns the --temperature and --top_p values (or
+// TGPT_TEMPERATURE / TGPT_TOP_P) as numbers. A value that is unset or is not a
+// number is nil, so the field is left out of the request.
+func (p Params) SamplingOptions() (temperature, topP *float64) {
+	return parseSampling(p.Temperature), parseSampling(p.Top_p)
+}
+
+func parseSampling(value string) *float64 {
+	v, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return nil
+	}
+	return &v
 }
 
 type ExtraOptions struct {
