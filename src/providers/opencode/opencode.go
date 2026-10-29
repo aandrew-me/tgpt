@@ -38,6 +38,8 @@ type RequestBody struct {
 	Model         string         `json:"model"`
 	Stream        bool           `json:"stream"`
 	Messages      []any          `json:"messages"`
+	Temperature   *float64       `json:"temperature,omitempty"`
+	TopP          *float64       `json:"top_p,omitempty"`
 	Tools         []any          `json:"tools,omitempty"`
 	ToolChoice    string         `json:"tool_choice,omitempty"`
 	StreamOptions *StreamOptions `json:"stream_options,omitempty"`
@@ -115,6 +117,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		ToolChoice:    toolChoice,
 		StreamOptions: &StreamOptions{IncludeUsage: true},
 	}
+	requestInfo.Temperature, requestInfo.TopP = params.SamplingOptions()
 
 	if len(params.PrevMessages) > 0 {
 		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)

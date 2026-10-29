@@ -15,9 +15,11 @@ import (
 )
 
 type RequestBody struct {
-	Model    string `json:"model"`
-	Stream   bool   `json:"stream"`
-	Messages []any  `json:"messages"`
+	Model       string   `json:"model"`
+	Stream      bool     `json:"stream"`
+	Messages    []any    `json:"messages"`
+	Temperature *float64 `json:"temperature,omitempty"`
+	TopP        *float64 `json:"top_p,omitempty"`
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -54,6 +56,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 			},
 		},
 	}
+	requestInfo.Temperature, requestInfo.TopP = params.SamplingOptions()
 
 	if len(params.PrevMessages) > 0 {
 		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
