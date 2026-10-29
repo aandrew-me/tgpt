@@ -2,6 +2,7 @@
 
 - [AnyAPI](https://docs.anyapi.ai/) (Multi-model API, 100k free anytokens/day, supports chat and image gen, many providers including deepseek, google, openai)
 - [Atlas Cloud](https://www.atlascloud.ai/) (OpenAI-compatible API, requires `ATLASCLOUD_API_KEY`, default model `qwen/qwen3.8-max`, supports `ATLASCLOUD_MODEL`, `ATLASCLOUD_URL`, and `ATLASCLOUD_BASE_URL`)
+- [AtmoRouter](https://atmorouter.dev) (OpenAI-compatible API, requires `ATMOROUTER_API_KEY`, default model `cc/claude-sonnet-4-6`, supports `ATMOROUTER_MODEL`, `ATMOROUTER_URL`, and `ATMOROUTER_BASE_URL`)
 - [API Route](https://www.api-route.com/) (OpenAI-compatible gateway, requires `API_ROUTE_API_KEY`, default model `gpt-5.5`, supports `API_ROUTE_MODEL`, `API_ROUTE_URL`, and `API_ROUTE_BASE_URL`)
 - [Cheaper Inference](https://cheaperinference.com/docs) (OpenAI-compatible gateway, requires `CHEAPERINFERENCE_API_KEY`, default model `gpt-5.6-luna`, supports `CHEAPERINFERENCE_MODEL`, `CHEAPERINFERENCE_URL`, and `CHEAPERINFERENCE_BASE_URL`)
 - [Deepseek](https://www.deepseek.com/) (Requires API key)
