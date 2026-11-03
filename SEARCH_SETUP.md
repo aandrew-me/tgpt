@@ -95,6 +95,23 @@ export SEARCH_PROVIDER="serply"   # or pass --search-provider serply
 
 Site filters are sent as part of the query (`site:reddit.com ...`). API reference: [https://serply.io/docs](https://serply.io/docs)
 
+## Alternative: Keenable (no API key needed)
+
+[Keenable](https://keenable.ai) is a web search index built for AI agents. It works **without an API key** (rate limited per IP) and needs neither a search engine ID nor the `is-fast` binary: each result comes with a long page excerpt, which is passed to the model directly.
+
+```bash
+export SEARCH_PROVIDER="keenable"   # or pass --search-provider keenable
+tgpt -f "latest Go release notes"
+```
+
+An API key is optional and lifts the per-IP limit (100,000 free requests a month):
+
+```bash
+export KEENABLE_API_KEY="your_keenable_key"
+```
+
+Site filters are sent as Keenable's `site` field. Keenable is also available as a built-in tool (`-t web_search_keenable`). API reference: [https://docs.keenable.ai/api-reference/search](https://docs.keenable.ai/api-reference/search)
+
 ## Usage Examples
 
 ### One-Shot Search (`-f`)

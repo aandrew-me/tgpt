@@ -137,3 +137,67 @@ func TestSerplyQuery(t *testing.T) {
 		t.Errorf("unexpected query with site filter: %q", got)
 	}
 }
+
+func TestParseKeenableResponse(t *testing.T) {
+	body := []byte(`{
+		"query": "go error handling",
+		"mode": "pro",
+		"results": [
+			{"title": "Error handling and Go", "url": "https://go.dev/blog/error-handling-and-go", "description": "", "snippet": "Errors are values.", "published_at": "2011-07-12T00:00:00Z"},
+			{"title": "Broken link", "url": "not a url", "description": "", "snippet": "should be skipped"},
+			{"title": "Effective Go", "url": "https://go.dev/doc/effective_go#errors", "description": "", "snippet": "Library routines must often return some sort of error indication."}
+		]
+	}`)
+
+	results, err := parseKeenableResponse(body, 5, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 results (invalid URL skipped), got %d", len(results))
+	}
+	if results[0].Title != "Error handling and Go" || results[0].URL != "https://go.dev/blog/error-handling-and-go" {
+		t.Errorf("unexpected first result: %+v", results[0])
+	}
+	if results[0].Snippet != "(published 2011-07-12T00:00:00Z) Errors are values." {
+		t.Errorf("unexpected first snippet: %q", results[0].Snippet)
+	}
+	if results[1].Snippet != "Library routines must often return some sort of error indication." {
+		t.Errorf("unexpected second snippet: %q", results[1].Snippet)
+	}
+
+	trimmed, err := parseKeenableResponse(body, 1, false)
+	if err != nil || len(trimmed) != 1 {
+		t.Fatalf("expected 1 result when trimmed, got %d (%v)", len(trimmed), err)
+	}
+
+	if _, err := parseKeenableResponse([]byte(`not json`), 5, false); err == nil {
+		t.Error("expected an error for invalid JSON")
+	}
+}
+
+func TestKeenableEndpointAndBody(t *testing.T) {
+	endpoint, headers := keenableEndpoint("")
+	if endpoint != "https://api.keenable.ai/v1/search/public" || headers["X-Keenable-Title"] != "tgpt" || headers["X-API-Key"] != "" {
+		t.Errorf("unexpected keyless endpoint %q / headers %v", endpoint, headers)
+	}
+	endpoint, headers = keenableEndpoint("keen_abc")
+	if endpoint != "https://api.keenable.ai/v1/search" || headers["X-API-Key"] != "keen_abc" || headers["X-Keenable-Title"] != "" {
+		t.Errorf("unexpected keyed endpoint %q / headers %v", endpoint, headers)
+	}
+
+	body := keenableRequestBody(SearchParams{Query: "docker tutorial", NumResults: 3, SiteFilter: "reddit.com"})
+	if body["query"] != "docker tutorial" || body["max_results"] != 3 || body["site"] != "reddit.com" {
+		t.Errorf("unexpected body: %v", body)
+	}
+	body = keenableRequestBody(SearchParams{Query: "q", NumResults: 500})
+	if body["max_results"] != 50 {
+		t.Errorf("expected max_results capped at 50, got %v", body["max_results"])
+	}
+	if _, ok := body["site"]; ok {
+		t.Error("expected no site field without a site filter")
+	}
+	if keenableRequestBody(SearchParams{Query: "q"})["max_results"] != 5 {
+		t.Error("expected 5 results by default")
+	}
+}
