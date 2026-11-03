@@ -98,6 +98,17 @@ type SerplySearchResponse struct {
 	} `json:"results"`
 }
 
+// KeenableSearchResponse represents the response from the Keenable search API.
+// The excerpt is in "snippet"; "description" is deprecated and always empty.
+type KeenableSearchResponse struct {
+	Results []struct {
+		Title       string `json:"title"`
+		URL         string `json:"url"`
+		Snippet     string `json:"snippet"`
+		PublishedAt string `json:"published_at"`
+	} `json:"results"`
+}
+
 func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
 	userQuery := params.Query
 	numResults := params.NumResults
@@ -727,6 +738,125 @@ func parseSerplyResponse(body []byte, numResults int, verbose bool) ([]SearchRes
 	return results, nil
 }
 
+// keenableEndpoint returns the Keenable search endpoint and request headers.
+// Without an API key the keyless public endpoint is used (rate limited per IP),
+// which requires an X-Keenable-Title header naming the application.
+func keenableEndpoint(apiKey string) (string, map[string]string) {
+	if apiKey != "" {
+		return "https://api.keenable.ai/v1/search", map[string]string{"X-API-Key": apiKey}
+	}
+	return "https://api.keenable.ai/v1/search/public", map[string]string{"X-Keenable-Title": "tgpt"}
+}
+
+// keenableRequestBody builds the JSON body of a Keenable search. The site
+// filter is a request field, not a query operator.
+func keenableRequestBody(params SearchParams) map[string]any {
+	numResults := params.NumResults
+	if numResults <= 0 {
+		numResults = 5
+	}
+	if numResults > 50 {
+		numResults = 50
+	}
+	body := map[string]any{
+		"query":              params.Query,
+		"max_results":        numResults,
+		"snippet_max_length": 1500,
+	}
+	if params.SiteFilter != "" {
+		body["site"] = params.SiteFilter
+	}
+	return body
+}
+
+// keenableSearch performs the actual Keenable search API call
+func keenableSearch(params SearchParams, apiKey string, verbose bool) ([]SearchResult, error) {
+	endpoint, headers := keenableEndpoint(apiKey)
+	payload, err := json.Marshal(keenableRequestBody(params))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode search request: %v", err)
+	}
+
+	if verbose {
+		fmt.Printf("Calling Keenable: %s %s\n", endpoint, string(payload))
+	}
+
+	httpClient, err := client.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "TGPT/2.11.0")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute search request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read search response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("search API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return parseKeenableResponse(body, params.NumResults, verbose)
+}
+
+// parseKeenableResponse converts a Keenable JSON response into search results.
+func parseKeenableResponse(body []byte, numResults int, verbose bool) ([]SearchResult, error) {
+	var searchResp KeenableSearchResponse
+	if err := json.Unmarshal(body, &searchResp); err != nil {
+		return nil, fmt.Errorf("failed to parse search response: %v", err)
+	}
+
+	var results []SearchResult
+	for _, item := range searchResp.Results {
+		if numResults > 0 && len(results) >= numResults {
+			break
+		}
+		if _, err := url.ParseRequestURI(item.URL); err != nil {
+			if verbose {
+				fmt.Printf("Warning: Skipping invalid URL: %s\n", item.URL)
+			}
+			continue
+		}
+		snippet := item.Snippet
+		if item.PublishedAt != "" {
+			snippet = "(published " + item.PublishedAt + ") " + snippet
+		}
+		results = append(results, SearchResult{
+			Title:   item.Title,
+			URL:     item.URL,
+			Snippet: snippet,
+		})
+	}
+
+	return results, nil
+}
+
+// PerformKeenableSearch searches with Keenable and formats the results for the
+// model. It works without an API key (KEENABLE_API_KEY is optional) and needs
+// no content extractor: Keenable returns long page excerpts with each result.
+func PerformKeenableSearch(params SearchParams, verbose bool) (string, error) {
+	results, err := keenableSearch(params, strings.TrimSpace(os.Getenv("KEENABLE_API_KEY")), verbose)
+	if err != nil {
+		return "", fmt.Errorf("search failed: %v", err)
+	}
+	return formatResultsForAI(results, params.Query), nil
+}
+
 // extractContent extracts the main content from a web page using is-fast
 func extractContent(pageURL string) (string, error) {
 	// Check if is-fast binary exists
@@ -990,6 +1120,8 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 		return PerformSerpingapiSearchWithParams(searchParams, verbose)
 	case "serply":
 		return PerformSerplySearchWithParams(searchParams, verbose)
+	case "keenable":
+		return PerformKeenableSearch(searchParams, verbose)
 	}
 
 	return PerformExaMCPSearch(searchParams, verbose)

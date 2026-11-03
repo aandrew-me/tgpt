@@ -419,3 +419,14 @@ func TestGlobTool(t *testing.T) {
 		t.Fatalf("expected 'No matching files found.', got: %q", res)
 	}
 }
+
+func TestRegisterKeenableTool(t *testing.T) {
+	r := NewRegistry()
+	r.RegisterBuiltinTools("web_search_keenable")
+	if !r.Has("web_search_keenable") {
+		t.Error("expected registry to have web_search_keenable")
+	}
+	if r.Has("web_search_exa") {
+		t.Error("expected registry to NOT have web_search_exa")
+	}
+}
