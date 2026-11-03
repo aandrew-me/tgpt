@@ -56,6 +56,24 @@ func TestRequestBody(t *testing.T) {
 	assert.Len(t, decoded["tools"], 1)
 }
 
+func TestRequestBodyIncludesSamplingOptions(t *testing.T) {
+	body := newRequestBody(nil, structs.Params{Temperature: "0.2", Top_p: "0.9"})
+	encoded, err := json.Marshal(body)
+	assert.NoError(t, err)
+
+	var decoded map[string]any
+	assert.NoError(t, json.Unmarshal(encoded, &decoded))
+	assert.Equal(t, 0.2, decoded["temperature"])
+	assert.Equal(t, 0.9, decoded["top_p"])
+
+	encoded, err = json.Marshal(newRequestBody(nil, structs.Params{}))
+	assert.NoError(t, err)
+	decoded = map[string]any{}
+	assert.NoError(t, json.Unmarshal(encoded, &decoded))
+	assert.NotContains(t, decoded, "temperature")
+	assert.NotContains(t, decoded, "top_p")
+}
+
 func TestGetMainText(t *testing.T) {
 	tests := []struct {
 		name string

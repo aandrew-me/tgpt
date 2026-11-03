@@ -19,6 +19,19 @@ type RequestBody struct {
 	Stream   bool   `json:"stream"`
 	Messages []any  `json:"messages"`
 	Tools    []any  `json:"tools,omitempty"`
+
+	Temperature *float64 `json:"temperature,omitempty"`
+	TopP        *float64 `json:"top_p,omitempty"`
+}
+
+func newRequestBody(params structs.Params) RequestBody {
+	body := RequestBody{
+		Model:  "openai",
+		Stream: true,
+		Tools:  params.Tools,
+	}
+	body.Temperature, body.TopP = params.SamplingOptions()
+	return body
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -28,11 +41,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		os.Exit(1)
 	}
 
-	requestInfo := RequestBody{
-		Model:  "openai",
-		Stream: true,
-		Tools:  params.Tools,
-	}
+	requestInfo := newRequestBody(params)
 
 	apiKey := params.ApiKey
 	if apiKey == "" {
@@ -47,14 +56,6 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	} else if envModel := os.Getenv("POLLINATIONS_MODEL"); envModel != "" {
 		requestInfo.Model = envModel
 	}
-
-	// if params.Temperature != "" {
-	// 	requestInfo.Temperature = params.Temperature
-	// }
-
-	// if params.Top_p != "" {
-	// 	requestInfo.Top_p = params.Top_p
-	// }
 
 	messages := make([]any, 0, len(params.PrevMessages)+2)
 	if params.SystemPrompt != "" {

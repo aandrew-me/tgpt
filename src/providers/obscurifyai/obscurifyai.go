@@ -24,6 +24,20 @@ type RequestBody struct {
 	Stream   bool   `json:"stream"`
 	Messages []any  `json:"messages"`
 	Tools    []any  `json:"tools,omitempty"`
+
+	Temperature *float64 `json:"temperature,omitempty"`
+	TopP        *float64 `json:"top_p,omitempty"`
+}
+
+func newRequestBody(messages []any, params structs.Params) RequestBody {
+	body := RequestBody{
+		Model:    model(params),
+		Stream:   true,
+		Messages: messages,
+		Tools:    params.Tools,
+	}
+	body.Temperature, body.TopP = params.SamplingOptions()
+	return body
 }
 
 func model(params structs.Params) string {
@@ -80,12 +94,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		})
 	}
 
-	requestInfo := RequestBody{
-		Model:    model(params),
-		Stream:   true,
-		Messages: messages,
-		Tools:    params.Tools,
-	}
+	requestInfo := newRequestBody(messages, params)
 	jsonRequest, err := json.Marshal(requestInfo)
 	if err != nil {
 		log.Fatal("Failed to build user request")
