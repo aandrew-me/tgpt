@@ -37,34 +37,7 @@ func NewCloudRequest(input string, params structs.Params) (*http.Response, error
 		apiKey = os.Getenv("AI_API_KEY")
 	}
 
-	messages := make([]any, 0, len(params.PrevMessages)+2)
-	if params.SystemPrompt != "" {
-		messages = append(messages, structs.DefaultMessage{
-			Content: params.SystemPrompt,
-			Role:    "system",
-		})
-	}
-
-	requestInfo := struct {
-		Model    string `json:"model"`
-		Stream   bool   `json:"stream"`
-		Messages []any  `json:"messages"`
-	}{
-		Model:    model,
-		Stream:   true,
-		Messages: messages,
-	}
-
-	if len(params.PrevMessages) > 0 {
-		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
-	}
-
-	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
-		Role:    "user",
-		Content: input,
-	})
-
-	jsonRequest, err := json.Marshal(requestInfo)
+	jsonRequest, err := cloudRequestBody(input, params, model)
 
 	if err != nil {
 		log.Fatal("Failed to build user request")
@@ -80,6 +53,40 @@ func NewCloudRequest(input string, params structs.Params) (*http.Response, error
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 
 	return client.Do(req)
+}
+
+func cloudRequestBody(input string, params structs.Params, model string) ([]byte, error) {
+	messages := make([]any, 0, len(params.PrevMessages)+2)
+	if params.SystemPrompt != "" {
+		messages = append(messages, structs.DefaultMessage{
+			Content: params.SystemPrompt,
+			Role:    "system",
+		})
+	}
+
+	requestInfo := struct {
+		Model       string   `json:"model"`
+		Stream      bool     `json:"stream"`
+		Messages    []any    `json:"messages"`
+		Temperature *float64 `json:"temperature,omitempty"`
+		TopP        *float64 `json:"top_p,omitempty"`
+	}{
+		Model:    model,
+		Stream:   true,
+		Messages: messages,
+	}
+	requestInfo.Temperature, requestInfo.TopP = params.SamplingOptions()
+
+	if len(params.PrevMessages) > 0 {
+		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
+	}
+
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+		Role:    "user",
+		Content: input,
+	})
+
+	return json.Marshal(requestInfo)
 }
 
 func GetCloudMainText(line string) (mainText string) {
