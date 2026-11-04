@@ -328,7 +328,7 @@ func main() {
 
 	logFile := flag.String("log", "", "Filepath to log conversation to.")
 	rotateProviders := flag.String("rotate", "", "Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)")
-	searchProvider := flag.String("search-provider", "", "Search provider: exa, google, serpingapi, serply or keenable (Env: SEARCH_PROVIDER)")
+	searchProvider := flag.String("search-provider", "", "Search provider: exa, google, serpingapi, serply, keenable or sofya (Env: SEARCH_PROVIDER)")
 	shouldExecuteCommand := flag.Bool("y", false, "Instantly execute the shell command")
 
 	isQuiet := flag.Bool("q", false, "Gives response back without loading animation")
@@ -783,7 +783,7 @@ func main() {
 				}
 
 				// Validate search provider
-				supportedSearchProviders := map[string]bool{"google": true, "exa": true, "serpingapi": true, "serply": true, "keenable": true, "": true}
+				supportedSearchProviders := map[string]bool{"google": true, "exa": true, "serpingapi": true, "serply": true, "keenable": true, "sofya": true, "": true}
 				if !supportedSearchProviders[finalSearchProvider] {
 					log.Fatal("Search provider is not valid")
 				}

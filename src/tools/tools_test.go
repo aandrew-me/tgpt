@@ -430,3 +430,14 @@ func TestRegisterKeenableTool(t *testing.T) {
 		t.Error("expected registry to NOT have web_search_exa")
 	}
 }
+
+func TestRegisterSofyaTool(t *testing.T) {
+	r := NewRegistry()
+	r.RegisterBuiltinTools("web_search_sofya")
+	if !r.Has("web_search_sofya") {
+		t.Error("expected registry to have web_search_sofya")
+	}
+	if r.Has("web_search_keenable") {
+		t.Error("expected registry to NOT have web_search_keenable")
+	}
+}

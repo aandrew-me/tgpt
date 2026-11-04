@@ -201,3 +201,57 @@ func TestKeenableEndpointAndBody(t *testing.T) {
 		t.Error("expected 5 results by default")
 	}
 }
+
+func TestParseSofyaResponse(t *testing.T) {
+	body := []byte(`{
+		"query": "go error handling",
+		"answer": null,
+		"results": [
+			{"title": "Error handling and Go", "url": "https://go.dev/blog/error-handling-and-go", "description": "Errors are values.", "content": "Go code uses error values to indicate an abnormal state.", "fetched": true, "published_date": "2011-07-12"},
+			{"title": "Broken link", "url": "not a url", "description": "should be skipped", "content": ""},
+			{"title": "Effective Go", "url": "https://go.dev/doc/effective_go#errors", "description": "Library routines must often return some sort of error indication.", "content": "", "fetched": false}
+		],
+		"credits_used": 2
+	}`)
+
+	results, err := parseSofyaResponse(body, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 results (invalid URL skipped), got %d", len(results))
+	}
+	if results[0].URL != "https://go.dev/blog/error-handling-and-go" || results[0].Snippet != "(published 2011-07-12) Errors are values." {
+		t.Errorf("unexpected first result: %+v", results[0])
+	}
+	if results[0].Content != "Go code uses error values to indicate an abnormal state." {
+		t.Errorf("unexpected first content: %q", results[0].Content)
+	}
+	if results[1].Content != "" {
+		t.Errorf("expected empty content for an unfetched page, got %q", results[1].Content)
+	}
+
+	if _, err := parseSofyaResponse([]byte(`not json`), false); err == nil {
+		t.Error("expected an error for invalid JSON")
+	}
+}
+
+func TestSofyaRequestBody(t *testing.T) {
+	body := sofyaRequestBody(SearchParams{Query: "docker tutorial", NumResults: 3, SiteFilter: "reddit.com"})
+	if body["query"] != "docker tutorial" || body["max_results"] != 3 || body["search_depth"] != "basic" {
+		t.Errorf("unexpected body: %v", body)
+	}
+	if domains, _ := body["include_domains"].([]string); len(domains) != 1 || domains[0] != "reddit.com" {
+		t.Errorf("unexpected include_domains: %v", body["include_domains"])
+	}
+	body = sofyaRequestBody(SearchParams{Query: "q", NumResults: 500})
+	if body["max_results"] != 20 {
+		t.Errorf("expected max_results capped at 20, got %v", body["max_results"])
+	}
+	if _, ok := body["include_domains"]; ok {
+		t.Error("expected no include_domains without a site filter")
+	}
+	if sofyaRequestBody(SearchParams{Query: "q"})["max_results"] != 5 {
+		t.Error("expected 5 results by default")
+	}
+}

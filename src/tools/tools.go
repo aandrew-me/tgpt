@@ -59,6 +59,7 @@ var AllBuiltinTools = []string{
 	"web_search_exa",
 	"web_search_firecrawl",
 	"web_search_keenable",
+	"web_search_sofya",
 	"read_directory",
 	"read_file",
 	"execute_command",
@@ -365,6 +366,38 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 			}
 			params := search.SearchParams{Query: query, NumResults: 5}
 			res, err := search.PerformKeenableSearch(params, false)
+			if err != nil {
+				return "", fmt.Errorf("search failed: %w", err)
+			}
+			return res, nil
+		})
+	}
+
+	// 4. web_search_sofya
+	if shouldRegister("web_search_sofya") {
+		r.Register(ToolSpec{
+			Type: "function",
+			Function: FunctionSpec{
+				Name:        "web_search_sofya",
+				Description: "Search the web for up-to-date information on any topic using Sofya",
+				Parameters: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"query": map[string]any{
+							"type":        "string",
+							"description": "The search query",
+						},
+					},
+					"required": []string{"query"},
+				},
+			},
+		}, func(ctx context.Context, args map[string]any) (string, error) {
+			query, _ := args["query"].(string)
+			if query == "" {
+				return "", fmt.Errorf("query parameter is required")
+			}
+			params := search.SearchParams{Query: query, NumResults: 5}
+			res, err := search.PerformSofyaSearch(params, false)
 			if err != nil {
 				return "", fmt.Errorf("search failed: %w", err)
 			}
