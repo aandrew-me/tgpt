@@ -112,6 +112,20 @@ export KEENABLE_API_KEY="your_keenable_key"
 
 Site filters are sent as Keenable's `site` field. Keenable is also available as a built-in tool (`-t web_search_keenable`). API reference: [https://docs.keenable.ai/api-reference/search](https://docs.keenable.ai/api-reference/search)
 
+## Alternative: Sofya
+
+[Sofya](https://sofya.co) is a web search API for AI agents. It needs a single API key and no `is-fast` binary: searches use `basic` depth, which returns the page text of each result, and that text is passed to the model directly. Each search costs 2 credits. Credits are pay as you go, and GitHub accounts a year or older get free monthly credits.
+
+1. Create an account at [https://sofya.co](https://sofya.co) and copy an API key from the dashboard
+2. Set the key and select the provider:
+
+```bash
+export SOFYA_API_KEY="your_sofya_key"
+export SEARCH_PROVIDER="sofya"   # or pass --search-provider sofya
+```
+
+Site filters are sent as Sofya's `include_domains` field. Sofya is also available as a built-in tool (`-t web_search_sofya`). API reference: [https://sofya.co/docs](https://sofya.co/docs)
+
 ## Usage Examples
 
 ### One-Shot Search (`-f`)
@@ -184,6 +198,7 @@ tgpt -ia
 - Make sure both `TGPT_GOOGLE_API_KEY` and `TGPT_GOOGLE_SEARCH_ENGINE_ID` are set
 - For `--search-provider serpingapi`, make sure `SERPINGAPI_API_KEY` is set
 - For `--search-provider serply`, make sure `SERPLY_API_KEY` is set
+- For `--search-provider sofya`, make sure `SOFYA_API_KEY` is set
 - Verify the variables are exported: `echo $TGPT_GOOGLE_API_KEY`
 
 ### "search API returned status 403" error
@@ -205,5 +220,6 @@ tgpt -ia
 - Google Custom Search API: 100 queries per day (free tier)
 - serpingapi: 1,000 searches per month (free plan)
 - Serply: 2,500 free credits to start, and credits do not expire
+- Sofya: 2 credits per search, pay as you go (free monthly credits for GitHub accounts a year or older)
 - Consider upgrading to paid tier for higher limits if needed
 - The tool defaults to 3 results per query to conserve quota

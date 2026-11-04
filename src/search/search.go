@@ -109,6 +109,18 @@ type KeenableSearchResponse struct {
 	} `json:"results"`
 }
 
+// SofyaSearchResponse represents the response from the Sofya search API.
+// With search_depth "basic" each result carries the page text in "content".
+type SofyaSearchResponse struct {
+	Results []struct {
+		Title         string `json:"title"`
+		URL           string `json:"url"`
+		Description   string `json:"description"`
+		Content       string `json:"content"`
+		PublishedDate string `json:"published_date"`
+	} `json:"results"`
+}
+
 func PerformExaMCPSearch(params SearchParams, verbose bool) (string, error) {
 	userQuery := params.Query
 	numResults := params.NumResults
@@ -857,6 +869,129 @@ func PerformKeenableSearch(params SearchParams, verbose bool) (string, error) {
 	return formatResultsForAI(results, params.Query), nil
 }
 
+// sofyaRequestBody builds the JSON body of a Sofya search. "basic" depth
+// returns the page text of each result, so no content extractor is needed.
+// The site filter is sent as include_domains, not as a query operator.
+func sofyaRequestBody(params SearchParams) map[string]any {
+	numResults := params.NumResults
+	if numResults <= 0 {
+		numResults = 5
+	}
+	if numResults > 20 {
+		numResults = 20
+	}
+	body := map[string]any{
+		"query":        params.Query,
+		"search_depth": "basic",
+		"max_results":  numResults,
+	}
+	if params.SiteFilter != "" {
+		body["include_domains"] = []string{params.SiteFilter}
+	}
+	return body
+}
+
+// sofyaSearch performs the actual Sofya search API call
+func sofyaSearch(params SearchParams, apiKey string, verbose bool) ([]SearchResult, error) {
+	payload, err := json.Marshal(sofyaRequestBody(params))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode search request: %v", err)
+	}
+
+	endpoint := "https://sofya.co/v1/search"
+	if verbose {
+		fmt.Printf("Calling Sofya: %s %s\n", endpoint, string(payload))
+	}
+
+	httpClient, err := client.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP client: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("User-Agent", "TGPT/2.11.0")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute search request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read search response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		// Sofya explains failures (invalid key, out of credits, rate limit)
+		// in a "detail" field; show that rather than the raw JSON.
+		var apiErr struct {
+			Detail string `json:"detail"`
+		}
+		if json.Unmarshal(body, &apiErr) == nil && apiErr.Detail != "" {
+			return nil, fmt.Errorf("search API returned status %d: %s", resp.StatusCode, apiErr.Detail)
+		}
+		return nil, fmt.Errorf("search API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return parseSofyaResponse(body, verbose)
+}
+
+// parseSofyaResponse converts a Sofya JSON response into search results.
+func parseSofyaResponse(body []byte, verbose bool) ([]SearchResult, error) {
+	var searchResp SofyaSearchResponse
+	if err := json.Unmarshal(body, &searchResp); err != nil {
+		return nil, fmt.Errorf("failed to parse search response: %v", err)
+	}
+
+	var results []SearchResult
+	for _, item := range searchResp.Results {
+		if _, err := url.ParseRequestURI(item.URL); err != nil {
+			if verbose {
+				fmt.Printf("Warning: Skipping invalid URL: %s\n", item.URL)
+			}
+			continue
+		}
+		snippet := item.Description
+		if item.PublishedDate != "" {
+			snippet = "(published " + item.PublishedDate + ") " + snippet
+		}
+		content := item.Content
+		if r := []rune(content); len(r) > maxContentPerURL {
+			content = string(r[:maxContentPerURL]) + "..."
+		}
+		results = append(results, SearchResult{
+			Title:   item.Title,
+			URL:     item.URL,
+			Snippet: snippet,
+			Content: content,
+		})
+	}
+
+	return results, nil
+}
+
+// PerformSofyaSearch searches with Sofya and formats the results for the
+// model. It needs SOFYA_API_KEY but no content extractor: Sofya returns the
+// page text with each result.
+func PerformSofyaSearch(params SearchParams, verbose bool) (string, error) {
+	apiKey := strings.TrimSpace(os.Getenv("SOFYA_API_KEY"))
+	if apiKey == "" {
+		return "", fmt.Errorf("missing required environment variable: SOFYA_API_KEY must be set. Please check SEARCH_SETUP.md for configuration instructions")
+	}
+
+	results, err := sofyaSearch(params, apiKey, verbose)
+	if err != nil {
+		return "", fmt.Errorf("search failed: %v", err)
+	}
+	return formatResultsForAI(results, params.Query), nil
+}
+
 // extractContent extracts the main content from a web page using is-fast
 func extractContent(pageURL string) (string, error) {
 	// Check if is-fast binary exists
@@ -1122,6 +1257,8 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 		return PerformSerplySearchWithParams(searchParams, verbose)
 	case "keenable":
 		return PerformKeenableSearch(searchParams, verbose)
+	case "sofya":
+		return PerformSofyaSearch(searchParams, verbose)
 	}
 
 	return PerformExaMCPSearch(searchParams, verbose)
