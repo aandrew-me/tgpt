@@ -150,8 +150,9 @@ It does not register Parallel's other MCP tools or fetch pages separately.
 Exa remains the default. `--search-provider` takes precedence over
 `SEARCH_PROVIDER`; selecting another provider or excluding this tool from an
 explicit `-t` list makes no Parallel requests. As with other built-in tools,
-`-t` without a list enables all tools, including Parallel. Find mode still asks
-for confirmation. Parallel errors are surfaced without switching providers.
+`-t` without a list enables all tools, including Parallel. One-shot `-f` skips
+confirmation; interactive `-if` retains it. Parallel errors are surfaced without
+switching providers.
 The normal find and agent commands still require model inference access.
 
 ## Usage Examples

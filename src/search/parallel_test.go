@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -130,4 +132,92 @@ func TestCredentialedSearchStillRequiresKeys(t *testing.T) {
 	if _, err := PerformSearchWithParams(params, false); err == nil || !strings.Contains(err.Error(), "TGPT_GOOGLE_API_KEY") {
 		t.Fatalf("Google missing-key error: %v", err)
 	}
+}
+
+// Synthetic HTTP peer, real TCP connections: cleanup must reach the wrapped
+// transport even when it has no idle timeout, as in the project HTTP client.
+func TestParallelTransportCleanup(t *testing.T) {
+	idle := make(chan net.Conn, 4)
+	closed := make(chan net.Conn, 4)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/active" {
+			close(started)
+			select {
+			case <-release:
+			case <-r.Context().Done():
+				return
+			}
+		}
+		fmt.Fprint(w, "ok")
+	}))
+	server.Config.ConnState = func(conn net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateIdle:
+			idle <- conn
+		case http.StateClosed:
+			closed <- conn
+		}
+	}
+	server.Start()
+	defer server.Close()
+	base := &http.Transport{}         // IdleConnTimeout deliberately unset.
+	defer base.CloseIdleConnections() // Also safely release sockets if an assertion fails.
+	hc := &http.Client{Transport: parallelTransport{base: base}, Timeout: 2 * time.Second}
+	wait := func(events <-chan net.Conn, state string) net.Conn {
+		t.Helper()
+		select {
+		case conn := <-events:
+			return conn
+		case <-time.After(time.Second):
+			t.Fatalf("connection did not become %s", state)
+			return nil
+		}
+	}
+	request := func(path string) error {
+		resp, err := hc.Get(server.URL + path)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err == nil && string(body) != "ok" {
+			return fmt.Errorf("body = %q", body)
+		}
+		return err
+	}
+	for i := 0; i < 3; i++ {
+		if err := request("/"); err != nil {
+			t.Fatal(err)
+		}
+		conn := wait(idle, "idle")
+		hc.CloseIdleConnections()
+		hc.CloseIdleConnections() // Repeated cleanup is safe and the client stays usable.
+		if wait(closed, "closed") != conn {
+			t.Fatal("closed the wrong connection")
+		}
+		t.Logf("call %d: observed idle socket close after client cleanup", i+1)
+	}
+	// Closing idle connections must not interrupt an in-flight request.
+	done := make(chan error, 1)
+	go func() { done <- request("/active") }()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("active request did not start")
+	}
+	hc.CloseIdleConnections()
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatalf("cleanup interrupted active request: %v", err)
+	}
+	conn := wait(idle, "idle")
+	hc.CloseIdleConnections()
+	if wait(closed, "closed") != conn {
+		t.Fatal("active request's idle connection was not closed")
+	}
+	t.Log("active request survived cleanup and its idle socket then closed")
+	// RoundTrippers without optional cleanup support must remain safe to wrap.
+	(&http.Client{Transport: parallelTransport{base: http.NewFileTransport(http.Dir(t.TempDir()))}}).CloseIdleConnections()
 }
