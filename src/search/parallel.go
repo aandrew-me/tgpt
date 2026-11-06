@@ -27,6 +27,13 @@ func (t parallelTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	return t.base.RoundTrip(req)
 }
 
+// Preserve the optional cleanup hook used by http.Client.CloseIdleConnections.
+func (t parallelTransport) CloseIdleConnections() {
+	if closer, ok := t.base.(interface{ CloseIdleConnections() }); ok {
+		closer.CloseIdleConnections()
+	}
+}
+
 // PerformParallelSearch uses anonymous Search MCP, whose server-managed default
 // is Fast mode. It returns source excerpts without a separate content extractor.
 func PerformParallelSearch(ctx context.Context, params SearchParams, verbose bool) (string, error) {
