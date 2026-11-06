@@ -458,3 +458,29 @@ func TestRegisterSofyaTool(t *testing.T) {
 		t.Error("expected registry to NOT have web_search_keenable")
 	}
 }
+
+func TestParallelToolSelection(t *testing.T) {
+	if parsed, ok := ParseToolList("web_search_parallel"); !ok || len(parsed) != 1 {
+		t.Fatal("Parallel tool not selectable")
+	}
+	r := NewRegistry()
+	r.RegisterBuiltinTools("web_search_parallel")
+	if !r.Has("web_search_parallel") || r.Has("web_search_exa") {
+		t.Fatal("tool selection ignored")
+	}
+	for _, args := range []string{`{}`, `{"query":"q","num_results":0}`, `{"query":"q","num_results":1.5}`} {
+		if _, err := r.Execute(context.Background(), "web_search_parallel", args); err == nil {
+			t.Fatalf("accepted invalid arguments %s", args)
+		}
+	}
+	disabled := NewRegistry()
+	disabled.RegisterBuiltinTools("read_file")
+	if _, err := disabled.Execute(context.Background(), "web_search_parallel", `{"query":"q"}`); err == nil {
+		t.Fatal("unselected search tool executed")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := r.Execute(ctx, "web_search_parallel", `{"query":"q"}`); err == nil {
+		t.Fatal("cancelled search executed")
+	}
+}

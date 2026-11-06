@@ -61,6 +61,7 @@ var AllBuiltinTools = []string{
 	"web_search_firecrawl",
 	"web_search_keenable",
 	"web_search_sofya",
+	"web_search_parallel",
 	"read_directory",
 	"read_file",
 	"execute_command",
@@ -403,6 +404,30 @@ func (r *Registry) registerBuiltinTools(selectedTools ...string) {
 				return "", fmt.Errorf("search failed: %w", err)
 			}
 			return res, nil
+		})
+	}
+
+	// Parallel is available only through the normal built-in tool selection.
+	if shouldRegister("web_search_parallel") {
+		r.Register(ToolSpec{Type: "function", Function: FunctionSpec{
+			Name:        "web_search_parallel",
+			Description: "Search the web using Parallel and return source excerpts (no API key required)",
+			Parameters: map[string]any{"type": "object", "properties": map[string]any{
+				"query":       map[string]any{"type": "string", "description": "The search query"},
+				"num_results": map[string]any{"type": "integer", "minimum": 1, "maximum": 20, "description": "Maximum results to return, default 5 (limited locally)"},
+				"site_filter": map[string]any{"type": "string", "description": "Optional bare domain, passed as a site: query filter"},
+			}, "required": []string{"query"}},
+		}}, func(ctx context.Context, args map[string]any) (string, error) {
+			query, _ := args["query"].(string)
+			site, _ := args["site_filter"].(string)
+			limit := 5
+			if n, ok := args["num_results"].(float64); ok {
+				if n < 1 || n > 20 || n != float64(int(n)) {
+					return "", fmt.Errorf("num_results must be an integer from 1 to 20")
+				}
+				limit = int(n)
+			}
+			return search.PerformParallelSearch(ctx, search.SearchParams{Query: query, NumResults: limit, SiteFilter: site}, false)
 		})
 	}
 

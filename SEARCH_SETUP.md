@@ -126,6 +126,34 @@ export SEARCH_PROVIDER="sofya"   # or pass --search-provider sofya
 
 Site filters are sent as Sofya's `include_domains` field. Sofya is also available as a built-in tool (`-t web_search_sofya`). API reference: [https://sofya.co/docs](https://sofya.co/docs)
 
+## Alternative: Parallel
+
+[Parallel](https://docs.parallel.ai/integrations/mcp/search-mcp) is an opt-in
+provider using anonymous Search MCP. No API key or `is-fast` binary is required;
+source URLs and page excerpts are returned directly to the model. Anonymous
+search uses the server-managed Fast default and is subject to free-tier limits.
+
+```bash
+tgpt -f --search-provider parallel "Go release notes on go.dev"
+# Or select it for find mode through the environment:
+export SEARCH_PROVIDER=parallel
+# Agent tool mode (requires an inference provider that supports tools):
+tgpt -t web_search_parallel "Find the latest Go release notes on go.dev"
+```
+
+Site filters use `site:domain` in the search query. The requested result count is
+applied locally because anonymous Search MCP does not expose a result-limit
+parameter. The built-in `web_search_parallel` tool accepts `query`, optional
+`site_filter` (a bare domain), and optional `num_results` (default 5, maximum 20).
+It does not register Parallel's other MCP tools or fetch pages separately.
+
+Exa remains the default. `--search-provider` takes precedence over
+`SEARCH_PROVIDER`; selecting another provider or excluding this tool from an
+explicit `-t` list makes no Parallel requests. As with other built-in tools,
+`-t` without a list enables all tools, including Parallel. Find mode still asks
+for confirmation. Parallel errors are surfaced without switching providers.
+The normal find and agent commands still require model inference access.
+
 ## Usage Examples
 
 ### One-Shot Search (`-f`)

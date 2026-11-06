@@ -1249,6 +1249,8 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 	}
 
 	switch searchProvider {
+	case "parallel":
+		return PerformParallelSearch(context.Background(), searchParams, verbose)
 	case "google":
 		return PerformSearchWithParams(searchParams, verbose)
 	case "serpingapi":
