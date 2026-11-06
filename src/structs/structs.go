@@ -45,7 +45,7 @@ type ExtraOptions struct {
 	IsFind             bool   // IsFind enable web search functionality
 	IsInteractiveFind  bool   // IsInteractiveFind enable interactive web search mode
 	Verbose            bool   // Verbose enable detailed search output
-	SearchProvider     string // Search provider: "exa" (default), "google", "serpingapi", "serply", "keenable" or "sofya"
+	SearchProvider     string // Search provider: "exa" (default), "google", "serpingapi", "serply", "keenable", "sofya" or "parallel"
 	IsToolFollowUp     bool   // IsToolFollowUp marks a request made to continue after tool execution
 	ToolDepth          int    // ToolDepth tracks recursion depth of tool execution loops
 }
