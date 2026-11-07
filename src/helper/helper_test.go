@@ -507,3 +507,30 @@ func TestToolCallFragmentsWithoutIndexContinueTheLastCall(t *testing.T) {
 		t.Errorf("expected both tool calls to run with their own results, got %#v", results)
 	}
 }
+
+// TestHandleStatus400BodyGoesToStderr verifies the provider's error body is
+// written to stderr, so stdout stays clean for pipes and scripts.
+func TestHandleStatus400BodyGoesToStderr(t *testing.T) {
+	if os.Getenv("GO_TEST_SUBPROCESS") == "1" {
+		resp := &http.Response{
+			Body:       &trackedBody{reader: strings.NewReader("PROVIDER-ERROR-BODY")},
+			StatusCode: 429,
+		}
+		handleStatus400(resp)
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestHandleStatus400BodyGoesToStderr$")
+	cmd.Env = append(os.Environ(), "GO_TEST_SUBPROCESS=1")
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	_ = cmd.Run()
+
+	if strings.Contains(stdout.String(), "PROVIDER-ERROR-BODY") {
+		t.Errorf("error body leaked to stdout: %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "PROVIDER-ERROR-BODY") {
+		t.Errorf("error body missing from stderr: %q", stderr.String())
+	}
+}
