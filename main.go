@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -534,11 +535,8 @@ func main() {
 
 	// Checking for piped text
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			pipedInput += scanner.Text()
-		}
-		if err := scanner.Err(); err != nil {
+		pipedInput, err = readPiped(os.Stdin)
+		if err != nil {
 			utils.PrintError(fmt.Sprintf("Error reading standard input: %v", err))
 			return
 		}
@@ -896,9 +894,25 @@ func main() {
 	}
 }
 
+// readPiped reads all of r. bufio.Scanner.Text drops the line ending, so lines
+// are joined with '\n'; otherwise "cat file | tgpt ..." reaches the model as
+// one line. The 1 MiB ceiling matches the SSE scanner in helper.HandleEachPart
+// (the default 64 KiB token limit fails on a long line).
+func readPiped(r io.Reader) (string, error) {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 32*1024), 1024*1024)
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+	return strings.Join(lines, "\n"), nil
+}
+
 func handleExit() {
 	bold.Println("Exiting...")
 	restoreTerminal()
 	os.Exit(130)
 }
-
