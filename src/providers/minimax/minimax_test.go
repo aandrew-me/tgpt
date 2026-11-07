@@ -349,3 +349,19 @@ func TestRequestIntegrationStreaming(t *testing.T) {
 
 	assert.NotEmpty(t, fullText.String(), "Should have extracted text from streaming response")
 }
+
+func TestBuildRequestBodyTools(t *testing.T) {
+	tools := []any{map[string]any{"type": "function", "function": map[string]any{"name": "run"}}}
+	encoded, err := json.Marshal(buildRequestBody("hi", structs.Params{Tools: tools}, "MiniMax-M2.7"))
+	assert.NoError(t, err)
+
+	var decoded map[string]any
+	assert.NoError(t, json.Unmarshal(encoded, &decoded))
+	assert.Len(t, decoded["tools"], 1)
+
+	encoded, err = json.Marshal(buildRequestBody("hi", structs.Params{}, "MiniMax-M2.7"))
+	assert.NoError(t, err)
+	decoded = nil
+	assert.NoError(t, json.Unmarshal(encoded, &decoded))
+	assert.NotContains(t, decoded, "tools")
+}
