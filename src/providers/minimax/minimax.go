@@ -20,6 +20,33 @@ type RequestBody struct {
 	Messages    []any    `json:"messages"`
 	Temperature *float64 `json:"temperature,omitempty"`
 	TopP        *float64 `json:"top_p,omitempty"`
+	Tools       []any    `json:"tools,omitempty"`
+}
+
+func buildRequestBody(input string, params structs.Params, model string) RequestBody {
+	requestInfo := RequestBody{
+		Model:  model,
+		Stream: true,
+		Messages: []any{
+			structs.DefaultMessage{
+				Content: params.SystemPrompt,
+				Role:    "system",
+			},
+		},
+		Tools: params.Tools,
+	}
+	requestInfo.Temperature, requestInfo.TopP = params.SamplingOptions()
+
+	if len(params.PrevMessages) > 0 {
+		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
+	}
+
+	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
+		Role:    "user",
+		Content: input,
+	})
+
+	return requestInfo
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -46,28 +73,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	url := "https://api.minimax.io/v1/chat/completions"
 
-	requestInfo := RequestBody{
-		Model:  model,
-		Stream: true,
-		Messages: []any{
-			structs.DefaultMessage{
-				Content: params.SystemPrompt,
-				Role:    "system",
-			},
-		},
-	}
-	requestInfo.Temperature, requestInfo.TopP = params.SamplingOptions()
-
-	if len(params.PrevMessages) > 0 {
-		requestInfo.Messages = append(requestInfo.Messages, params.PrevMessages...)
-	}
-
-	requestInfo.Messages = append(requestInfo.Messages, structs.DefaultMessage{
-		Role:    "user",
-		Content: input,
-	})
-
-	jsonRequest, err := json.Marshal(requestInfo)
+	jsonRequest, err := json.Marshal(buildRequestBody(input, params, model))
 
 	if err != nil {
 		log.Fatal("Failed to build user request")
