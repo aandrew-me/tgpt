@@ -3,9 +3,9 @@ package magicstudio
 import (
 	"bytes"
 	"fmt"
+	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	http "github.com/bogdanfinn/fhttp"
-	"github.com/aandrew-me/tgpt/v2/src/client"
 	"io"
 	"log"
 	"mime/multipart"
@@ -56,7 +56,7 @@ func GenerateImageMagicStudio(prompt string, params structs.ImageParams) string 
 
 	writer.Close()
 
-		req, err := http.NewRequest("POST", "https://ai-api.magicstudio.com/api/ai-art-generator", form)
+	req, err := http.NewRequest("POST", "https://ai-api.magicstudio.com/api/ai-art-generator", form)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,15 +73,27 @@ func GenerateImageMagicStudio(prompt string, params structs.ImageParams) string 
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	
+
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	bodyBytes, err := io.ReadAll(resp.Body)
+	filename, err := saveImageResponse(resp, randomID)
 	if err != nil {
 		log.Fatal(err)
+	}
+	return filename
+}
+
+func saveImageResponse(resp *http.Response, randomID string) (string, error) {
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("MagicStudio returned HTTP %d: %s", resp.StatusCode, bodyBytes)
 	}
 
 	ct := resp.Header.Get("Content-Type")
@@ -89,10 +101,10 @@ func GenerateImageMagicStudio(prompt string, params structs.ImageParams) string 
 	if strings.Contains(ct, "image/jpeg") || strings.Contains(ct, "image/jpg") {
 		filename := fmt.Sprintf("magic_%s.jpg", randomID)
 		if err := os.WriteFile(filename, bodyBytes, 0644); err != nil {
-			log.Fatal(err)
+			return "", err
 		}
-		return filename
+		return filename, nil
 	}
 
-	return ""
+	return "", fmt.Errorf("MagicStudio returned unexpected Content-Type %q: %s", ct, bodyBytes)
 }
