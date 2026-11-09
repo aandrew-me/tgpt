@@ -1310,7 +1310,7 @@ func ShowHelpMessage() {
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
-	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference, demonroute, runcrate, obscurifyai\n", "--url")
+	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference, demonroute, runcrate, obscurifyai, standardcompute\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
@@ -1337,7 +1337,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, apiroute, cheaperinference, deepseek, deepseek-web, demonroute, fx, gemini, groq, isou, koboldai, minimax, obscurifyai, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain, runcrate.")
+	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, apiroute, cheaperinference, deepseek, deepseek-web, demonroute, fx, gemini, groq, isou, koboldai, minimax, obscurifyai, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain, runcrate, standardcompute.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -1359,6 +1359,9 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: runcrate")
 	fmt.Println("OpenAI-compatible Runcrate API for open models. Recognizes RUNCRATE_API_KEY, RUNCRATE_MODEL, RUNCRATE_URL and RUNCRATE_BASE_URL env vars. Default model: deepseek-ai/DeepSeek-V4.1-Flash. Site: https://www.runcrate.ai/?utm_source=tgpt&utm_medium=directory&utm_campaign=gpu_pricing")
+
+	bold.Println("\nProvider: standardcompute")
+	fmt.Println("OpenAI-compatible Standard Compute API. Recognizes STANDARDCOMPUTE_API_KEY, STANDARDCOMPUTE_MODEL, STANDARDCOMPUTE_URL and STANDARDCOMPUTE_BASE_URL env vars. Default model: StandardCompute, which routes each request to the cheapest enabled model that can handle it, with automatic fallback. Pinned model ids are listed at https://api.stdcmpt.com/v1/models. Site: https://standardcompute.com")
 
 	bold.Println("\nProvider: aihorde")
 	fmt.Println("A free, community-powered generation service: volunteers share spare computer power so anyone can generate images and text. Supports AIHORDE_MODEL and AIHORDE_API_KEY env variables. Site: https://aihorde.net/")
