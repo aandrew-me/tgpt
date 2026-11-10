@@ -1261,6 +1261,8 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 		return PerformKeenableSearch(searchParams, verbose)
 	case "sofya":
 		return PerformSofyaSearch(searchParams, verbose)
+	case "specstream":
+		return PerformSpecStreamSearch(searchParams, verbose)
 	}
 
 	return PerformExaMCPSearch(searchParams, verbose)

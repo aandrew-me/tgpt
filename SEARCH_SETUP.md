@@ -155,6 +155,20 @@ confirmation; interactive `-if` retains it. Parallel errors are surfaced without
 switching providers.
 The normal find and agent commands still require model inference access.
 
+## Alternative: SpecStream
+
+[SpecStream](https://specstream.ai/search-api) is a web search API that returns a source URL and snippet with each result, and the publish date when the page has one. It needs a single API key and no `is-fast` binary: searches ask for page passages, and that text is passed to the model directly. A search of up to 10 results costs $0.005.
+
+1. Create an API key under Agents & API in your workspace at [https://specstream.ai](https://specstream.ai)
+2. Set the key and select the provider:
+
+```bash
+export SPECSTREAM_API_KEY="your_specstream_key"
+export SEARCH_PROVIDER="specstream"   # or pass --search-provider specstream
+```
+
+Site filters are sent as part of the query (`site:reddit.com ...`). SpecStream is also available as a built-in tool (`-t web_search_specstream`). API reference: [https://specstream.ai/search-api](https://specstream.ai/search-api)
+
 ## Usage Examples
 
 ### One-Shot Search (`-f`)
@@ -228,6 +242,7 @@ tgpt -ia
 - For `--search-provider serpingapi`, make sure `SERPINGAPI_API_KEY` is set
 - For `--search-provider serply`, make sure `SERPLY_API_KEY` is set
 - For `--search-provider sofya`, make sure `SOFYA_API_KEY` is set
+- For `--search-provider specstream`, make sure `SPECSTREAM_API_KEY` is set
 - Verify the variables are exported: `echo $TGPT_GOOGLE_API_KEY`
 
 ### "search API returned status 403" error
@@ -250,5 +265,6 @@ tgpt -ia
 - serpingapi: 1,000 searches per month (free plan)
 - Serply: 2,500 free credits to start, and credits do not expire
 - Sofya: 2 credits per search, pay as you go (free monthly credits for GitHub accounts a year or older)
+- SpecStream: $5 per 1,000 searches of up to 10 results
 - Consider upgrading to paid tier for higher limits if needed
 - The tool defaults to 3 results per query to conserve quota
