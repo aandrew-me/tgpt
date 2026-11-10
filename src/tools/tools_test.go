@@ -459,6 +459,17 @@ func TestRegisterSofyaTool(t *testing.T) {
 	}
 }
 
+func TestRegisterSpecStreamTool(t *testing.T) {
+	r := NewRegistry()
+	r.RegisterBuiltinTools("web_search_specstream")
+	if !r.Has("web_search_specstream") {
+		t.Error("expected registry to have web_search_specstream")
+	}
+	if r.Has("web_search_sofya") {
+		t.Error("expected registry to NOT have web_search_sofya")
+	}
+}
+
 func TestParallelToolSelection(t *testing.T) {
 	if parsed, ok := ParseToolList("web_search_parallel"); !ok || len(parsed) != 1 {
 		t.Fatal("Parallel tool not selectable")
