@@ -53,7 +53,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	url := params.Url
 	if url == "" {
 		if envUrl := os.Getenv("CEREBRAS_BASE_URL"); envUrl != "" {
-			url = envUrl + "/chat/completions"
+			url = strings.TrimSuffix(envUrl, "/") + "/chat/completions"
 		} else if envUrl := os.Getenv("OPENAI_URL"); envUrl != "" {
 			url = envUrl
 		}

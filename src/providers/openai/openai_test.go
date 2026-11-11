@@ -44,3 +44,22 @@ func TestRequestLeavesOutUnsetSampling(t *testing.T) {
 	assert.NotContains(t, body, "temperature")
 	assert.NotContains(t, body, "top_p")
 }
+
+func TestCerebrasBaseURL(t *testing.T) {
+	for _, suffix := range []string{"", "/"} {
+		t.Run("suffix="+suffix, func(t *testing.T) {
+			var path string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				path = r.URL.Path
+			}))
+			defer server.Close()
+
+			t.Setenv("CEREBRAS_BASE_URL", server.URL+"/v1"+suffix)
+			resp, err := NewRequest("hello", structs.Params{})
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			assert.Equal(t, "/v1/chat/completions", path)
+		})
+	}
+}
