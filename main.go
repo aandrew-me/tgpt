@@ -73,6 +73,48 @@ func (f *toolsFlagValue) IsBoolFlag() bool {
 	return true
 }
 
+// normalizeToolsFlagArgs rewrites `-t <tool_list>` / `--tools <tool_list>` into
+// `-t=<tool_list>` when the next arg is a valid built-in tool list so Go's
+// flag package keeps parsing subsequent flags (e.g. `-t web_search_exa -i`).
+func normalizeToolsFlagArgs(fs *flag.FlagSet, args []string) []string {
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" || arg == "-" || !strings.HasPrefix(arg, "-") {
+			out = append(out, args[i:]...)
+			break
+		}
+		name := strings.TrimPrefix(arg, "-")
+		name = strings.TrimPrefix(name, "-")
+		if name == "" || strings.HasPrefix(name, "-") || strings.Contains(name, "=") {
+			out = append(out, arg)
+			continue
+		}
+		f := fs.Lookup(name)
+		if f == nil {
+			out = append(out, args[i:]...)
+			break
+		}
+		if bf, ok := f.Value.(interface{ IsBoolFlag() bool }); !ok || !bf.IsBoolFlag() {
+			out = append(out, arg)
+			if i+1 < len(args) {
+				i++
+				out = append(out, args[i])
+			}
+			continue
+		}
+		if (name == "t" || name == "tools") && i+1 < len(args) {
+			if _, ok := tools.ParseToolList(args[i+1]); ok {
+				out = append(out, arg+"="+args[i+1])
+				i++
+				continue
+			}
+		}
+		out = append(out, arg)
+	}
+	return out
+}
+
 func restoreTerminal() {
 	bubbletea.RestoreTerminal()
 }
@@ -389,15 +431,7 @@ func main() {
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
-	flag.Parse()
-
-	promptArgIndex := 0
-	if toolsFlag.enabled && len(toolsFlag.toolNames) == 0 && flag.NArg() > 0 {
-		if parsedTools, ok := tools.ParseToolList(flag.Arg(0)); ok {
-			toolsFlag.toolNames = parsedTools
-			promptArgIndex = 1
-		}
-	}
+	_ = flag.CommandLine.Parse(normalizeToolsFlagArgs(flag.CommandLine, os.Args[1:]))
 
 	if *mcpAdd {
 		if err := mcp.AddServerInteractive(context.Background(), *mcpConfig); err != nil {
@@ -521,7 +555,7 @@ func main() {
 		Params:            mainParams,
 	}
 
-	prompt := flag.Arg(promptArgIndex)
+	prompt := flag.Arg(0)
 
 	pipedInput := ""
 	cleanPipedInput := ""
