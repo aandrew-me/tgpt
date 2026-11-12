@@ -34,3 +34,33 @@ func TestCloudRequestBodyOmitsUnsetSampling(t *testing.T) {
 	assert.Equal(t, true, decoded["stream"])
 	assert.Len(t, decoded["messages"], 1)
 }
+
+func TestCloudRequestBodyTools(t *testing.T) {
+	tools := []any{map[string]any{
+		"type": "function",
+		"function": map[string]any{
+			"name": "get_weather",
+			"parameters": map[string]any{
+				"type":       "object",
+				"properties": map[string]any{"city": map[string]any{"type": "string"}},
+			},
+		},
+	}}
+
+	t.Run("configured", func(t *testing.T) {
+		decoded := decodeCloudBody(t, structs.Params{Tools: tools})
+		assert.Equal(t, tools, decoded["tools"])
+	})
+	for _, tc := range []struct {
+		name  string
+		tools []any
+	}{
+		{name: "nil"},
+		{name: "empty", tools: []any{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			decoded := decodeCloudBody(t, structs.Params{Tools: tc.tools})
+			assert.NotContains(t, decoded, "tools")
+		})
+	}
+}
