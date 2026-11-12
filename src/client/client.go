@@ -58,6 +58,15 @@ func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
 	if len(timeoutSeconds) > 0 && timeoutSeconds[0] > 0 {
 		timeout = timeoutSeconds[0]
 	}
+	return NewClientWithOptions(timeout)
+}
+
+// NewClientWithOptions builds a tls-client with shared timeout, dialer, and proxy config plus caller overrides.
+func NewClientWithOptions(timeoutSeconds int, extra ...tls_client.HttpClientOption) (tls_client.HttpClient, error) {
+	timeout := 600
+	if timeoutSeconds > 0 {
+		timeout = timeoutSeconds
+	}
 
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(timeout),
@@ -92,6 +101,7 @@ func NewClient(timeoutSeconds ...int) (tls_client.HttpClient, error) {
 		}
 	}
 
+	options = append(options, extra...)
 	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
 
