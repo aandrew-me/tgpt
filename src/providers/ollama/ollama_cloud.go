@@ -70,10 +70,12 @@ func cloudRequestBody(input string, params structs.Params, model string) ([]byte
 		Messages    []any    `json:"messages"`
 		Temperature *float64 `json:"temperature,omitempty"`
 		TopP        *float64 `json:"top_p,omitempty"`
+		Tools       []any    `json:"tools,omitempty"`
 	}{
 		Model:    model,
 		Stream:   true,
 		Messages: messages,
+		Tools:    params.Tools,
 	}
 	requestInfo.Temperature, requestInfo.TopP = params.SamplingOptions()
 
