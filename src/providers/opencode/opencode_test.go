@@ -108,3 +108,15 @@ func TestBunProfileSpec(t *testing.T) {
 		t.Errorf("CipherSuites len = %d, want 17", len(spec.CipherSuites))
 	}
 }
+
+func TestURLFromEnv(t *testing.T) {
+	want := "http://localhost:8080/v1/chat/completions"
+	for _, in := range []string{"http://localhost:8080", "http://localhost:8080/"} {
+		if got := urlFromEnv(in); got != want {
+			t.Errorf("urlFromEnv(%q) = %q, want %q", in, got, want)
+		}
+	}
+	if got := urlFromEnv(""); got != "" {
+		t.Errorf("urlFromEnv(\"\") = %q, want empty", got)
+	}
+}

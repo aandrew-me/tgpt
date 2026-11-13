@@ -278,9 +278,7 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 
 	url := params.Url
 	if url == "" {
-		if envUrl := os.Getenv("OPENCODE_URL"); envUrl != "" {
-			url = envUrl + "/v1/chat/completions"
-		}
+		url = urlFromEnv(os.Getenv("OPENCODE_URL"))
 	}
 
 	if url == "" {
@@ -359,4 +357,11 @@ func toolName(t any) string {
 		}
 	}
 	return ""
+}
+
+func urlFromEnv(envUrl string) string {
+	if envUrl == "" {
+		return ""
+	}
+	return strings.TrimSuffix(envUrl, "/") + "/v1/chat/completions"
 }
