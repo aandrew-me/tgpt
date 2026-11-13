@@ -51,7 +51,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "demonroute", "gemini", "groq", "litellm", "obscurifyai", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate":
+	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "demonroute", "gemini", "groq", "litellm", "minimax", "obscurifyai", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate":
 		return true
 	default:
 		return false

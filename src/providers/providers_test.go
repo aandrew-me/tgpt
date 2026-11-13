@@ -3,14 +3,14 @@ package providers
 import "testing"
 
 func TestSupportsTools(t *testing.T) {
-	supported := []string{"openai", "opencode", "gemini", "groq", "deepseek", "ollama", "ollamacloud", "litellm", "omniroute", "openrouter", "anyapi", "atlascloud", "apiroute", "cheaperinference", "demonroute", "obscurifyai", "pollinations", "runcrate", ""}
+	supported := []string{"openai", "opencode", "gemini", "groq", "deepseek", "ollama", "ollamacloud", "litellm", "minimax", "omniroute", "openrouter", "anyapi", "atlascloud", "apiroute", "cheaperinference", "demonroute", "obscurifyai", "pollinations", "runcrate", ""}
 	for _, p := range supported {
 		if !SupportsTools(p) {
 			t.Errorf("expected provider %q to support tools", p)
 		}
 	}
 
-	unsupported := []string{"aihorde", "deepseek-web", "fx", "isou", "koboldai", "minimax", "powerbrain", "invalid"}
+	unsupported := []string{"aihorde", "deepseek-web", "fx", "isou", "koboldai", "powerbrain", "invalid"}
 	for _, p := range unsupported {
 		if SupportsTools(p) {
 			t.Errorf("expected provider %q NOT to support tools", p)
