@@ -1,7 +1,7 @@
 package isou
 
 import (
-	// "encoding/json"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,6 +13,29 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/client"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 )
+
+type requestBody struct {
+	Model      string                   `json:"model"`
+	Provider   string                   `json:"provider"`
+	Language   string                   `json:"language"`
+	Categories []string                 `json:"categories"`
+	Engine     string                   `json:"engine"`
+	Messages   []structs.DefaultMessage `json:"messages"`
+}
+
+func newRequestBody(input, model string) ([]byte, error) {
+	return json.Marshal(requestBody{
+		Model:      model,
+		Provider:   "openai",
+		Language:   "all",
+		Categories: []string{"general"},
+		Engine:     "SEARXNG",
+		Messages: []structs.DefaultMessage{{
+			Role:    "user",
+			Content: input,
+		}},
+	})
+}
 
 // NewRequest sends a chat request to the isou.chat API and returns the streaming HTTP response.
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -29,17 +52,14 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		model = params.ApiModel
 	}
 
-	var data = strings.NewReader(fmt.Sprintf(`{
-		"model": "%v",
-		"provider": "openai",
-		"language": "all",
-		"categories": [
-			"general"
-		],
-		"engine": "SEARXNG",
-		"messages": [{"role": "user", "content": "%s"}]
+	payload, err := newRequestBody(input, model)
+	if err != nil {
+		fmt.Println("\nSome error has occurred.")
+		fmt.Println("Error:", err)
+		os.Exit(1)
 	}
-	`, model, input))
+
+	data := bytes.NewReader(payload)
 
 	link := "https://isou.chat/api/chat"
 
@@ -76,9 +96,9 @@ func GetMainText(line string) (mainText string) {
 	}
 
 	type Context struct {
-		Id      int    `json:"id"`
-		Name    string `json:"name"`
-		Source  string `json:"url"`
+		Id     int    `json:"id"`
+		Name   string `json:"name"`
+		Source string `json:"url"`
 	}
 
 	type InnerData struct {
