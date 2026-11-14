@@ -17,10 +17,12 @@ import (
 )
 
 type TextGenParams struct {
-	MaxLength  int     `json:"max_length,omitempty"`
-	Temperature float64 `json:"temperature,omitempty"`
-	TopP       float64 `json:"top_p,omitempty"`
-	RepPen     float64 `json:"rep_pen,omitempty"`
+	MaxLength int `json:"max_length,omitempty"`
+	// No omitempty: encoding/json drops a 0 float, so --temperature 0 would
+	// never be sent and the worker would apply its own default.
+	Temperature float64 `json:"temperature"`
+	TopP        float64 `json:"top_p,omitempty"`
+	RepPen      float64 `json:"rep_pen,omitempty"`
 }
 
 type TextSubmitRequest struct {
@@ -41,6 +43,33 @@ type TextStatusResponse struct {
 		State string `json:"state"`
 		Model string `json:"model"`
 	} `json:"generations"`
+}
+
+// generationParams turns --temperature / --top_p / --max_length into the
+// AI Horde body. Temperature defaults to 0.7. Zero is a real setting
+// (greedy sampling) and must be kept; values outside [0, 2] stay at the default.
+func generationParams(params structs.Params) TextGenParams {
+	maxLength := 200
+	if v, err := strconv.Atoi(params.Max_length); err == nil && v > 0 {
+		maxLength = v
+	}
+
+	temperature := 0.7
+	if v, err := strconv.ParseFloat(params.Temperature, 64); err == nil && v >= 0 && v <= 2 {
+		temperature = v
+	}
+
+	topP := 0.9
+	if v, err := strconv.ParseFloat(params.Top_p, 64); err == nil && v > 0 && v <= 1 {
+		topP = v
+	}
+
+	return TextGenParams{
+		MaxLength:   maxLength,
+		Temperature: temperature,
+		TopP:        topP,
+		RepPen:      1.1,
+	}
 }
 
 func NewRequest(input string, params structs.Params) (*http.Response, error) {
@@ -86,31 +115,11 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 		prompt = history + prompt
 	}
 
-	// Parse user-configured generation params with safe defaults
-	maxLength := 200
-	if v, err := strconv.Atoi(params.Max_length); err == nil && v > 0 {
-		maxLength = v
-	}
-
-	temperature := 0.7
-	if v, err := strconv.ParseFloat(params.Temperature, 64); err == nil && v > 0 && v <= 2 {
-		temperature = v
-	}
-
-	topP := 0.9
-	if v, err := strconv.ParseFloat(params.Top_p, 64); err == nil && v > 0 && v <= 1 {
-		topP = v
-	}
-
+	gen := generationParams(params)
 	submitReq := TextSubmitRequest{
 		Prompt: prompt,
 		Models: []string{model},
-		Params: &TextGenParams{
-			MaxLength:   maxLength,
-			Temperature: temperature,
-			TopP:        topP,
-			RepPen:     1.1,
-		},
+		Params: &gen,
 	}
 
 	jsonReq, err := json.Marshal(submitReq)
