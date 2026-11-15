@@ -169,6 +169,20 @@ export SEARCH_PROVIDER="specstream"   # or pass --search-provider specstream
 
 Site filters are sent as part of the query (`site:reddit.com ...`). SpecStream is also available as a built-in tool (`-t web_search_specstream`). API reference: [https://specstream.ai/search-api](https://specstream.ai/search-api)
 
+## Alternative: SearchApi
+
+[SearchApi](https://www.searchapi.io) is a Google SERP API. It returns Google organic results (title, link, snippet and the publish date when Google shows one) from a single API key with no search engine ID. New accounts get 100 free requests on sign-up and no card is needed. Page content is fetched with `is-fast`, as for Google Custom Search.
+
+1. Create an account at [https://www.searchapi.io](https://www.searchapi.io) and copy the API key from the dashboard
+2. Set the key and select the provider:
+
+```bash
+export SEARCHAPI_API_KEY="your_searchapi_key"
+export SEARCH_PROVIDER="searchapi"   # or pass --search-provider searchapi
+```
+
+Site filters are sent as part of the query (`site:reddit.com ...`). The key is sent as a bearer token, never in the URL. SearchApi is also available as a built-in tool (`-t web_search_searchapi`). API reference: [https://www.searchapi.io/docs/google](https://www.searchapi.io/docs/google)
+
 ## Usage Examples
 
 ### One-Shot Search (`-f`)
@@ -243,6 +257,7 @@ tgpt -ia
 - For `--search-provider serply`, make sure `SERPLY_API_KEY` is set
 - For `--search-provider sofya`, make sure `SOFYA_API_KEY` is set
 - For `--search-provider specstream`, make sure `SPECSTREAM_API_KEY` is set
+- For `--search-provider searchapi`, make sure `SEARCHAPI_API_KEY` is set
 - Verify the variables are exported: `echo $TGPT_GOOGLE_API_KEY`
 
 ### "search API returned status 403" error
@@ -266,5 +281,6 @@ tgpt -ia
 - Serply: 2,500 free credits to start, and credits do not expire
 - Sofya: 2 credits per search, pay as you go (free monthly credits for GitHub accounts a year or older)
 - SpecStream: $5 per 1,000 searches of up to 10 results
+- SearchApi: 100 free requests on sign-up, then paid plans
 - Consider upgrading to paid tier for higher limits if needed
 - The tool defaults to 3 results per query to conserve quota

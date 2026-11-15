@@ -1263,6 +1263,8 @@ func ProcessSearchWithConfirmation(userInput string, aiParams structs.Params, ve
 		return PerformSofyaSearch(searchParams, verbose)
 	case "specstream":
 		return PerformSpecStreamSearch(searchParams, verbose)
+	case "searchapi":
+		return PerformSearchapiSearch(searchParams, verbose)
 	}
 
 	return PerformExaMCPSearch(searchParams, verbose)
