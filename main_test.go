@@ -102,3 +102,99 @@ func TestNormalizeToolsFlagArgs(t *testing.T) {
 	}
 }
 
+func TestSessionFlags(t *testing.T) {
+	fs := flag.NewFlagSet("tgpt", flag.ContinueOnError)
+	sessionName := fs.String("session", "", "session name")
+	resumeSession := fs.Bool("r", false, "resume session")
+	fs.BoolVar(resumeSession, "resume", false, "resume session")
+	listSessions := fs.Bool("list-sessions", false, "list sessions")
+	deleteSession := fs.String("delete-session", "", "delete session")
+
+	if err := fs.Parse([]string{"--session", "my-chat", "-r"}); err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	if *sessionName != "my-chat" {
+		t.Errorf("sessionName = %q, want my-chat", *sessionName)
+	}
+	if !*resumeSession {
+		t.Errorf("resumeSession = false, want true")
+	}
+	if *listSessions {
+		t.Errorf("listSessions = true, want false")
+	}
+	if *deleteSession != "" {
+		t.Errorf("deleteSession = %q, want empty", *deleteSession)
+	}
+}
+
+func TestSessionModeResolution(t *testing.T) {
+	tests := []struct {
+		name              string
+		sessionName       string
+		isHelp            bool
+		isFind            bool
+		isInteractiveFind bool
+		isInteractive     bool
+		wantFind          bool
+		wantInterFind     bool
+		wantInteractive   bool
+	}{
+		{
+			name:            "session alone enables normal interactive",
+			sessionName:     "work",
+			wantInteractive: true,
+		},
+		{
+			name:            "session with -h does not force interactive",
+			sessionName:     "work",
+			isHelp:          true,
+			wantInteractive: false,
+		},
+		{
+			name:            "session with -f promotes to interactive find",
+			sessionName:     "work",
+			isFind:          true,
+			wantFind:        false,
+			wantInterFind:   true,
+			wantInteractive: false,
+		},
+		{
+			name:              "session with -if stays interactive find",
+			sessionName:       "work",
+			isInteractiveFind: true,
+			wantInterFind:     true,
+			wantInteractive:   false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			isFind := tc.isFind
+			isInteractiveFind := tc.isInteractiveFind
+			isInteractive := tc.isInteractive
+
+			if tc.sessionName != "" {
+				if isFind && !isInteractiveFind {
+					isFind = false
+					isInteractiveFind = true
+				}
+				if !tc.isHelp && !isInteractive && !isInteractiveFind {
+					isInteractive = true
+				}
+			}
+
+			if isFind != tc.wantFind {
+				t.Errorf("isFind = %v, want %v", isFind, tc.wantFind)
+			}
+			if isInteractiveFind != tc.wantInterFind {
+				t.Errorf("isInteractiveFind = %v, want %v", isInteractiveFind, tc.wantInterFind)
+			}
+			if isInteractive != tc.wantInteractive {
+				t.Errorf("isInteractive = %v, want %v", isInteractive, tc.wantInteractive)
+			}
+		})
+	}
+}
+
+

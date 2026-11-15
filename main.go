@@ -21,6 +21,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
 	"github.com/aandrew-me/tgpt/v2/src/mcp"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
+	"github.com/aandrew-me/tgpt/v2/src/session"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
@@ -192,7 +193,7 @@ func shellSystemPrompt(useAliases bool) string {
 // runInteractiveShellMode handles both the shell and alias interactive modes.
 func runInteractiveShellMode(
 	params structs.Params,
-	preprompt, logFile, initialInput string,
+	preprompt, logFile, initialInput, sessionName string,
 	shouldExecuteCommand, useAliases bool,
 ) {
 	if useAliases {
@@ -209,6 +210,20 @@ func runInteractiveShellMode(
 	history := []string{}
 	commandRegex := regexp.MustCompile(`<cmd>(.*?)</cmd>`)
 
+	if sessionName != "" {
+		loaded, err := session.Load(sessionName)
+		if err != nil && !os.IsNotExist(err) {
+			utils.PrintError(fmt.Sprintf("Failed to load session %q: %v", sessionName, err))
+			os.Exit(1)
+		}
+		if len(loaded) > 0 {
+			previousMessages = loaded
+			history = session.ExtractHistory(loaded)
+			bold.Printf("Resumed session %q (%d messages).\n\n", sessionName, len(loaded))
+			session.Replay(loaded)
+		}
+	}
+
 	getAndPrintResponse := func(input string) string {
 		input = strings.TrimSpace(input)
 		if input == "" {
@@ -218,6 +233,15 @@ func runInteractiveShellMode(
 			bold.Println("Exiting...")
 			restoreTerminal()
 			os.Exit(0)
+		}
+		if input == "/clear" || input == "/reset" {
+			previousMessages = nil
+			history = nil
+			if sessionName != "" {
+				_ = session.Save(sessionName, nil)
+			}
+			bold.Println("Session cleared.")
+			return ""
 		}
 		if len(logFile) > 0 {
 			utils.LogToFile(input, "USER_QUERY", logFile)
@@ -244,6 +268,9 @@ func runInteractiveShellMode(
 
 		previousMessages = append(previousMessages, responseObjects...)
 		history = append(history, input)
+		if sessionName != "" {
+			_ = session.Save(sessionName, previousMessages)
+		}
 		return ""
 	}
 
@@ -275,6 +302,9 @@ func runInteractiveShellMode(
 				Role:    "user",
 				Content: fmt.Sprintf("Declined to execute command: %s", cmd),
 			})
+			if sessionName != "" {
+				_ = session.Save(sessionName, previousMessages)
+			}
 			return
 		}
 		previousMessages = append(previousMessages, structs.DefaultMessage{
@@ -289,6 +319,9 @@ func runInteractiveShellMode(
 				Content: fmt.Sprintf("Command output:\n%s", output),
 			}
 			previousMessages = append(previousMessages, outputMsg)
+		}
+		if sessionName != "" {
+			_ = session.Save(sessionName, previousMessages)
 		}
 	}
 
@@ -431,7 +464,62 @@ func main() {
 	isVerbose := flag.Bool("vb", false, "Enable verbose output for debugging")
 	flag.BoolVar(isVerbose, "verbose", false, "Enable verbose output for debugging")
 
+	sessionName := flag.String("session", "", "Start or resume a named interactive session")
+	resumeSession := flag.Bool("r", false, "Resume the latest interactive session")
+	flag.BoolVar(resumeSession, "resume", false, "Resume the latest interactive session")
+	listSessions := flag.Bool("list-sessions", false, "List saved interactive sessions")
+	deleteSession := flag.String("delete-session", "", "Delete a saved interactive session")
+
 	_ = flag.CommandLine.Parse(normalizeToolsFlagArgs(flag.CommandLine, os.Args[1:]))
+
+	if *listSessions {
+		sessions, err := session.List()
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Failed to list sessions: %v", err))
+			os.Exit(1)
+		}
+		if len(sessions) == 0 {
+			fmt.Println("No saved sessions.")
+			os.Exit(0)
+		}
+		fmt.Printf("%-25s %-10s %s\n", "NAME", "MESSAGES", "LAST MODIFIED")
+		for _, s := range sessions {
+			fmt.Printf("%-25s %-10d %s\n", s.Name, s.MessageCount, s.UpdatedAt.Format("2006-01-02 15:04:05"))
+		}
+		os.Exit(0)
+	}
+
+	if *deleteSession != "" {
+		if err := session.Delete(*deleteSession); err != nil {
+			utils.PrintError(fmt.Sprintf("Failed to delete session %q: %v", *deleteSession, err))
+			os.Exit(1)
+		}
+		fmt.Printf("Deleted session %q.\n", *deleteSession)
+		os.Exit(0)
+	}
+
+	if *resumeSession && *sessionName == "" && !*isHelp {
+		latest, err := session.GetLatest()
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Cannot resume session: %v", err))
+			os.Exit(1)
+		}
+		*sessionName = latest
+	}
+
+	if *sessionName != "" {
+		if err := session.ValidateName(*sessionName); err != nil {
+			utils.PrintError(fmt.Sprintf("Invalid session name: %v", err))
+			os.Exit(1)
+		}
+		if *isFind && !*isInteractiveFind {
+			*isFind = false
+			*isInteractiveFind = true
+		}
+		if !*isHelp && !*isInteractive && !*isMultiline && !*isInteractiveShell && !*isInteractiveAlias && !*isInteractiveFind {
+			*isInteractive = true
+		}
+	}
 
 	if *mcpAdd {
 		if err := mcp.AddServerInteractive(context.Background(), *mcpConfig); err != nil {
@@ -707,6 +795,20 @@ func main() {
 			threadID := utils.RandomString(36)
 			history := []string{}
 
+			if *sessionName != "" {
+				loaded, err := session.Load(*sessionName)
+				if err != nil && !os.IsNotExist(err) {
+					utils.PrintError(fmt.Sprintf("Failed to load session %q: %v", *sessionName, err))
+					os.Exit(1)
+				}
+				if len(loaded) > 0 {
+					previousMessages = loaded
+					history = session.ExtractHistory(loaded)
+					bold.Printf("Resumed session %q (%d messages).\n\n", *sessionName, len(loaded))
+					session.Replay(loaded)
+				}
+			}
+
 			getAndPrintResponse := func(input string) {
 				input = strings.TrimSpace(input)
 				if input == "" {
@@ -716,6 +818,15 @@ func main() {
 					bold.Println("Exiting...")
 					restoreTerminal()
 					os.Exit(0)
+				}
+				if input == "/clear" || input == "/reset" {
+					previousMessages = nil
+					history = nil
+					if *sessionName != "" {
+						_ = session.Save(*sessionName, nil)
+					}
+					bold.Println("Session cleared.")
+					return
 				}
 				if len(*logFile) > 0 {
 					utils.LogToFile(input, "USER_QUERY", *logFile)
@@ -737,6 +848,12 @@ func main() {
 				previousMessages = append(previousMessages, responseObjects...)
 				history = append(history, input)
 				lastResponse = responseTxt
+
+				if *sessionName != "" {
+					if err := session.Save(*sessionName, previousMessages); err != nil {
+						utils.PrintError(fmt.Sprintf("Failed to save session: %v", err))
+					}
+				}
 			}
 
 			input := strings.TrimSpace(prompt)
@@ -771,6 +888,19 @@ func main() {
 
 			threadID := utils.RandomString(36)
 
+			if *sessionName != "" {
+				loaded, err := session.Load(*sessionName)
+				if err != nil && !os.IsNotExist(err) {
+					utils.PrintError(fmt.Sprintf("Failed to load session %q: %v", *sessionName, err))
+					os.Exit(1)
+				}
+				if len(loaded) > 0 {
+					previousMessages = loaded
+					bold.Printf("Resumed session %q (%d messages).\n\n", *sessionName, len(loaded))
+					session.Replay(loaded)
+				}
+			}
+
 			for programLoop {
 				fmt.Print("\n")
 				p := tea.NewProgram(bubbletea.InitialModel(preprompt, &programLoop, &lastResponse, &userInput))
@@ -781,6 +911,15 @@ func main() {
 					os.Exit(1)
 				}
 				if len(userInput) > 0 {
+					trimmed := strings.TrimSpace(userInput)
+					if trimmed == "/clear" || trimmed == "/reset" {
+						previousMessages = nil
+						if *sessionName != "" {
+							_ = session.Save(*sessionName, nil)
+						}
+						bold.Println("Session cleared.")
+						continue
+					}
 					if len(*logFile) > 0 {
 						utils.LogToFile(userInput, "USER_QUERY", *logFile)
 					}
@@ -795,11 +934,17 @@ func main() {
 					if len(*logFile) > 0 {
 						utils.LogToFile(responseTxt, "ASSISTANT_RESPONSE", *logFile)
 					}
+
+					if *sessionName != "" {
+						if err := session.Save(*sessionName, previousMessages); err != nil {
+							utils.PrintError(fmt.Sprintf("Failed to save session: %v", err))
+						}
+					}
 				}
 			}
 
 		case *isInteractiveShell:
-			runInteractiveShellMode(mainParams, *preprompt, *logFile, prompt, *shouldExecuteCommand, false)
+			runInteractiveShellMode(mainParams, *preprompt, *logFile, prompt, *sessionName, *shouldExecuteCommand, false)
 
 		case *isFind:
 			/////////////////////
@@ -840,16 +985,32 @@ func main() {
 
 			bold.Print("Interactive Find mode started. Press Ctrl + C or type exit to quit.\n\n")
 
+			history := []string{}
+
+			if *sessionName != "" {
+				loaded, err := session.Load(*sessionName)
+				if err != nil && !os.IsNotExist(err) {
+					utils.PrintError(fmt.Sprintf("Failed to load session %q: %v", *sessionName, err))
+					os.Exit(1)
+				}
+				if len(loaded) > 0 {
+					mainParams.PrevMessages = loaded
+					history = session.ExtractHistory(loaded)
+					bold.Printf("Resumed session %q (%d messages).\n\n", *sessionName, len(loaded))
+					session.Replay(loaded)
+				}
+			}
+
 			extraOptions := structs.ExtraOptions{
 				IsInteractiveFind: true,
 				IsFind:            true,
 				Verbose:           *isVerbose,
 				SearchProvider:    finalSearchProvider,
 				AutoExec:          *shouldExecuteCommand,
+				SessionName:       *sessionName,
 			}
 
 			getAndPrintFindResponse := helper.InteractiveFindSession(mainParams, extraOptions, *logFile, nil)
-			history := []string{}
 
 			input := strings.TrimSpace(prompt)
 			if input != "" {
@@ -871,12 +1032,14 @@ func main() {
 				}
 				if len(input) > 0 {
 					getAndPrintFindResponse(input)
-					history = append(history, input)
+					if input != "/clear" && input != "/reset" {
+						history = append(history, input)
+					}
 				}
 			}
 
 		case *isInteractiveAlias:
-			runInteractiveShellMode(mainParams, *preprompt, *logFile, prompt, *shouldExecuteCommand, true)
+			runInteractiveShellMode(mainParams, *preprompt, *logFile, prompt, *sessionName, *shouldExecuteCommand, true)
 
 		case *isHelp:
 			helper.ShowHelpMessage()

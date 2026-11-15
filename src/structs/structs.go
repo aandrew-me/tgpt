@@ -48,6 +48,7 @@ type ExtraOptions struct {
 	SearchProvider     string // Search provider: "exa" (default), "google", "serpingapi", "serply", "keenable", "sofya", "parallel" or "specstream"
 	IsToolFollowUp     bool   // IsToolFollowUp marks a request made to continue after tool execution
 	ToolDepth          int    // ToolDepth tracks recursion depth of tool execution loops
+	SessionName        string // SessionName identifies a persistent session to save turns to
 }
 
 type ToolCallFunction struct {
