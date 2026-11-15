@@ -23,6 +23,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/clipboard"
 	"github.com/aandrew-me/tgpt/v2/src/providers"
 	"github.com/aandrew-me/tgpt/v2/src/search"
+	"github.com/aandrew-me/tgpt/v2/src/session"
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
@@ -1312,6 +1313,10 @@ func ShowHelpMessage() {
 	fmt.Printf("%-50v Set API Key. (Env: <PROVIDER>_API_KEY, then AI_API_KEY as a fallback)\n", "--key")
 	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference, demonroute, runcrate, synap, obscurifyai, trustedrouter\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
+	fmt.Printf("%-50v Start or resume a named interactive session\n", "--session")
+	fmt.Printf("%-50v Resume the latest interactive session\n", "-r, --resume")
+	fmt.Printf("%-50v List saved interactive sessions\n", "--list-sessions")
+	fmt.Printf("%-50v Delete a saved interactive session\n", "--delete-session")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")
 	fmt.Printf("%-50v Comma-separated fallback providers (Env: AI_ROTATE_PROVIDERS)\n", "--rotate")
 	fmt.Printf("%-50v Execute shell command without confirmation\n", "-y")
@@ -1561,7 +1566,7 @@ func SearchQuery(input string, params structs.Params, extraOptions structs.Extra
 }
 
 func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOptions, logFile string, inputReader func() (string, error)) func(string) {
-	var previousMessages []any
+	previousMessages := append([]any(nil), params.PrevMessages...)
 
 	threadID := utils.RandomString(36)
 
@@ -1587,6 +1592,14 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 		if input == "exit" {
 			bold.Println("Exiting...")
 			os.Exit(0)
+		}
+		if input == "/clear" || input == "/reset" {
+			previousMessages = nil
+			if extraOptions.SessionName != "" {
+				_ = session.Save(extraOptions.SessionName, nil)
+			}
+			bold.Println("Session cleared.")
+			return
 		}
 
 		if len(logFile) > 0 {
@@ -1661,6 +1674,10 @@ func InteractiveFindSession(params structs.Params, extraOptions structs.ExtraOpt
 			}
 
 			previousMessages = append(previousMessages, responseObjects...)
+		}
+
+		if extraOptions.SessionName != "" {
+			_ = session.Save(extraOptions.SessionName, previousMessages)
 		}
 	}
 
