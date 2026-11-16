@@ -25,6 +25,7 @@
 - [Gemini](https://gemini.google.com) (Require a free API keys, supports [many models](https://ai.google.dev/gemini-api/docs/models/gemini), default model `gemini-3.6-flash`)
 - PowerBrain (Free)
 - [Runcrate](https://www.runcrate.ai/?utm_source=tgpt&utm_medium=directory&utm_campaign=gpu_pricing) (OpenAI-compatible API for open models, open models are free with your GitHub account, requires `RUNCRATE_API_KEY`, default model `deepseek-ai/DeepSeek-V4.1-Flash`, supports `RUNCRATE_MODEL`, `RUNCRATE_URL`, and `RUNCRATE_BASE_URL`)
+- [Synap](https://synap402.com/) (OpenAI-compatible API for open-weight models, free tier of 100,000 tokens/day on `qwen3-coder-30b` with Google sign-in, requires `SYNAP_API_KEY`, default model `qwen3-coder-30b`, supports `SYNAP_MODEL`, `SYNAP_URL`, and `SYNAP_BASE_URL`)
 
 **Image Generation Models**: 
 - AnyAPI (Requires API key, 100k anytokens/day)
