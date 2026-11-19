@@ -2,6 +2,9 @@ package fx
 
 import (
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -241,3 +244,41 @@ message: {"type":"text-end","id":"txt-0"}`
 	}
 }
 
+func captureRequestBody(t *testing.T, params structs.Params) map[string]any {
+	t.Helper()
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		if err := json.Unmarshal(raw, &got); err != nil {
+			t.Errorf("invalid request body: %v", err)
+		}
+	}))
+	defer srv.Close()
+
+	params.Url = srv.URL
+	resp, err := NewRequest("hi", params)
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	resp.Body.Close()
+	return got
+}
+
+func TestRequestBodySamplingOptions(t *testing.T) {
+	body := captureRequestBody(t, structs.Params{Temperature: "0.2", Top_p: "0.9"})
+	if body["temperature"] != 0.2 {
+		t.Errorf("temperature = %v, want 0.2", body["temperature"])
+	}
+	if body["topP"] != 0.9 {
+		t.Errorf("topP = %v, want 0.9", body["topP"])
+	}
+}
+
+func TestRequestBodyOmitsUnsetSamplingOptions(t *testing.T) {
+	body := captureRequestBody(t, structs.Params{})
+	for _, key := range []string{"temperature", "topP"} {
+		if _, ok := body[key]; ok {
+			t.Errorf("%s should be omitted when unset", key)
+		}
+	}
+}

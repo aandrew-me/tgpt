@@ -30,6 +30,8 @@ type PromptMessage struct {
 type RequestBody struct {
 	Prompt          []PromptMessage `json:"prompt"`
 	MaxOutputTokens int             `json:"maxOutputTokens,omitempty"`
+	Temperature     *float64        `json:"temperature,omitempty"`
+	TopP            *float64        `json:"topP,omitempty"`
 	ProviderOptions map[string]any  `json:"providerOptions,omitempty"`
 	Headers         map[string]any  `json:"headers,omitempty"`
 }
@@ -162,6 +164,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 			"user-agent": "fx/0.0.3",
 		},
 	}
+
+	reqBody.Temperature, reqBody.TopP = params.SamplingOptions()
 
 	jsonRequest, err := json.Marshal(reqBody)
 	if err != nil {
