@@ -1309,7 +1309,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
-	fmt.Printf("%-50v Set API Key. (Env: AI_API_KEY)\n", "--key")
+	fmt.Printf("%-50v Set API Key. (Env: <PROVIDER>_API_KEY, then AI_API_KEY as a fallback)\n", "--key")
 	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference, demonroute, runcrate, synap, obscurifyai, trustedrouter\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Set preprompt\n", "--preprompt")

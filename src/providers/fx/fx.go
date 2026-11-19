@@ -56,6 +56,8 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	apiKey := "fx-demo-proxy"
 	if params.ApiKey != "" {
 		apiKey = params.ApiKey
+	} else if envKey := os.Getenv("AI_API_KEY"); envKey != "" {
+		apiKey = envKey
 	}
 
 	url := params.Url
