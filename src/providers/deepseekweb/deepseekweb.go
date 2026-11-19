@@ -272,6 +272,9 @@ func NewRequest(input string, params structs.Params) (*http.Response, error) {
 	if token == "" {
 		token = os.Getenv("DEEPSEEK_WEB_TOKEN")
 	}
+	if token == "" {
+		token = os.Getenv("AI_API_KEY")
+	}
 
 	token = strings.TrimSpace(token)
 	token = strings.Trim(token, "\"'`")
