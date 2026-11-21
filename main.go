@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"strings"
 	"syscall"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/aandrew-me/tgpt/v2/src/bubbletea"
 	"github.com/aandrew-me/tgpt/v2/src/helper"
 	"github.com/aandrew-me/tgpt/v2/src/imagegen"
@@ -24,7 +24,6 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/structs"
 	"github.com/aandrew-me/tgpt/v2/src/tools"
 	"github.com/aandrew-me/tgpt/v2/src/utils"
-	tea "charm.land/bubbletea/v2"
 	"github.com/fatih/color"
 )
 
@@ -576,25 +575,10 @@ func main() {
 		}
 	}
 
-	contextTextByte, _ := json.Marshal("\n\nHere is text for the context:\n")
-
 	if len(pipedInput) > 0 {
-		cleanPipedInputByte, err := json.Marshal(pipedInput)
-		if err != nil {
-			utils.PrintError(fmt.Sprintf("Error marshaling piped input to JSON: %v", err))
-			return
-		}
-		cleanPipedInput = string(cleanPipedInputByte)
-		cleanPipedInput = cleanPipedInput[1 : len(cleanPipedInput)-1]
-
-		safePipedBytes, err := json.Marshal(pipedInput + "\n")
-		if err != nil {
-			utils.PrintError(fmt.Sprintf("Error marshaling piped input to JSON: %v", err))
-			return
-		}
-		pipedInput = string(safePipedBytes)
-		pipedInput = pipedInput[1 : len(pipedInput)-1]
-		contextText = string(contextTextByte)
+		cleanPipedInput = pipedInput
+		pipedInput += "\n"
+		contextText = "\n\nHere is text for the context:\n"
 	}
 
 	if len(*preprompt) > 0 {
