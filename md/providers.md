@@ -26,6 +26,7 @@
 - PowerBrain (Free)
 - [Runcrate](https://www.runcrate.ai/?utm_source=tgpt&utm_medium=directory&utm_campaign=gpu_pricing) (OpenAI-compatible API for open models, open models are free with your GitHub account, requires `RUNCRATE_API_KEY`, default model `deepseek-ai/DeepSeek-V4.1-Flash`, supports `RUNCRATE_MODEL`, `RUNCRATE_URL`, and `RUNCRATE_BASE_URL`)
 - [Synap](https://synap402.com/) (OpenAI-compatible API for open-weight models, free tier of 100,000 tokens/day on `qwen3-coder-30b` with Google sign-in, requires `SYNAP_API_KEY`, default model `qwen3-coder-30b`, supports `SYNAP_MODEL`, `SYNAP_URL`, and `SYNAP_BASE_URL`)
+- [TeamoRouter](https://teamorouter.com) (OpenAI-compatible gateway for GLM, Kimi, DeepSeek, Qwen, Claude, GPT and Gemini, model ids such as `glm-5.3` and `claude-sonnet-5-5` listed at https://api.teamorouter.com/v1/models, requires `TEAMOROUTER_API_KEY`, default model `deepseek-v4-flash`, supports `TEAMOROUTER_MODEL`, `TEAMOROUTER_URL`, and `TEAMOROUTER_BASE_URL`)
 - [TrustedRouter](https://trustedrouter.com) (OpenAI-compatible gateway, vendor-prefixed model ids such as `anthropic/claude-sonnet-4.5` listed at https://api.trustedrouter.com/v1/models, requires `TRUSTEDROUTER_API_KEY`, default model `deepseek/deepseek-v4-flash`, supports `TRUSTEDROUTER_MODEL`, `TRUSTEDROUTER_URL`, and `TRUSTEDROUTER_BASE_URL`)
 
 **Image Generation Models**: 
