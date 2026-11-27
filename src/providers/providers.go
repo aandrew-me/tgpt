@@ -19,6 +19,7 @@ import (
 	"github.com/aandrew-me/tgpt/v2/src/providers/isou"
 	"github.com/aandrew-me/tgpt/v2/src/providers/koboldai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/litellm"
+	"github.com/aandrew-me/tgpt/v2/src/providers/llmtr"
 	"github.com/aandrew-me/tgpt/v2/src/providers/minimax"
 	"github.com/aandrew-me/tgpt/v2/src/providers/obscurifyai"
 	"github.com/aandrew-me/tgpt/v2/src/providers/ollama"
@@ -36,7 +37,7 @@ import (
 )
 
 var AvailableProviders = []string{
-	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "demonroute", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "obscurifyai", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain", "runcrate", "synap", "trustedrouter",
+	"anyapi", "aihorde", "aitopia", "atlascloud", "apiroute", "cheaperinference", "deepseek", "deepseek-web", "demonroute", "fx", "isou", "gemini", "groq", "koboldai", "litellm", "minimax", "obscurifyai", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "powerbrain", "runcrate", "synap", "trustedrouter", "llmtr",
 }
 
 func IsValidProvider(name string) bool {
@@ -53,7 +54,7 @@ func SupportsTools(provider string) bool {
 		provider = "opencode"
 	}
 	switch provider {
-	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "demonroute", "gemini", "groq", "litellm", "minimax", "obscurifyai", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate", "synap", "trustedrouter":
+	case "anyapi", "atlascloud", "apiroute", "cheaperinference", "deepseek", "demonroute", "gemini", "groq", "litellm", "llmtr", "minimax", "obscurifyai", "ollama", "ollamacloud", "omniroute", "opencode", "openai", "openrouter", "pollinations", "runcrate", "synap", "trustedrouter":
 		return true
 	default:
 		return false
@@ -118,6 +119,8 @@ func GetMainText(line string, provider string, input string) string {
 		return synap.GetMainText(line)
 	case "trustedrouter":
 		return trustedrouter.GetMainText(line)
+	case "llmtr":
+		return llmtr.GetMainText(line)
 	default:
 		return opencode.GetMainText(line)
 	}
@@ -190,6 +193,8 @@ func NewRequest(input string, params structs.Params, extraOptions structs.ExtraO
 		return synap.NewRequest(input, params)
 	case "trustedrouter":
 		return trustedrouter.NewRequest(input, params)
+	case "llmtr":
+		return llmtr.NewRequest(input, params)
 	default:
 		return opencode.NewRequest(input, params)
 	}
