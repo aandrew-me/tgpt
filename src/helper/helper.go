@@ -1311,7 +1311,7 @@ func ShowHelpMessage() {
 	boldBlue.Println("\nSome additional options can be set. However not all options are supported by all providers. Not supported options will just be ignored.")
 	fmt.Printf("%-50v Set Model\n", "--model")
 	fmt.Printf("%-50v Set API Key. (Env: <PROVIDER>_API_KEY, then AI_API_KEY as a fallback)\n", "--key")
-	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference, demonroute, runcrate, synap, obscurifyai, trustedrouter\n", "--url")
+	fmt.Printf("%-50v Set API endpoint url. You need to provide the full URL. Supported by openai, opencode, openrouter, ollama, litellm, groq, gemini, deepseek, omniroute, atlascloud, apiroute, cheaperinference, demonroute, runcrate, synap, obscurifyai, trustedrouter, llmtr\n", "--url")
 	fmt.Printf("%-50v Set filepath to log conversation to (For interactive modes)\n", "--log")
 	fmt.Printf("%-50v Start or resume a named interactive session\n", "--session")
 	fmt.Printf("%-50v Resume the latest interactive session\n", "-r, --resume")
@@ -1342,7 +1342,7 @@ func ShowHelpMessage() {
 
 	boldBlue.Println("\nProviders:")
 	fmt.Println("The default provider is opencode. The AI_PROVIDER environment variable can be used to specify a different provider.")
-	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, apiroute, cheaperinference, deepseek, deepseek-web, demonroute, fx, gemini, groq, isou, koboldai, minimax, obscurifyai, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain, runcrate, synap, trustedrouter.")
+	fmt.Println("Available providers to use: anyapi, aihorde, aitopia, atlascloud, apiroute, cheaperinference, deepseek, deepseek-web, demonroute, fx, gemini, groq, isou, koboldai, minimax, obscurifyai, ollama, ollamacloud, omniroute, openai, openrouter, opencode, pollinations, powerbrain, runcrate, synap, trustedrouter, llmtr.")
 
 	bold.Println("\nProvider: anyapi")
 	fmt.Println("Multi-model API with 100k free anytokens per day. Recognizes ANYAPI_API_KEY and ANYAPI_MODEL env vars. Default model: openai/gpt-4o-mini. Supports chat and image generation. Docs: https://docs.anyapi.ai/")
@@ -1370,6 +1370,9 @@ func ShowHelpMessage() {
 
 	bold.Println("\nProvider: trustedrouter")
 	fmt.Println("OpenAI-compatible TrustedRouter gateway. Recognizes TRUSTEDROUTER_API_KEY, TRUSTEDROUTER_MODEL, TRUSTEDROUTER_URL and TRUSTEDROUTER_BASE_URL env vars. Default model: deepseek/deepseek-v4-flash. Model list: https://api.trustedrouter.com/v1/models. Docs: https://trustedrouter.com/docs")
+
+	bold.Println("\nProvider: llmtr")
+	fmt.Println("OpenAI-compatible LLMTR gateway. Recognizes LLMTR_API_KEY, LLMTR_MODEL, LLMTR_URL and LLMTR_BASE_URL env vars. Default model: qwen/qwen3.8-flash. Model list: https://llmtr.com/v1/models. Docs: https://llmtr.com/docs")
 
 	bold.Println("\nProvider: aihorde")
 	fmt.Println("A free, community-powered generation service: volunteers share spare computer power so anyone can generate images and text. Supports AIHORDE_MODEL and AIHORDE_API_KEY env variables. Site: https://aihorde.net/")
